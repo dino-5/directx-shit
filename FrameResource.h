@@ -1,6 +1,5 @@
 #pragma once
-#include"common.h"
-#include"../../Common/UploadBuffer.h"
+#include"UploadBuffer.h"
 #include"PassConstants.h"
 
 class FrameResource
