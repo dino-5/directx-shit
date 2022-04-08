@@ -1,4 +1,4 @@
-#include "GeometryGenerator.h"
+#include "include/GeometryGenerator.h"
 using namespace DirectX;
 
 GeometryGenerator::MeshData GeometryGenerator::CreateCylinder

@@ -28,6 +28,7 @@ private:
     virtual void OnResize()override;
     virtual void Update(const GameTimer& gt)override;
     virtual void Draw(const GameTimer& gt)override;
+    virtual void Destroy()override;
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
     virtual void OnMouseDown(WPARAM btnState, int x, int y)override;

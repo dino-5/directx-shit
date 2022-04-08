@@ -7,7 +7,7 @@
 //   Hold the left mouse button down and move the mouse to rotate.
 //   Hold the right mouse button down and move the mouse to zoom in and out.
 //***************************************************************************************
-#include"App.h"
+#include "include/App.h"
 using namespace DirectX;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -189,6 +189,13 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
     }
 }
 
+void App::Destroy()
+{
+	HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+	ThrowIfFailed(mFence->SetEventOnCompletion(m_currentFrameResource->m_fence, eventHandle));
+	WaitForSingleObject(eventHandle, INFINITE);
+	CloseHandle(eventHandle);
+}
 
 void App::Draw(const GameTimer& gt)
 {
@@ -602,7 +609,7 @@ void App::BuildPSO()
         m_shaders["opaquePS"]->GetBufferSize()
     };
     opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+    //opaquePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
     opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     opaquePsoDesc.SampleMask = UINT_MAX;

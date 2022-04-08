@@ -19,33 +19,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="d3dApp.cpp" />
-    <ClCompile Include="d3dUtil.cpp" />
-    <ClCompile Include="DDSTextureLoader.cpp" />
-    <ClCompile Include="FrameResource.cpp" />
-    <ClCompile Include="GameTimer.cpp" />
-    <ClCompile Include="GeometryGenerator.cpp" />
-    <ClCompile Include="MathHelper.cpp" />
-    <ClCompile Include="PassConstants.cpp" />
-    <ClCompile Include="RenderItem.cpp" />
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\d3dApp.cpp" />
+    <ClCompile Include="src\d3dUtil.cpp" />
+    <ClCompile Include="src\DDSTextureLoader.cpp" />
+    <ClCompile Include="src\FrameResource.cpp" />
+    <ClCompile Include="src\GameTimer.cpp" />
+    <ClCompile Include="src\GeometryGenerator.cpp" />
+    <ClCompile Include="src\MathHelper.cpp" />
+    <ClCompile Include="src\PassConstants.cpp" />
+    <ClCompile Include="src\RenderItem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="common.h" />
-    <ClInclude Include="d3dApp.h" />
-    <ClInclude Include="d3dUtil.h" />
-    <ClInclude Include="d3dx12.h" />
-    <ClInclude Include="DDSTextureLoader.h" />
-    <ClInclude Include="FrameResource.h" />
-    <ClInclude Include="GameTimer.h" />
-    <ClInclude Include="GeometryGenerator.h" />
-    <ClInclude Include="MathHelper.h" />
-    <ClInclude Include="PassConstants.h" />
-    <ClInclude Include="RenderItem.h" />
-    <ClInclude Include="UploadBuffer.h" />
+    <ClInclude Include="src\include\App.h" />
+    <ClInclude Include="src\include\Camera.h" />
+    <ClInclude Include="src\include\common.h" />
+    <ClInclude Include="src\include\d3dApp.h" />
+    <ClInclude Include="src\include\d3dUtil.h" />
+    <ClInclude Include="src\include\d3dx12.h" />
+    <ClInclude Include="src\include\DDSTextureLoader.h" />
+    <ClInclude Include="src\include\FrameResource.h" />
+    <ClInclude Include="src\include\GameTimer.h" />
+    <ClInclude Include="src\include\GeometryGenerator.h" />
+    <ClInclude Include="src\include\MathHelper.h" />
+    <ClInclude Include="src\include\PassConstants.h" />
+    <ClInclude Include="src\include\RenderItem.h" />
+    <ClInclude Include="src\include\UploadBuffer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B590A678-E935-4AED-AF1F-3B6D02A4AE95}</ProjectGuid>
