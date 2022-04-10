@@ -52,6 +52,109 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder
     return mesh;
 }
 
+GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float height, float depth, uint32 numSubdivisions)
+{
+    MeshData mesh;
+
+    const int n  = 8;
+    std::vector<XMFLOAT3> vertices =
+    {
+         XMFLOAT3(-1.0f, -1.0f, -1.0f), // 0
+		 XMFLOAT3(+1.0f, -1.0f, -1.0f), // 1
+		 XMFLOAT3(+1.0f, -1.0f, +1.0f), // 2 
+		 XMFLOAT3(-1.0f, -1.0f, +1.0f), // 3
+		 XMFLOAT3(-1.0f, +1.0f, -1.0f), // 4
+		 XMFLOAT3(+1.0f, +1.0f, -1.0f), // 5
+		 XMFLOAT3(+1.0f, +1.0f, +1.0f), // 6
+		 XMFLOAT3(-1.0f, +1.0f, +1.0f), // 7
+    };
+    XMFLOAT3 tan{ 0,0,0 };
+    XMFLOAT2 uv{ 0,0 };
+
+    for (int i = 0; i < 3; i++)
+    {
+        XMVECTOR vec1 = XMLoadFloat3(&vertices[i]);
+        XMVECTOR vec2 = XMLoadFloat3(&vertices[i+4]);
+        XMVECTOR v1 = XMVectorSubtract(vec1, vec2);
+        vec1 = XMLoadFloat3(&vertices[i]);
+        vec2 = XMLoadFloat3(&vertices[i+1]);
+        XMVECTOR v2 = XMVectorSubtract(vec1, vec2);
+        XMVECTOR norm = XMVector3Cross(v2, v1);
+        XMFLOAT3 Norm;
+        XMStoreFloat3(&Norm, XMVector3Normalize(norm));
+
+        mesh.Vertices.push_back(Vertex( vertices[i],   Norm, tan, uv));
+        mesh.Vertices.push_back(Vertex( vertices[i+4], Norm, tan, uv));
+        mesh.Vertices.push_back(Vertex( vertices[i+5], Norm, tan, uv));
+        mesh.Vertices.push_back(Vertex( vertices[i+1], Norm, tan, uv));
+
+        mesh.Indices32.push_back(i*4);
+        mesh.Indices32.push_back(i*4+1);
+        mesh.Indices32.push_back(i*4+2);
+
+        mesh.Indices32.push_back(i*4);
+        mesh.Indices32.push_back(i*4+2);
+        mesh.Indices32.push_back(i*4+3);
+    }
+
+	XMVECTOR vec1 = XMLoadFloat3(&vertices[3]);
+	XMVECTOR vec2 = XMLoadFloat3(&vertices[7]);
+	XMVECTOR v1 = XMVectorSubtract(vec1, vec2);
+	vec1 = XMLoadFloat3(&vertices[3]);
+	vec2 = XMLoadFloat3(&vertices[0]);
+	XMVECTOR v2 = XMVectorSubtract(vec1, vec2);
+	XMVECTOR norm = XMVector3Cross(v1, v2);
+	XMFLOAT3 Norm;
+	XMStoreFloat3(&Norm, XMVector3Normalize(norm));
+
+	mesh.Vertices.push_back(Vertex( vertices[3], Norm, tan, uv));
+	mesh.Vertices.push_back(Vertex( vertices[7], Norm, tan, uv));
+	mesh.Vertices.push_back(Vertex( vertices[4], Norm, tan, uv));
+	mesh.Vertices.push_back(Vertex( vertices[0], Norm, tan, uv));
+	int i = 3;
+
+	mesh.Indices32.push_back(i*4);
+	mesh.Indices32.push_back(i*4+1);
+	mesh.Indices32.push_back(i*4+2);
+
+	mesh.Indices32.push_back(i*4);
+	mesh.Indices32.push_back(i*4+2);
+	mesh.Indices32.push_back(i*4+3);
+    i++;
+
+	for (int j = 0; j < 2; j++)
+	{
+        XMVECTOR vec1 = XMLoadFloat3(&vertices[j*4]);
+        XMVECTOR vec2 = XMLoadFloat3(&vertices[j*4+3]);
+        XMVECTOR v1 = XMVectorSubtract(vec1, vec2);
+        vec1 = XMLoadFloat3(&vertices[j*4]);
+        vec2 = XMLoadFloat3(&vertices[j*4+1]);
+        XMVECTOR v2 = XMVectorSubtract(vec1, vec2);
+        XMVECTOR norm = XMVector3Cross(v1, v2);
+        XMFLOAT3 Norm;
+        XMStoreFloat3(&Norm, XMVector3Normalize(norm));
+        if (!j)
+            Norm.y *= -1;
+
+        mesh.Vertices.push_back(Vertex( vertices[j*4+0], Norm, tan, uv));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+3], Norm, tan, uv));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+2], Norm, tan, uv));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+1], Norm, tan, uv));
+
+        mesh.Indices32.push_back(i*4);
+        mesh.Indices32.push_back(i*4+1);
+        mesh.Indices32.push_back(i*4+2);
+
+        mesh.Indices32.push_back(i*4);
+        mesh.Indices32.push_back(i*4+2);
+        mesh.Indices32.push_back(i*4+3);
+        i++;
+
+	}
+
+    return mesh;
+}
+
 void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
 {
     uint32 baseIndex = (uint32)meshData.Vertices.size();
@@ -114,7 +217,3 @@ void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadi
     }
 }
 
-GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float height, float depth, uint32_t numSubdivisions)
-{
-    return MeshData();
-}

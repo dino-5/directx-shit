@@ -13,7 +13,7 @@ using namespace DirectX;
 struct Vertex
 {
     XMFLOAT3 Pos;
-    XMFLOAT4 Color;
+    XMFLOAT3 Normal;
 };
 
 struct ObjectConstants

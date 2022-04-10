@@ -17,26 +17,25 @@ cbuffer cbPerPass: register(b1)
 	float4x4 gInvProj;
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
+
 	float3 gEyePosW;
-	float cbPerObjectPad1;
-	float2 gRenderTargetSize;
-	float2 gInvRenderTargetSize;
-	float gNearZ;
-	float gFarZ;
-	float gTotalTime;
-	float gDeltaTime;
+    float3 lightPos;
+    float3 lightColor;
+    float3 boxColor;
+
 };
 
 struct VertexIn
 {
 	float3 PosL  : POSITION;
-    float4 Color : COLOR;
+    float3 Norm: NORMAL;
 };
 
 struct VertexOut
 {
-	float4 PosH  : SV_POSITION;
-    float4 Color : COLOR;
+	float4 PosH  :  SV_POSITION;
+    float3 pos :    Pos;
+    float3 normal : Norm;
 };
 
 VertexOut VS(VertexIn vin)
@@ -47,15 +46,27 @@ VertexOut VS(VertexIn vin)
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
 
-	// Just pass vertex color into the pixel shader.
-	vout.Color = vin.Color;
+    vout.pos = vin.PosL;
+    vout.normal = vin.Norm;
 
 	return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    return pin.Color;
+    //float3 boxColor = float3(1.0f, 0.5, 0.0);
+    float4 fragcolor;
+    float ambientStrength = 0.2f;
+    float3 ambient = ambientStrength * lightColor;
+
+    float3 lightDir = normalize(lightPos - pin.pos);
+    float diff = max(dot(pin.normal, lightDir), 0);
+    float3 diffuse = diff * lightColor;
+
+    float3 result = (ambient +diffuse) * boxColor;
+    fragcolor = float4(result, 1.0f);
+
+    return fragcolor;
 }
 
 

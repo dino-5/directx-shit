@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <DirectXMath.h>
 #include <vector>
+#include "MathHelper.h"
+#include <array>
 
 class GeometryGenerator
 {
@@ -64,7 +66,7 @@ public:
 	/// Creates a box centered at the origin with the given dimensions, where each
 	/// face has m rows and n columns of vertices.
 	///</summary>
-	MeshData CreateBox(float width, float height, float depth, uint32 numSubdivisions);
+	MeshData CreateBox(float width=0, float height=0, float depth=0, uint32 numSubdivisions=0);
 
 	///<summary>
 	/// Creates a sphere centered at the origin with the given radius.  The

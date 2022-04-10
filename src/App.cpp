@@ -40,6 +40,7 @@ App::App(HINSTANCE hInstance)
 
 App::~App()
 {
+    Destroy();
 }
 
 bool App::Initialize()
@@ -127,13 +128,10 @@ void App::UpdateMainPassCB(const GameTimer& gt)
     XMStoreFloat4x4(&m_mainPassCB.ViewProj, XMMatrixTranspose(viewProj));
     XMStoreFloat4x4(&m_mainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
     m_mainPassCB.EyePosW = mEyePos;
-    m_mainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
-    m_mainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
-    m_mainPassCB.NearZ = 1.0f;
-    m_mainPassCB.FarZ = 1000.0f;
-    m_mainPassCB.TotalTime = gt.TotalTime();
-    m_mainPassCB.DeltaTime = gt.DeltaTime();
 
+    m_mainPassCB.lightPos = XMFLOAT3(2.0f, 3.0, 10);
+    m_mainPassCB.lightColor = XMFLOAT3( 1.0f, 1.0f, 1.0f );
+    m_mainPassCB.boxColor =  XMFLOAT3(0.5f, 0.6, 0.7);
     auto currPassCB = m_currentFrameResource->m_passCb.get();
     currPassCB->CopyData(0, m_mainPassCB);
 
@@ -148,7 +146,6 @@ void App::Update(const GameTimer& gt)
 
     // Convert Spherical to Cartesian coordinates.
     auto temp = mFence->GetCompletedValue();
-
     if (m_currentFrameResource->m_fence != 0 && mFence->GetCompletedValue() < m_currentFrameResource->m_fence)
     {
         HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
@@ -428,56 +425,12 @@ void App::BuildShadersAndInputLayout()
     mInputLayout =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 }
 
 void App::BuildGeometry()
 {
-        /*
-    std::array<Vertex, 8> vertices =
-    {
-        Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
-    };
-
-	std::array<std::uint16_t, 36> indices =
-	{
-		// front face
-		0, 1, 2,
-		0, 2, 3,
-
-		// back face
-		4, 6, 5,
-		4, 7, 6,
-
-		// left face
-		4, 5, 1,
-		4, 1, 0,
-
-		// right face
-		3, 2, 6,
-		3, 6, 7,
-
-		// top face
-		1, 5, 6,
-		1, 6, 2,
-
-		// bottom face
-		4, 0, 3,
-		4, 3, 7
-	};
-
-    const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-    */
 
     GeometryGenerator generator;
     auto box      = generator.CreateBox(10, 5, 10, 3);
@@ -506,13 +459,14 @@ void App::BuildGeometry()
     for (size_t i = 0; i < box.Vertices.size(); ++i, ++k)
     {
         vertices[k].Pos = box.Vertices[i].Position;
-        vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
+        vertices[k].Normal = box.Vertices[i].Normal;
+        //vertices[k].Color = XMFLOAT4(box.Vertices[i].Normal.x, box.Vertices[i].Normal.y,box.Vertices[i].Normal.z,1.0f);
     }
 
     for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
     {
         vertices[k].Pos = cylinder.Vertices[i].Position;
-        vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
+        vertices[k].Normal = cylinder.Vertices[i].Normal;
     }
     std::vector<std::uint16_t> indices;
     indices.insert(indices.end(), box.Indices32.begin(), box.Indices32.end());
@@ -561,6 +515,7 @@ void App::BuildRenderItems()
     CreateRenderItem("box",XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
     CreateRenderItem("grid", MathHelper::Identity4x4());
 
+    /*
     UINT objCBIndex = 2;
     for (int i = 0; i < 5; ++i)
     {
@@ -582,6 +537,7 @@ void App::BuildRenderItems()
 		CreateRenderItem("sphere", rightSpherem_World);
         m_renderItems.back()->m_objCbIndex = objCBIndex++;
     }
+    */
 
     // All the render items are opaque.
     for (auto& e : m_renderItems)
