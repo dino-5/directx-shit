@@ -142,12 +142,12 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
         mesh.Vertices.push_back(Vertex( vertices[j*4+1], Norm, tan, uv));
 
         mesh.Indices32.push_back(i*4);
-        mesh.Indices32.push_back(i*4+1);
-        mesh.Indices32.push_back(i*4+2);
+        mesh.Indices32.push_back(i*4+1+(1-j)*2);
+        mesh.Indices32.push_back(i * 4 + 2);// -(1 - j)); // strange calculations == culling of down face
 
         mesh.Indices32.push_back(i*4);
         mesh.Indices32.push_back(i*4+2);
-        mesh.Indices32.push_back(i*4+3);
+        mesh.Indices32.push_back(i*4+3-(1-j)*2);
         i++;
 
 	}
