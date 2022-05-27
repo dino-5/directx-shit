@@ -161,7 +161,7 @@ struct MeshGeometry
 	UINT IndexBufferByteSize = 0;
 
     void Init(
-        ComPtr<ID3D12Device>&device, ComPtr<ID3D12GraphicsCommandList>& cmList,
+        ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
         const void* vertexData, UINT vertexDataSize, UINT structSize,
         const void* indexData, UINT indexDataSize, DXGI_FORMAT format)
     {
@@ -179,13 +179,13 @@ struct MeshGeometry
     }
 
     static void CreateCPUBuffer(
-				ComPtr<ID3D12Device>& device, ComPtr<ID3D12GraphicsCommandList>& cmList,
+				ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
 				ComPtr<ID3DBlob>& cpuMemory, const void* data, UINT dataSize, 
 				ComPtr<ID3D12Resource>& uploadBuffer, ComPtr<ID3D12Resource>& gpuMemory)
     {
         ThrowIfFailed(D3DCreateBlob(dataSize, &cpuMemory));
         CopyMemory(cpuMemory->GetBufferPointer(), data, dataSize);
-        gpuMemory = d3dUtil::CreateDefaultBuffer(device.Get(), cmList.Get(), data, dataSize, uploadBuffer);
+        gpuMemory = d3dUtil::CreateDefaultBuffer(device, cmList.Get(), data, dataSize, uploadBuffer);
 
     }
 
@@ -221,6 +221,7 @@ struct MeshGeometry
 		IndexBufferUploader = nullptr;
 	}
 };
+
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif

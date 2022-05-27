@@ -11,6 +11,8 @@
 #include "GeometryGenerator.h"
 #include "ImGuiSettings.h" 
 #include "Texture.h"
+#include "../dx12/DescriptorHeap.h"
+
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -64,10 +66,11 @@ private:
 
     std::vector<std::unique_ptr<FrameResource>> m_frameResources;
     FrameResource* m_currentFrameResource = nullptr;
-    int m_currentFrameResourceIndex = 0;
+    int m_frameIndex = 0;
     
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-    ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+    //ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+    DescriptorHeap m_cbvHeap;
 
     std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
 
@@ -94,7 +97,7 @@ private:
     UINT m_passCbvOffset = 0;
     UINT m_textureCbvOffset = 0;
 
-    float clear_color[4] = { 0.6f, 0.7f, 0.3f, 1.0f };
+    float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 
     std::vector<Texture> m_textures;

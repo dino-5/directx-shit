@@ -1,4 +1,5 @@
 #include "Device.h"
+#include "../external/stb/stb_image.h"
 
 
 void Device::GetHardwareAdapter(
@@ -49,13 +50,9 @@ void Device::GetHardwareAdapter(
 
             if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
             {
-                // Don't select the Basic Render Driver adapter.
-                // If you want a software adapter, pass in "/warp" on the command line.
                 continue;
             }
 
-            // Check to see whether the adapter supports Direct3D 12, but don't create the
-            // actual device yet.
             if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
             {
                 break;
@@ -98,7 +95,9 @@ ID3D12Device* Device::GetDevice()
     return m_device.Get();
 }
 
-
-
+IDXGIFactory4* Device::GetFactory()
+{
+    return m_factory.Get();
+}
 
 

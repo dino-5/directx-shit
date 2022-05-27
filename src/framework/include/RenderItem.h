@@ -9,7 +9,6 @@ class RenderItem
 public:
 	RenderItem() = default;
 
-	//DirectX::XMFLOAT4X4 m_World = MathHelper::Identity4x4();
 	ObjectConstants objectParam;
 
 	void SetTranslation(float, float, float);

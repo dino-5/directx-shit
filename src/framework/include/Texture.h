@@ -5,17 +5,20 @@
 #include "d3dx12.h"
 #include "common.h"
 
+class DescriptorHeap;
+
 class Texture
 {
 public:
-	Texture(const char* path, ComPtr<ID3D12Device>& device, ComPtr<ID3D12GraphicsCommandList>&, ComPtr<ID3D12DescriptorHeap>&, UINT);
+	Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&, DescriptorHeap&);
 
-private:
+public:
 	ComPtr<ID3D12Resource> m_texture;
 	int width = 0,
 		height = 0,
 		nrChannels =0;
     ComPtr<ID3D12Resource> textureUploadHeap;
+	unsigned int index;
 };
 
 #endif

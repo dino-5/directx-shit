@@ -1,49 +1,10 @@
 #include "include/Texture.h"
 #include "../external/stb/stb_image.h"
 #include "include/d3dUtil.h"
+#include "dx12/DescriptorHeap.h"
 
-//std::vector<UINT8> GenerateTextureData()
-//{
-//    int TextureWidth = 256;
-//    int TextureHeight = 256;
-//    int TexturePixelSize = 4;
-//    const UINT rowPitch = TextureWidth * TexturePixelSize;
-//    const UINT cellPitch = rowPitch >> 3;        // The width of a cell in the checkboard texture.
-//    const UINT cellHeight = TextureWidth >> 3;    // The height of a cell in the checkerboard texture.
-//    const UINT textureSize = rowPitch * TextureHeight;
-//
-//    std::vector<UINT8> data(textureSize);
-//    UINT8* pData = &data[0];
-//
-//    for (UINT n = 0; n < textureSize; n += TexturePixelSize)
-//    {
-//        UINT x = n % rowPitch;
-//        UINT y = n / rowPitch;
-//        UINT i = x / cellPitch;
-//        UINT j = y / cellHeight;
-//
-//        if (i % 2 == j % 2)
-//        {
-//            pData[n] = 0x00;        // R
-//            pData[n + 1] = 0x00;    // G
-//            pData[n + 2] = 0x00;    // B
-//            pData[n + 3] = 0xff;    // A
-//        }
-//        else
-//        {
-//            pData[n] = 0xff;        // R
-//            pData[n + 1] = 0xff;    // G
-//            pData[n + 2] = 0xff;    // B
-//            pData[n + 3] = 0xff;    // A
-//        }
-//    }
-//
-//    return data;
-//}
-//
-
-Texture::Texture(const char* path, ComPtr<ID3D12Device>& device, ComPtr<ID3D12GraphicsCommandList>& commandList,
-          ComPtr<ID3D12DescriptorHeap>& srvHeap, UINT index)
+Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList,
+          DescriptorHeap& srvHeap)
 {
 	std::uint8_t* data = stbi_load(path, &width, &height, &nrChannels, 4); 
     D3D12_RESOURCE_DESC textureDesc = {};
@@ -94,9 +55,5 @@ Texture::Texture(const char* path, ComPtr<ID3D12Device>& device, ComPtr<ID3D12Gr
     srvDesc.Format = textureDesc.Format;
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = 1;
-    auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
-    UINT srvDescSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    handle.Offset(index, srvDescSize);
-    device->CreateShaderResourceView(m_texture.Get(), &srvDesc, handle);
-
+    index = srvHeap.CreateSRV(srvDesc, m_texture.Get());
 }

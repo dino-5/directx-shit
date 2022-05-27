@@ -9,7 +9,8 @@
 #include <DirectXMath.h>
 #include "../include/d3dx12.h"
 
-
+class Texture;
+class DescriptorHeap;
 
 class Device
 {
@@ -17,8 +18,8 @@ public:
 
 	static void Initialize();
 	Device() = delete;
-	static void CreateTexture();
 	static ID3D12Device* GetDevice();
+	static IDXGIFactory4* GetFactory();
 
 private:
 		
