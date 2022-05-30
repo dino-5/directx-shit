@@ -113,6 +113,37 @@ float Camera::GetFarWindowHeight()const
 	return mFarWindowHeight;
 }
 
+XMVECTOR Camera::GetVector(DirectX::XMFLOAT3 fl)
+{
+	XMVECTOR res;
+	XMStoreFloat3(&fl, res);
+	return res;
+}
+
+void Camera::OnKeyDown(Key key)
+{
+	XMVECTOR position = GetVector(mPosition);
+	XMVECTOR look = GetVector(mLook);
+	XMVECTOR y{0.0, 1.0, 0.0};
+	switch (key)
+	{
+	case Key::W:
+		position += vel * look;
+		break;
+	case Key::A:
+		position -= XMVector3Cross(look, y) * vel;
+		break;
+	case Key::S:
+		position -= vel * look;
+		break;
+	case Key::D:
+		position += XMVector3Cross(look, y) * vel;
+		break;
+	default:
+		break;
+	}
+}
+
 void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 {
 	// cache properties

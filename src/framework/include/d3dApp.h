@@ -12,11 +12,13 @@
 #include "d3dUtil.h"
 #include "GameTimer.h"
 #include "../dx12/DescriptorHeap.h"
+#include "common.h"
 
 // Link necessary d3d12 libraries.
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
+
 
 
 class D3DApp
@@ -54,6 +56,7 @@ protected:
 	virtual void OnMouseDown(WPARAM btnState, int x, int y){ }
 	virtual void OnMouseUp(WPARAM btnState, int x, int y)  { }
 	virtual void OnMouseMove(WPARAM btnState, int x, int y){ }
+	virtual void OnKeyDown(Key key) { }
 	virtual void Destroy() = 0;
 
 protected:

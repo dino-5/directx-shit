@@ -46,7 +46,13 @@ public:
     }
 
     UploadBuffer() = default;
-    UploadBuffer(const UploadBuffer& rhs) = delete;
+    UploadBuffer(const UploadBuffer&& rhs)
+    {
+        mUploadBuffer = rhs.mUploadBuffer;
+        mMappedData = rhs.mMappedData;
+        mElementByteSize = rhs.mElementByteSize;
+        mIsConstantBuffer = rhs.mIsConstantBuffer;
+    }
     UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
     ~UploadBuffer()
     {

@@ -1,17 +1,9 @@
-//***************************************************************************************
-// Camera.h by Frank Luna (C) 2011 All Rights Reserved.
-//   
-// Simple first person style camera class that lets the viewer explore the 3D scene.
-//   -It keeps track of the camera coordinate system relative to the world space
-//    so that the view matrix can be constructed.  
-//   -It keeps track of the viewing frustum of the camera so that the projection
-//    matrix can be obtained.
-//***************************************************************************************
 
 #ifndef CAMERA_H
 #define CAMERA_H
 
 #include "d3dUtil.h"
+#include "common.h"
 
 class Camera
 {
@@ -74,6 +66,9 @@ public:
 	// After modifying camera position/orientation, call to rebuild the view matrix.
 	void UpdateViewMatrix();
 
+	void OnKeyDown(Key key);
+	XMVECTOR GetVector(DirectX::XMFLOAT3 fl);
+
 private:
 
 	// Camera coordinate system with coordinates relative to world space.
@@ -81,6 +76,8 @@ private:
 	DirectX::XMFLOAT3 mRight = { 1.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 mUp = { 0.0f, 1.0f, 0.0f };
 	DirectX::XMFLOAT3 mLook = { 0.0f, 0.0f, 1.0f };
+
+	float vel = 1.f;
 
 	// Cache frustum properties.
 	float mNearZ = 0.0f;

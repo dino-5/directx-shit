@@ -8,14 +8,17 @@ class FrameResource
 {
 public:
 	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount);
-	FrameResource(const FrameResource&) = delete;
+	void Init(ID3D12Device* device, UINT passCount, UINT objectCount);
+
+	FrameResource() = default;
+	FrameResource(const FrameResource&&) ;
 	FrameResource& operator=(const FrameResource&) = delete;
 
-	ComPtr<ID3D12CommandAllocator> m_cmdAlloc;
-	std::unique_ptr<UploadBuffer<PassConstants>> m_passCb = nullptr;
-	std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCb = nullptr;
-	ViewID passIndex;
-	ViewID objectIndex;
+	ComPtr<ID3D12CommandAllocator> m_cmdAlloc = nullptr;
+	UploadBuffer<PassConstants> m_passCb;
+	UploadBuffer<ObjectConstants> m_objectCb;
+	ViewID passIndex=-1;
+	ViewID objectIndex=-1;
 
 	UINT m_fence = 0;
 

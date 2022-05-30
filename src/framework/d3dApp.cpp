@@ -327,6 +327,10 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         else if((int)wParam == VK_F2)
             Set4xMsaaState(!m4xMsaaState);
+	case WM_KEYDOWN:
+		//OutputDebugString((std::to_wstring(wParam)+L"\n").c_str());
+		OnKeyDown(static_cast<Key>(wParam));
+		
 
         return 0;
 	}

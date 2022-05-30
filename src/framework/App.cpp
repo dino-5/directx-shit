@@ -21,7 +21,7 @@ bool App::Initialize()
 		
     // Reset the command list to prep for initialization commands.
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
- 
+    InitCamera();
     BuildRootSignature();
     BuildShadersAndInputLayout();
     BuildGeometry();
@@ -38,6 +38,11 @@ bool App::Initialize()
 	FlushCommandQueue();
 
 	return true;
+}
+
+void App::InitCamera()
+{
+    m_camera.SetPosition(mEyePos);
 }
 
 void App::BuildDescriptorHeaps()
@@ -59,11 +64,11 @@ void App::BuildConstantBuffers()
 
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex)
     {
-        auto objectCB = m_frameResources[frameIndex]->m_objectCb->Resource();
+        auto objectCB = m_frameResources[frameIndex].m_objectCb.Resource();
         for (UINT i = 0; i < objCount; ++i)
         {
             D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-            m_frameResources[frameIndex]->objectIndex = m_cbvHeap.CreateCBV(cbAddress, objCBByteSize);
+            m_frameResources[frameIndex].objectIndex = m_cbvHeap.CreateCBV(cbAddress, objCBByteSize);
         }
     }
 
@@ -71,9 +76,9 @@ void App::BuildConstantBuffers()
 
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex)
     {
-        auto passCB = m_frameResources[frameIndex]->m_passCb->Resource();
+        auto passCB = m_frameResources[frameIndex].m_passCb.Resource();
         D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
-        m_frameResources[frameIndex]->passIndex = m_cbvHeap.CreateCBV(cbAddress, passCBByteSize);
+        m_frameResources[frameIndex].passIndex = m_cbvHeap.CreateCBV(cbAddress, passCBByteSize);
     }
 }
 
@@ -214,27 +219,27 @@ void App::BuildGeometry()
 
 void App::CreateRenderItem(const char* renderItemName, XMMATRIX& matrix)
 {
-    auto rItem = std::make_unique<RenderItem>();
-    XMStoreFloat4x4(&rItem->objectParam.World, matrix);
-    rItem->m_objCbIndex = 0;
-    rItem->Geo = mBoxGeo.get();
-    rItem->m_indexCount = mBoxGeo->DrawArgs[renderItemName].IndexCount;
-    rItem->m_startIndexLocation= mBoxGeo->DrawArgs[renderItemName].StartIndexLocation;
-    rItem->m_baseVertexLocation= mBoxGeo->DrawArgs[renderItemName].BaseVertexLocation;
-    rItem->m_name = std::string(renderItemName);
+    RenderItem rItem;
+    XMStoreFloat4x4(&rItem.objectParam.World, matrix);
+    rItem.m_objCbIndex = 0;
+    rItem.Geo = mBoxGeo.get();
+    rItem.m_indexCount = mBoxGeo->DrawArgs[renderItemName].IndexCount;
+    rItem.m_startIndexLocation= mBoxGeo->DrawArgs[renderItemName].StartIndexLocation;
+    rItem.m_baseVertexLocation= mBoxGeo->DrawArgs[renderItemName].BaseVertexLocation;
+    rItem.m_name = std::string(renderItemName);
     m_renderItems.push_back(std::move(rItem));
 }
 
 void App::CreateRenderItem(const char* renderItemName, XMFLOAT4X4& matrix)
 {
-    auto rItem = std::make_unique<RenderItem>();
-    rItem->objectParam.World = matrix;
-    rItem->m_objCbIndex = 0;
-    rItem->Geo = mBoxGeo.get();
-    rItem->m_indexCount = mBoxGeo->DrawArgs[renderItemName].IndexCount;
-    rItem->m_startIndexLocation= mBoxGeo->DrawArgs[renderItemName].StartIndexLocation;
-    rItem->m_baseVertexLocation= mBoxGeo->DrawArgs[renderItemName].BaseVertexLocation;
-    rItem->m_name = std::string(renderItemName);
+    RenderItem rItem;
+    rItem.objectParam.World = matrix;
+    rItem.m_objCbIndex = 0;
+    rItem.Geo = mBoxGeo.get();
+    rItem.m_indexCount = mBoxGeo->DrawArgs[renderItemName].IndexCount;
+    rItem.m_startIndexLocation= mBoxGeo->DrawArgs[renderItemName].StartIndexLocation;
+    rItem.m_baseVertexLocation= mBoxGeo->DrawArgs[renderItemName].BaseVertexLocation;
+    rItem.m_name = std::string(renderItemName);
     m_renderItems.push_back(std::move(rItem));
 }
 
@@ -243,16 +248,13 @@ void App::BuildRenderItems()
     CreateRenderItem("box",XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
 
     for (auto& e : m_renderItems)
-        m_opaqueItems.push_back(e.get());
+        m_opaqueItems.push_back(&e);
 }
 
 void App::BuildPSO()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
-    //
-    // PSO for opaque objects.
-    //
     ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
     opaquePsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
     opaquePsoDesc.pRootSignature = mRootSignature.Get();
@@ -287,7 +289,7 @@ void App::BuildFrameResources()
 {
     for (int i = 0; i < NumFrames; ++i)
     {
-        m_frameResources.push_back(std::make_unique<FrameResource>(Device::GetDevice(), 1, m_renderItems.size()));
+        m_frameResources.push_back(std::move(FrameResource(Device::GetDevice(), 1, m_renderItems.size())));
     }
 }
 
@@ -316,16 +318,15 @@ void App::OnResize()
 
 void App::UpdateObjectCB(const GameTimer& gt)
 {
-    auto currObjectCb = m_currentFrameResource->m_objectCb.get();
     for (auto& e : m_renderItems)
     {
-        if (e->numFramesDirty > 0)
+        if (e.numFramesDirty > 0)
         {
-            XMMATRIX world = XMLoadFloat4x4(&e->objectParam.World);
+            XMMATRIX world = XMLoadFloat4x4(&e.objectParam.World);
             ObjectConstants constants;
             XMStoreFloat4x4(&constants.World, XMMatrixTranspose(world));
-            currObjectCb->CopyData(e->m_objCbIndex, constants);
-            e->numFramesDirty--;
+            m_currentFrameResource->m_objectCb.CopyData(e.m_objCbIndex, constants);
+            e.numFramesDirty--;
         }
     }
 }
@@ -366,8 +367,7 @@ void App::UpdateMainPassCB(const GameTimer& gt)
     m_mainPassCB.lightPos = XMFLOAT3(2.0f, 3.0, 10);
     m_mainPassCB.lightColor = XMFLOAT3( 1.0f, 1.0f, 1.0f );
     m_mainPassCB.boxColor =  XMFLOAT3(0.5f, 0.6, 0.7);
-    auto currPassCB = m_currentFrameResource->m_passCb.get();
-    currPassCB->CopyData(0, m_mainPassCB);
+    m_currentFrameResource->m_passCb.CopyData(0, m_mainPassCB);
 
 }
 
@@ -375,7 +375,7 @@ void App::Update(const GameTimer& gt)
 {
     UpdateCamera(gt);
     m_frameIndex = (m_frameIndex + 1) % NumFrames;
-    m_currentFrameResource = m_frameResources[m_frameIndex].get();
+    m_currentFrameResource = &m_frameResources[m_frameIndex];
 
     // Convert Spherical to Cartesian coordinates.
     auto temp = mFence->GetCompletedValue();
@@ -395,7 +395,7 @@ void App::DrawImgui()
 {
     for (auto& renderItem : m_renderItems)
     {
-        renderItem->OnImGuiRender();
+        renderItem.OnImGuiRender();
     }
 }
 
@@ -403,7 +403,7 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
 {
     UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
-    auto objectCB = m_currentFrameResource->m_objectCb->Resource();
+    ID3D12Resource* objectCB = m_currentFrameResource->m_objectCb.Resource();
 
     // For each render item...
     for (size_t i = 0; i < ritems.size(); ++i)
@@ -414,7 +414,7 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
         cmdList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
         cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
         cmdList->IASetPrimitiveTopology(ri->m_primitiveType);
-        auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex]->objectIndex);
+        auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndex);
         cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
         cmdList->DrawIndexedInstanced(ri->m_indexCount, 1, ri->m_startIndexLocation, ri->m_baseVertexLocation, 0);
     }
@@ -431,7 +431,7 @@ void App::Destroy()
 void App::Draw(const GameTimer& gt)
 {
 
-    auto& currentCmdAlloc = m_currentFrameResource->m_cmdAlloc;
+    ComPtr<ID3D12CommandAllocator> currentCmdAlloc = m_currentFrameResource->m_cmdAlloc;
 	ThrowIfFailed(currentCmdAlloc->Reset());
     if (m_isWireFrame)
     {
@@ -457,7 +457,7 @@ void App::Draw(const GameTimer& gt)
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-    auto passCbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex]->passIndex);
+    auto passCbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].passIndex);
     mCommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
     auto textureHandle = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex].index);
@@ -526,4 +526,10 @@ void App::OnMouseMove(WPARAM btnState, int x, int y)
 
     mLastMousePos.x = x;
     mLastMousePos.y = y;
+}
+
+void App::OnKeyDown(Key key)
+{
+    
+    
 }

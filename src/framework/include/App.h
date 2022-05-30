@@ -12,6 +12,7 @@
 #include "ImGuiSettings.h" 
 #include "Texture.h"
 #include "../dx12/DescriptorHeap.h"
+#include "Camera.h"
 
 
 using namespace DirectX;
@@ -35,10 +36,12 @@ private:
     virtual void Destroy()override;
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
-    virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
-    virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
-    virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
+    void OnMouseDown(WPARAM btnState, int x, int y)override;
+    void OnMouseUp(WPARAM btnState, int x, int y)override;
+    void OnMouseMove(WPARAM btnState, int x, int y)override;
+    void OnKeyDown(Key key) override;
 
+    void InitCamera();
     void BuildDescriptorHeaps();
 	void BuildConstantBuffers();
     void BuildRootSignature();
@@ -60,11 +63,11 @@ private:
 
 private:
 
-    std::vector<std::unique_ptr<RenderItem>> m_renderItems;
+    std::vector<RenderItem> m_renderItems;
     std::vector<RenderItem*> m_opaqueItems;
     std::vector<RenderItem*> m_transparentItems;
 
-    std::vector<std::unique_ptr<FrameResource>> m_frameResources;
+    std::vector<FrameResource> m_frameResources;
     FrameResource* m_currentFrameResource = nullptr;
     int m_frameIndex = 0;
     
@@ -88,6 +91,7 @@ private:
     XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
     XMFLOAT4X4 mView = MathHelper::Identity4x4();
     XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+    Camera m_camera;
 
     PassConstants m_mainPassCB;
 

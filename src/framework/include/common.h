@@ -24,3 +24,9 @@ struct ObjectConstants
     XMFLOAT4X4 World = MathHelper::Identity4x4();
  };
 
+enum class Key {
+	W = 65,
+	A = 87,
+	S = 83,
+	D = 68
+};
