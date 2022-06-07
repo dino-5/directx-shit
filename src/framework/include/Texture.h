@@ -3,14 +3,19 @@
 
 #include <d3d12.h>
 #include "d3dx12.h"
+#include <string>
 #include "common.h"
 
 class DescriptorHeap;
+using TextureHandle = unsigned int;
 
 class Texture
 {
 public:
-	Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&, DescriptorHeap&);
+	Texture() = default;
+	Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&);
+	void Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&);
+	TextureHandle GetHandle()const { return index; }
 
 public:
 	ComPtr<ID3D12Resource> m_texture;
@@ -18,7 +23,9 @@ public:
 		height = 0,
 		nrChannels =0;
     ComPtr<ID3D12Resource> textureUploadHeap;
-	unsigned int index;
+	TextureHandle index;
+	std::string m_name;
 };
+
 
 #endif

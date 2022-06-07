@@ -9,6 +9,11 @@ void RenderItem::SetTranslation(float x, float y, float z)
 	Update();
 }
 
+void RenderItem::SetPrimitiveTopology(ID3D12GraphicsCommandList* cmList)
+{
+	cmList->IASetPrimitiveTopology(m_primitiveType);
+}
+
 
 void RenderItem::SetScale(float x, float y, float z)
 {

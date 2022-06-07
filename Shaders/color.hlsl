@@ -9,6 +9,11 @@ cbuffer cbPerObject : register(b0)
 	float4x4 gWorld; 
 };
 
+struct Material
+{
+
+};
+
 cbuffer cbPerPass: register(b1)
 {
 	float4x4 gView;
@@ -18,10 +23,10 @@ cbuffer cbPerPass: register(b1)
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
 
-	float3 gEyePosW;
-    float3 lightPos;
-    float3 lightColor;
-    float3 boxColor;
+	float4 gEyePosW;
+    float4 lightPos;
+    float4 lightColor;
+    float4 boxColor;
 
 };
 
@@ -35,8 +40,8 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH   : SV_POSITION;
-    float3 pos    : Pos;
-    float3 normal : Norm;
+    float4 pos    : Pos;
+    float4 normal : Norm;
     float2 Tex    : Texture;
 };
 
@@ -45,33 +50,42 @@ VertexOut VS(VertexIn vin)
 	VertexOut vout;
 
 	float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
-	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
 
-    vout.pos = vin.PosL;
-    vout.normal = vin.Norm;
+    vout.pos = float4(vin.PosL, 1.0f);
+    vout.normal = float4(vin.Norm, 1.0f);
     vout.Tex = vin.Tex;
 
 	return vout;
 }
 
-Texture2D g_texture : register(t0);
+Texture2D diffuse_texture: register(t0);
+Texture2D specular_texture: register(t1);
 SamplerState g_sampler : register(s0);
 
-float4 PS(VertexOut pin) : SV_Target
+float4 PS(VertexOut input) : SV_Target
 {
-    ////float3 boxColor = float3(1.0f, 0.5, 0.0);
-    //float4 fragcolor;
-    //float ambientStrength = 0.2f;
-    //float3 ambient = ambientStrength * lightColor;
+    float4 specularPixelColor = specular_texture.Sample(g_sampler, input.Tex);
+    float4 pixelColor = diffuse_texture.Sample(g_sampler, input.Tex);
+    float ambientStrength = 0.2f;
+    float4 ambient = ambientStrength * lightColor * pixelColor;
 
-    //float3 lightDir = normalize(lightPos - pin.pos);
-    //float diff = max(dot(pin.normal, lightDir), 0);
-    //float3 diffuse = diff * lightColor;
+    float diffuseStrength = 0.8f;
 
-    //float3 result = (ambient +diffuse) * boxColor;
+    float4 normal = normalize(input.normal);
+    float4 l = normalize(lightPos - input.pos);
+    float4 diffuse = diffuseStrength * lightColor * max(dot(l, normal),0) * pixelColor;
 
-	return g_texture.Sample(g_sampler, pin.Tex);
+    float4 eyeVector = normalize(gEyePosW - input.pos);
+    float4 reflectedLight = reflect(l, input.normal);
+    float4 specular = pow(max(dot(eyeVector, reflectedLight), 0), 8) * specular_texture.Sample(g_sampler, input.Tex);
+
+
+    float4 result = diffuse + ambient +specular;
+
+    return result;
+    return specularPixelColor;
+    return pixelColor;
 }
 
 

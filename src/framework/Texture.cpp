@@ -3,9 +3,16 @@
 #include "include/d3dUtil.h"
 #include "dx12/DescriptorHeap.h"
 
-Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList,
-          DescriptorHeap& srvHeap)
+Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList)
+          //DescriptorHeap& srvHeap)
 {
+    Init(path, device, commandList);
+}
+
+void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList)
+          //DescriptorHeap& srvHeap)
+{
+
 	std::uint8_t* data = stbi_load(path, &width, &height, &nrChannels, 4); 
     D3D12_RESOURCE_DESC textureDesc = {};
     textureDesc.MipLevels = 1;
@@ -55,5 +62,6 @@ Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCo
     srvDesc.Format = textureDesc.Format;
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = 1;
-    index = srvHeap.CreateSRV(srvDesc, m_texture.Get());
+    index = DescriptorHeapManager::CurrentSRVHeap->CreateSRV(srvDesc, m_texture.Get());
+    m_name = path;
 }

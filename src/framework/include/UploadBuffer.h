@@ -46,17 +46,16 @@ public:
     }
 
     UploadBuffer() = default;
-    UploadBuffer(const UploadBuffer&& rhs)
-    {
-        mUploadBuffer = rhs.mUploadBuffer;
-        mMappedData = rhs.mMappedData;
-        mElementByteSize = rhs.mElementByteSize;
-        mIsConstantBuffer = rhs.mIsConstantBuffer;
-    }
+    UploadBuffer(const UploadBuffer&& rhs):
+        mUploadBuffer(std::move(rhs.mUploadBuffer)),
+        mMappedData(std::move(rhs.mMappedData)),
+        mElementByteSize(std::move(rhs.mElementByteSize)),
+        mIsConstantBuffer(std::move(rhs.mIsConstantBuffer))
+    {}
     UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
     ~UploadBuffer()
     {
-        if(mUploadBuffer != nullptr)
+        if(mUploadBuffer != nullptr && !isMoved)
             mUploadBuffer->Unmap(0, nullptr);
 
         mMappedData = nullptr;
@@ -78,4 +77,5 @@ private:
 
     UINT mElementByteSize = 0;
     bool mIsConstantBuffer = false;
+    bool isMoved = false;
 };

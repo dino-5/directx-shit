@@ -5,8 +5,9 @@
 #include <vector>
 #include "MathHelper.h"
 #include <array>
+#include "Texture.h"
 
-class GeometryGenerator
+class Geometry
 {
 public:
 
@@ -19,30 +20,29 @@ public:
 		Vertex(
 			const DirectX::XMFLOAT3& p,
 			const DirectX::XMFLOAT3& n,
-			const DirectX::XMFLOAT3& t,
 			const DirectX::XMFLOAT2& uv) :
 			Position(p),
 			Normal(n),
-			TangentU(t),
-			TexC(uv) {}
+			Tex(uv) {}
 		Vertex(
 			float px, float py, float pz,
 			float nx, float ny, float nz,
-			float tx, float ty, float tz,
 			float u, float v) :
 			Position(px, py, pz),
 			Normal(nx, ny, nz),
-			TangentU(tx, ty, tz),
-			TexC(u, v) {}
+			Tex(u, v) {}
 
 		DirectX::XMFLOAT3 Position;
 		DirectX::XMFLOAT3 Normal;
-		DirectX::XMFLOAT3 TangentU;
-		DirectX::XMFLOAT2 TexC;
+		DirectX::XMFLOAT2 Tex;
 	};
 
 	struct MeshData
 	{
+		MeshData(std::vector<Vertex> vertices, std::vector<unsigned int> indices) :
+			Vertices(vertices), Indices32(indices)
+		{}
+		MeshData() = default;
 		std::vector<Vertex> Vertices;
 		std::vector<uint32> Indices32;
 
@@ -62,40 +62,11 @@ public:
 		std::vector<uint16> mIndices16;
 	};
 
-	///<summary>
-	/// Creates a box centered at the origin with the given dimensions, where each
-	/// face has m rows and n columns of vertices.
-	///</summary>
 	MeshData CreateBox(float width=0, float height=0, float depth=0, uint32 numSubdivisions=0);
-
-	///<summary>
-	/// Creates a sphere centered at the origin with the given radius.  The
-	/// slices and stacks parameters control the degree of tessellation.
-	///</summary>
 	MeshData CreateSphere(float radius, uint32 sliceCount, uint32 stackCount);
-
-	///<summary>
-	/// Creates a geosphere centered at the origin with the given radius.  The
-	/// depth controls the level of tessellation.
-	///</summary>
 	MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
-
-	///<summary>
-	/// Creates a cylinder parallel to the y-axis, and centered about the origin.  
-	/// The bottom and top radius can vary to form various cone shapes rather than true
-	// cylinders.  The slices and stacks parameters control the degree of tessellation.
-	///</summary>
 	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
-
-	///<summary>
-	/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
-	/// at the origin with the specified width and depth.
-	///</summary>
 	MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
-
-	///<summary>
-	/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.
-	///</summary>
 	MeshData CreateQuad(float x, float y, float w, float h, float depth);
 
 private:

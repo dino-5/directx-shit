@@ -14,6 +14,25 @@ enum class DescriptorHeapType
 
 using ViewID = int;
 
+class DescriptorHeap;
+
+class DescriptorHeapManager
+{
+public:
+	static void SetSRVHeap(DescriptorHeap& heap)
+	{
+		CurrentSRVHeap = &heap;
+	}
+
+	static void SetCBVHeap(DescriptorHeap& heap)
+	{
+		CurrentCBVHeap = &heap;
+	}
+
+	static inline DescriptorHeap* CurrentSRVHeap = nullptr;
+	static inline DescriptorHeap* CurrentCBVHeap = nullptr;
+};
+
 class DescriptorHeap
 {
 public:

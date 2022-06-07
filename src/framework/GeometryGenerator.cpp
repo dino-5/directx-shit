@@ -1,7 +1,7 @@
 #include "include/GeometryGenerator.h"
 using namespace DirectX;
 
-GeometryGenerator::MeshData GeometryGenerator::CreateCylinder
+Geometry::MeshData Geometry::CreateCylinder
 (
     float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount)
 {
@@ -22,14 +22,9 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder
             float c = cosf(j * dTheta);
             float s = sinf(j * dTheta);
             vertex.Position = XMFLOAT3(r * c, y, r * s);
-            vertex.TexC.x = (float)j / sliceCount;
-            vertex.TexC.y = 1.0f - (float)i / stackCount;
-            vertex.TangentU = XMFLOAT3(-s, 0.0f, c);
+            vertex.Tex.x = (float)j / sliceCount;
+            vertex.Tex.y = 1.0f - (float)i / stackCount;
             XMFLOAT3 bitangent(c_dr * c, -height, c_dr * s);
-            XMVECTOR T = XMLoadFloat3(&vertex.TangentU);
-            XMVECTOR B = XMLoadFloat3(&bitangent);
-            XMVECTOR N = XMVector3Normalize(XMVector3Cross(T, B));
-            XMStoreFloat3(&vertex.Normal, N);
             mesh.Vertices.push_back(vertex);
         }
     }
@@ -52,7 +47,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder
     return mesh;
 }
 
-GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float height, float depth, uint32 numSubdivisions)
+Geometry::MeshData Geometry::CreateBox(float width, float height, float depth, uint32 numSubdivisions)
 {
     MeshData mesh;
 
@@ -83,10 +78,10 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
         XMFLOAT3 Norm;
         XMStoreFloat3(&Norm, XMVector3Normalize(norm));
 
-        mesh.Vertices.push_back(Vertex( vertices[i],   Norm, tan,  {0, 0}));
-        mesh.Vertices.push_back(Vertex( vertices[i+4], Norm, tan,  {0, 1}));
-        mesh.Vertices.push_back(Vertex(vertices[i + 5], Norm, tan, {1, 1}));
-        mesh.Vertices.push_back(Vertex(vertices[i + 1], Norm, tan, {1, 0}));
+        mesh.Vertices.push_back(Vertex( vertices[i],    Norm, {0, 0}));
+        mesh.Vertices.push_back(Vertex( vertices[i+4],  Norm, {0, 1}));
+        mesh.Vertices.push_back(Vertex(vertices[i + 5], Norm, {1, 1}));
+        mesh.Vertices.push_back(Vertex(vertices[i + 1], Norm, {1, 0}));
 
         mesh.Indices32.push_back(i*4);
         mesh.Indices32.push_back(i*4+1);
@@ -107,10 +102,10 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
 	XMFLOAT3 Norm;
 	XMStoreFloat3(&Norm, XMVector3Normalize(norm));
 
-	mesh.Vertices.push_back(Vertex( vertices[3], Norm, tan, {0, 0}));
-	mesh.Vertices.push_back(Vertex( vertices[7], Norm, tan, {0, 1}));
-	mesh.Vertices.push_back(Vertex( vertices[4], Norm, tan, {1, 1}));
-	mesh.Vertices.push_back(Vertex( vertices[0], Norm, tan, {1, 0}));
+	mesh.Vertices.push_back(Vertex( vertices[3], Norm, {0, 0}));
+	mesh.Vertices.push_back(Vertex( vertices[7], Norm, {0, 1}));
+	mesh.Vertices.push_back(Vertex( vertices[4], Norm, {1, 1}));
+	mesh.Vertices.push_back(Vertex( vertices[0], Norm, {1, 0}));
 	int i = 3;
 
 	mesh.Indices32.push_back(i*4);
@@ -136,10 +131,10 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
         if (!j)
             Norm.y *= -1;
 
-        mesh.Vertices.push_back(Vertex( vertices[j*4+0], Norm, tan, {0, 0}));
-        mesh.Vertices.push_back(Vertex( vertices[j*4+3], Norm, tan, {0, 1}));
-        mesh.Vertices.push_back(Vertex( vertices[j*4+2], Norm, tan, {1, 1}));
-        mesh.Vertices.push_back(Vertex( vertices[j*4+1], Norm, tan, {1, 0}));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+0], Norm, {0, 0}));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+3], Norm, {0, 1}));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+2], Norm, {1, 1}));
+        mesh.Vertices.push_back(Vertex( vertices[j*4+1], Norm, {1, 0}));
 
         mesh.Indices32.push_back(i*4);
         mesh.Indices32.push_back(i*4+1+(1-j)*2);
@@ -155,7 +150,7 @@ GeometryGenerator::MeshData GeometryGenerator::CreateBox(float width, float heig
     return mesh;
 }
 
-void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
+void Geometry::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
 {
     uint32 baseIndex = (uint32)meshData.Vertices.size();
     float y = 0.5f * height;
@@ -168,12 +163,12 @@ void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius,
         float u = x / height + 0.5f;
         float v = z / height + 0.5f;
         meshData.Vertices.push_back(
-            Vertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v)
+            Vertex(x, y, z, 0.0f, 1.0f, 0.0f, u, v)
         );
     }
     
     meshData.Vertices.push_back(
-        Vertex(0, y, 0, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f)
+        Vertex(0, y, 0, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f)
     );
 
     uint32 centerIndex = meshData.Vertices.size() - 1;
@@ -186,7 +181,7 @@ void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius,
 
 }
 
-void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
+void Geometry::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
 {
 
     uint32 baseIndex = (uint32)meshData.Vertices.size();
@@ -200,12 +195,12 @@ void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadi
         float u = x / height + 0.5f;
         float v = z / height + 0.5f;
         meshData.Vertices.push_back(
-            Vertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v)
+            Vertex(x, y, z, 0.0f, -1.0f, 0.0f, u, v)
         );
     }
     
     meshData.Vertices.push_back(
-        Vertex(0, y, 0, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f)
+        Vertex(0, y, 0, 0.0f, -1.0f, 0.0f, 0.5f, 0.5f)
     );
 
     uint32 centerIndex = meshData.Vertices.size() - 1;

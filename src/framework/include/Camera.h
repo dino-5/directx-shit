@@ -17,6 +17,7 @@ public:
 	DirectX::XMFLOAT3 GetPosition3f()const;
 	void SetPosition(float x, float y, float z);
 	void SetPosition(const DirectX::XMFLOAT3& v);
+	void SetWindowSize(float width, float height);
 	
 	// Get camera basis vectors.
 	DirectX::XMVECTOR GetRight()const;
@@ -49,7 +50,7 @@ public:
 	void LookAt(const DirectX::XMFLOAT3& pos, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up);
 
 	// Get View/Proj matrices.
-	DirectX::XMMATRIX GetView()const;
+	DirectX::XMMATRIX GetView();
 	DirectX::XMMATRIX GetProj()const;
 
 	DirectX::XMFLOAT4X4 GetView4x4f()const;
@@ -67,17 +68,21 @@ public:
 	void UpdateViewMatrix();
 
 	void OnKeyDown(Key key);
+	void OnMouseMove(int x, int y, bool update=true);
 	XMVECTOR GetVector(DirectX::XMFLOAT3 fl);
+	void OnImGui();
+	bool IsCameraOn()const { return m_cameraOn;  }
 
 private:
 
 	// Camera coordinate system with coordinates relative to world space.
-	DirectX::XMFLOAT3 mPosition = { 0.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 mPosition = { 0.0f, 0.0f, -7.0f };
 	DirectX::XMFLOAT3 mRight = { 1.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 mUp = { 0.0f, 1.0f, 0.0f };
 	DirectX::XMFLOAT3 mLook = { 0.0f, 0.0f, 1.0f };
 
-	float vel = 1.f;
+	float vel = .1f;
+
 
 	// Cache frustum properties.
 	float mNearZ = 0.0f;
@@ -86,12 +91,18 @@ private:
 	float mFovY = 0.0f;
 	float mNearWindowHeight = 0.0f;
 	float mFarWindowHeight = 0.0f;
+	float m_width;
+	float m_height;
+
+	float m_pitch = 0.f;
+	float m_yaw = 90.f;
 
 	bool mViewDirty = true;
 
 	// Cache View/Proj matrices.
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+	bool m_cameraOn = true;
 };
 
 #endif // CAMERA_H

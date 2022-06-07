@@ -3,8 +3,17 @@
 //***************************************************************************************
 
 #include "include/Camera.h"
+#include "include/ImGuiSettings.h"
+#include <chrono>
+#include <ctime>
+#include <sys/utime.h>
 
 using namespace DirectX;
+
+float to_radians(float angle)
+{
+	return angle * MathHelper::Pi / 180;
+}
 
 Camera::Camera()
 {
@@ -17,7 +26,8 @@ Camera::~Camera()
 
 XMVECTOR Camera::GetPosition()const
 {
-	return XMLoadFloat3(&mPosition);
+	XMVECTOR result{ mPosition.x, mPosition.y, mPosition.z, 1.0f };
+	return result;
 }
 
 XMFLOAT3 Camera::GetPosition3f()const
@@ -115,33 +125,47 @@ float Camera::GetFarWindowHeight()const
 
 XMVECTOR Camera::GetVector(DirectX::XMFLOAT3 fl)
 {
-	XMVECTOR res;
+	XMVECTOR res{0.f, 0.f, 0.f};
 	XMStoreFloat3(&fl, res);
 	return res;
 }
 
 void Camera::OnKeyDown(Key key)
 {
-	XMVECTOR position = GetVector(mPosition);
-	XMVECTOR look = GetVector(mLook);
+	static time_t lastTimeSwitch = 0;
+	XMVECTOR position{ mPosition.x, mPosition.y, mPosition.z };
+	XMVECTOR look{ mLook.x, mLook.y, mLook.z };
 	XMVECTOR y{0.0, 1.0, 0.0};
 	switch (key)
 	{
 	case Key::W:
-		position += vel * look;
+		if(m_cameraOn)
+			position += vel * look;
 		break;
 	case Key::A:
-		position -= XMVector3Cross(look, y) * vel;
+		if(m_cameraOn)
+			position += XMVector3Cross(look, y) * vel;
 		break;
 	case Key::S:
-		position -= vel * look;
+		if(m_cameraOn)
+			position -= vel * look;
 		break;
 	case Key::D:
-		position += XMVector3Cross(look, y) * vel;
+		if(m_cameraOn)
+			position -= XMVector3Cross(look, y) * vel;
 		break;
+	case Key::SWITCH_CAMERA:
+		if (time(nullptr) - lastTimeSwitch > 1)
+		{
+			m_cameraOn = !m_cameraOn;
+			lastTimeSwitch = time(nullptr);
+		}
+
 	default:
 		break;
 	}
+	mViewDirty = true;
+	XMStoreFloat3(&mPosition, position);
 }
 
 void Camera::SetLens(float fovY, float aspect, float zn, float zf)
@@ -157,6 +181,12 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 
 	XMMATRIX P = XMMatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mFarZ);
 	XMStoreFloat4x4(&mProj, P);
+}
+
+void Camera::SetWindowSize(float width, float height)
+{
+	m_height= height;
+	m_width= width;
 }
 
 void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
@@ -184,10 +214,21 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 	mViewDirty = true;
 }
 
-XMMATRIX Camera::GetView()const
+XMMATRIX Camera::GetView()
 {
-	assert(!mViewDirty);
+	//assert(!mViewDirty);
+	if (mViewDirty)
+		UpdateViewMatrix();
 	return XMLoadFloat4x4(&mView);
+}
+
+void Camera::OnImGui()
+{
+	ImGui::Begin("Camera Position");
+	{
+		ImGui::SliderFloat3("pos", &mPosition.x, -50, 50);
+	}
+	ImGui::End();
 }
 
 XMMATRIX Camera::GetProj()const
@@ -205,28 +246,6 @@ XMFLOAT4X4 Camera::GetView4x4f()const
 XMFLOAT4X4 Camera::GetProj4x4f()const
 {
 	return mProj;
-}
-
-void Camera::Strafe(float d)
-{
-	// mPosition += d*mRight
-	XMVECTOR s = XMVectorReplicate(d);
-	XMVECTOR r = XMLoadFloat3(&mRight);
-	XMVECTOR p = XMLoadFloat3(&mPosition);
-	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, r, p));
-
-	mViewDirty = true;
-}
-
-void Camera::Walk(float d)
-{
-	// mPosition += d*mLook
-	XMVECTOR s = XMVectorReplicate(d);
-	XMVECTOR l = XMLoadFloat3(&mLook);
-	XMVECTOR p = XMLoadFloat3(&mPosition);
-	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, l, p));
-
-	mViewDirty = true;
 }
 
 void Camera::Pitch(float angle)
@@ -260,6 +279,9 @@ void Camera::UpdateViewMatrix()
 	{
 		XMVECTOR R = XMLoadFloat3(&mRight);
 		XMVECTOR U = XMLoadFloat3(&mUp);
+		mLook.x = cos(to_radians(m_yaw)) * cos(to_radians(m_pitch));
+		mLook.z = sin(to_radians(m_yaw)) * cos(to_radians(m_pitch));
+		mLook.y = sin(to_radians(m_pitch));
 		XMVECTOR L = XMLoadFloat3(&mLook);
 		XMVECTOR P = XMLoadFloat3(&mPosition);
 
@@ -301,6 +323,39 @@ void Camera::UpdateViewMatrix()
 
 		mViewDirty = false;
 	}
+}
+
+void Camera::OnMouseMove(int xpos, int ypos, bool update)
+{
+	static bool first = true;
+	static double lastx;
+	static double lasty;
+	if (first)
+	{
+		lastx = xpos;
+		lasty = ypos;
+		first = false;
+	}
+	float dx = lastx - xpos;
+	float dy = lasty - ypos;
+	float sens = 0.1f;
+	lastx = xpos;
+	lasty = ypos;
+	dx *= sens;
+	dy *= sens;
+	if (m_cameraOn) // add disable of move camera
+	{
+		m_yaw += dx;
+		m_pitch += dy;
+		mViewDirty = true;
+		//Pitch(m_pitch);
+		//RotateY(m_yaw);
+	}
+	else
+	if (m_pitch > 89.0f)
+		m_pitch = 89.0f;
+	if (m_pitch < -89.0f)
+		m_pitch = -89.0f;
 }
 
 

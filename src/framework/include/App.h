@@ -10,6 +10,7 @@
 #include "PassConstants.h"
 #include "GeometryGenerator.h"
 #include "ImGuiSettings.h" 
+#include "Mesh.h"
 #include "Texture.h"
 #include "../dx12/DescriptorHeap.h"
 #include "Camera.h"
@@ -38,7 +39,7 @@ private:
 
     void OnMouseDown(WPARAM btnState, int x, int y)override;
     void OnMouseUp(WPARAM btnState, int x, int y)override;
-    void OnMouseMove(WPARAM btnState, int x, int y)override;
+    void OnMouseMove();
     void OnKeyDown(Key key) override;
 
     void InitCamera();
@@ -77,18 +78,18 @@ private:
 
     std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
 
-	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
+	std::unique_ptr<Mesh> mBoxGeo = nullptr;
 
     ComPtr<ID3DBlob> mvsByteCode = nullptr;
     ComPtr<ID3DBlob> mpsByteCode = nullptr;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-    std::unordered_map < std::string, ComPtr<ID3DBlob>> m_shaders;
+    std::unordered_map <std::string, ComPtr<ID3DBlob>> m_shaders;
 
     std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSO ;
     float m_isWireFrame = false;
 
-    XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
+    XMFLOAT3 mEyePos = { 0.0f, .75f, -7.0f };
     XMFLOAT4X4 mView = MathHelper::Identity4x4();
     XMFLOAT4X4 mProj = MathHelper::Identity4x4();
     Camera m_camera;

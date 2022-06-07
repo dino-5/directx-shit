@@ -12,9 +12,9 @@ public:
     DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 InvViewProj = MathHelper::Identity4x4();
 
-    DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
-    DirectX::XMFLOAT3 lightPos   = { 0.0f, 0.0f, 0.0f };
-    DirectX::XMFLOAT3 lightColor = { 1.0f, 1.0f, 1.0f };
-    DirectX::XMFLOAT3 boxColor   = { 0.5f, 0.1f, 0.0f };
+    DirectX::XMFLOAT4 EyePosW    = { 0.0f, 0.0f, 0.0f, 1.0f};
+    DirectX::XMFLOAT4 lightPos   = { 0.0f, 3.0f, 2.0f, 1.0f };
+    DirectX::XMFLOAT4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    DirectX::XMFLOAT4 boxColor   = { 0.5f, 0.1f, 0.0f, 1.0f };
 };
 

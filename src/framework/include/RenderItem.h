@@ -3,6 +3,7 @@
 #include "MathHelper.h"
 #include <DirectXMath.h>
 #include <string>
+#include "Mesh.h"
 
 class RenderItem
 {
@@ -22,9 +23,10 @@ public:
 	int numFramesDirty = NumFrames;
 	UINT  m_objCbIndex = -1;
 
-	MeshGeometry* Geo = nullptr;
+	Mesh* Geo = nullptr;
 
 	D3D12_PRIMITIVE_TOPOLOGY m_primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	void SetPrimitiveTopology(ID3D12GraphicsCommandList* cmList);
 
 	UINT m_indexCount         = 0;
 	UINT m_startIndexLocation = 0;

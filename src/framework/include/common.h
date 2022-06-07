@@ -25,8 +25,9 @@ struct ObjectConstants
  };
 
 enum class Key {
-	W = 65,
-	A = 87,
+	W = 87,
+	A = 65,
 	S = 83,
-	D = 68
+	D = 68,
+	SWITCH_CAMERA = 192
 };

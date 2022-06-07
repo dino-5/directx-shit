@@ -43,12 +43,13 @@ bool App::Initialize()
 void App::InitCamera()
 {
     m_camera.SetPosition(mEyePos);
+    m_camera.SetWindowSize(mClientWidth, mClientHeight);
 }
 
 void App::BuildDescriptorHeaps()
 {
     UINT objCount = m_renderItems.size();
-    UINT numberOfTextures = 1;
+    UINT numberOfTextures = 2;
     UINT numberOfPassDescriptors = 1;
     UINT numDescriptors = (objCount + numberOfPassDescriptors + numberOfTextures) * NumFrames;
     m_passCbvOffset = objCount * NumFrames;
@@ -84,10 +85,9 @@ void App::BuildConstantBuffers()
 
 void App::BuildRootSignature()
 {
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+    const int numberOfRootArguments = 4;
+	CD3DX12_ROOT_PARAMETER slotRootParameter[numberOfRootArguments];
 
-	// Create a single descriptor table of CBVs.
 	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
 	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
@@ -97,10 +97,14 @@ void App::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
     cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+	CD3DX12_DESCRIPTOR_RANGE cbvTable3;
+    cbvTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
 
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[3].InitAsDescriptorTable(1, &cbvTable3, D3D12_SHADER_VISIBILITY_PIXEL);
 
     D3D12_STATIC_SAMPLER_DESC sampler = {};
     sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -117,8 +121,7 @@ void App::BuildRootSignature()
     sampler.RegisterSpace = 0;
     sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 1, &sampler, 
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(numberOfRootArguments, slotRootParameter, 1, &sampler, 
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -157,9 +160,9 @@ void App::BuildShadersAndInputLayout()
 void App::BuildGeometry()
 {
     UINT countOfMeshes = 2;
-    GeometryGenerator generator;
-    std::vector<GeometryGenerator::MeshData> mesh(countOfMeshes);
-    std::vector<SubmeshGeometry> submeshes(countOfMeshes);
+    Geometry generator;
+    std::vector<Geometry::MeshData> mesh(countOfMeshes);
+    std::vector<Submesh> submeshes(countOfMeshes);
 
     std::vector<std::string> submeshNames = {
         "box",
@@ -196,7 +199,7 @@ void App::BuildGeometry()
 		{
 			vertices[k].Pos = i.Vertices[j].Position;
 			vertices[k].Normal = i.Vertices[j].Normal;
-            vertices[k].Tex = i.Vertices[j].TexC;
+            vertices[k].Tex = i.Vertices[j].Tex;
 		}
     }
 
@@ -207,7 +210,7 @@ void App::BuildGeometry()
     const UINT vbByteSize = vertices.size() * sizeof(Vertex);
     const UINT ibByteSize = indices.size() * sizeof(std::uint16_t);
 
-	mBoxGeo = std::make_unique<MeshGeometry>();
+	mBoxGeo = std::make_unique<Mesh>();
 	mBoxGeo->Name = "boxGeo";
     mBoxGeo->Init(Device::GetDevice(), mCommandList,
         vertices.data(), vbByteSize, sizeof(Vertex),
@@ -301,10 +304,11 @@ void App::InitImgui()
 
 void App::CreateTextures()
 {
-
+    DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
     for (int i = 0; i < NumFrames; i++)
     {
-        m_textures.push_back(Texture("textures/wall.jpg", Device::GetDevice(), mCommandList, m_cbvHeap));
+        m_textures.push_back(Texture("textures/container2.png",          Device::GetDevice(), mCommandList));
+        m_textures.push_back(Texture("textures/container2_specular.png", Device::GetDevice(), mCommandList));
     }
 }
 
@@ -331,24 +335,9 @@ void App::UpdateObjectCB(const GameTimer& gt)
     }
 }
 
-void App::UpdateCamera(const GameTimer& gt)
-{
-    mEyePos.x = mRadius * sinf(mPhi) * cosf(mTheta);
-    mEyePos.z = mRadius * sinf(mPhi) * sinf(mTheta);
-    mEyePos.y = mRadius * cosf(mPhi);
-
-    // Build the view matrix.
-    XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
-    XMVECTOR target = XMVectorZero();
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-    XMStoreFloat4x4(&mView, view);
-}
-
 void App::UpdateMainPassCB(const GameTimer& gt)
 {
-    XMMATRIX view = XMLoadFloat4x4(&mView);
+    XMMATRIX view = m_camera.GetView();// XMLoadFloat4x4(&mView);
     XMMATRIX proj = XMLoadFloat4x4(&mProj);
 
     XMMATRIX viewProj = XMMatrixMultiply(view, proj);
@@ -362,18 +351,15 @@ void App::UpdateMainPassCB(const GameTimer& gt)
     XMStoreFloat4x4(&m_mainPassCB.InvProj, XMMatrixTranspose(invProj));
     XMStoreFloat4x4(&m_mainPassCB.ViewProj, XMMatrixTranspose(viewProj));
     XMStoreFloat4x4(&m_mainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-    m_mainPassCB.EyePosW = mEyePos;
+    XMStoreFloat4(&m_mainPassCB.EyePosW, m_camera.GetPosition());
 
-    m_mainPassCB.lightPos = XMFLOAT3(2.0f, 3.0, 10);
-    m_mainPassCB.lightColor = XMFLOAT3( 1.0f, 1.0f, 1.0f );
-    m_mainPassCB.boxColor =  XMFLOAT3(0.5f, 0.6, 0.7);
     m_currentFrameResource->m_passCb.CopyData(0, m_mainPassCB);
 
 }
 
 void App::Update(const GameTimer& gt)
 {
-    UpdateCamera(gt);
+    OnMouseMove();
     m_frameIndex = (m_frameIndex + 1) % NumFrames;
     m_currentFrameResource = &m_frameResources[m_frameIndex];
 
@@ -397,6 +383,7 @@ void App::DrawImgui()
     {
         renderItem.OnImGuiRender();
     }
+    m_camera.OnImGui();
 }
 
 void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
@@ -411,9 +398,9 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
         auto ri = ritems[i];
         if (!ri->m_indexCount)
             continue;
-        cmdList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
-        cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
-        cmdList->IASetPrimitiveTopology(ri->m_primitiveType);
+        ri->Geo->SetVertexBuffer(cmdList);
+        ri->Geo->SetIndexBuffer(cmdList);
+        ri->SetPrimitiveTopology(cmdList);
         auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndex);
         cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
         cmdList->DrawIndexedInstanced(ri->m_indexCount, 1, ri->m_startIndexLocation, ri->m_baseVertexLocation, 0);
@@ -460,8 +447,11 @@ void App::Draw(const GameTimer& gt)
     auto passCbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].passIndex);
     mCommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-    auto textureHandle = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex].index);
-    mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle);
+    auto textureHandle1 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2].index);
+    mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle1);
+
+    auto textureHandle2 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2+1].index);
+    mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
 
     DrawRenderItems(mCommandList.Get(), m_opaqueItems);
 
@@ -486,9 +476,6 @@ void App::Draw(const GameTimer& gt)
 
 void App::OnMouseDown(WPARAM btnState, int x, int y)
 {
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
-
     SetCapture(mhMainWnd);
 }
 
@@ -497,39 +484,15 @@ void App::OnMouseUp(WPARAM btnState, int x, int y)
     ReleaseCapture();
 }
 
-void App::OnMouseMove(WPARAM btnState, int x, int y)
+void App::OnMouseMove()
 {
-    if((btnState & MK_LBUTTON) != 0)
-    {
-        float sence = -0.35f;
-        float dx = XMConvertToRadians(sence*static_cast<float>(x - mLastMousePos.x));
-        float dy = XMConvertToRadians(sence*static_cast<float>(y - mLastMousePos.y));
-
-        mTheta += dx;
-        mPhi += dy;
-
-        // Restrict the angle mPhi.
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
-    }
-    else if((btnState & MK_RBUTTON) != 0)
-    {
-        // Make each pixel correspond to 0.005 unit in the scene.
-        float dx = 0.005f*static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.005f*static_cast<float>(y - mLastMousePos.y);
-
-        // Update the camera radius based on input.
-        mRadius += dx - dy;
-
-        // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 3.0f, 15.0f);
-    }
-
-    mLastMousePos.x = x;
-    mLastMousePos.y = y;
+    ShowCursor(!m_camera.IsCameraOn());
+    POINT p{};
+    GetCursorPos(&p);
+	m_camera.OnMouseMove(p.x, p.y);
 }
 
 void App::OnKeyDown(Key key)
 {
-    
-    
+    m_camera.OnKeyDown(key);
 }
