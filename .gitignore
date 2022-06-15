@@ -5,3 +5,4 @@
 .gitignore~
 ./App.pdb
 *.pdb
+*.pdb
