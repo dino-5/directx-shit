@@ -41,6 +41,7 @@ struct Mesh
 {
 public:
 	Mesh() = default;
+	Mesh(std::vector < Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
 	Mesh(
 		ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
 		const void* vertexData, UINT vertexDataSize, UINT structSize,
@@ -81,7 +82,7 @@ public:
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	std::unordered_map<std::string, Submesh> DrawArgs;
+	std::vector<Submesh> DrawArgs;
 	std::unordered_map<std::string, TextureHandle> m_textures;
 
 };

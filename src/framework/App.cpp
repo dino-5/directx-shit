@@ -163,30 +163,8 @@ void App::BuildGeometry()
 {
     UINT countOfMeshes = 1;
     std::vector<Geometry::MeshData> mesh(countOfMeshes);
-
-    std::vector<std::string> submeshNames = {
-        "box",
-    };
-
     mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
-
-    std::vector<Submesh> submeshes = Submesh::GetSubmeshes(mesh);
-
-    std::vector<Geometry::Vertex> vertices;
-    std::vector<std::uint16_t> indices;
-    for (auto& i : mesh)
-    {
-        vertices.insert(vertices.end(), i.Vertices.begin(), i.Vertices.end());
-		indices.insert(indices.end(), i.Indices32.begin(), i.Indices32.end());
-    }
-
-	mBoxGeo.Name = "boxGeo";
-    mBoxGeo.Init(Device::GetDevice(), mCommandList,
-        vertices.data(), GetVectorSize(vertices), sizeof(Vertex),
-        indices.data(), GetVectorSize(indices), DXGI_FORMAT_R16_UINT);
-
-    for(int i=0;i<submeshes.size();i++)
-		mBoxGeo.DrawArgs[submeshNames[i]] = submeshes[i];
+    mBoxGeo = Mesh(mesh, mCommandList, "box");
 }
 
 void App::CreateRenderItem(const char* renderItemName, XMMATRIX& matrix)
@@ -278,8 +256,8 @@ void App::UpdateObjectCB(const GameTimer& gt)
     {
         if (e.numFramesDirty > 0)
         {
-            XMMATRIX world = XMLoadFloat4x4(&e.objectParam.World);
-            ObjectConstants constants;
+            XMMATRIX world = XMLoadFloat4x4(&e.m_transformation.properties.World);
+			ObjectConstants::ObjectProperties constants;
             XMStoreFloat4x4(&constants.World, XMMatrixTranspose(world));
             m_currentFrameResource->m_objectCb.CopyData(e.m_objCbIndex, constants);
             e.numFramesDirty--;
@@ -289,7 +267,7 @@ void App::UpdateObjectCB(const GameTimer& gt)
 
 void App::UpdateMainPassCB(const GameTimer& gt)
 {
-    XMMATRIX view = m_camera.GetView();// XMLoadFloat4x4(&mView);
+    XMMATRIX view = m_camera.GetView();
     XMMATRIX proj = XMLoadFloat4x4(&mProj);
 
     XMMATRIX viewProj = XMMatrixMultiply(view, proj);
@@ -348,8 +326,8 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
     for (size_t i = 0; i < ritems.size(); ++i)
     {
         auto ri = ritems[i];
-        ri->Geo->SetVertexBuffer(cmdList);
-        ri->Geo->SetIndexBuffer(cmdList);
+        ri->Geo.SetVertexBuffer(cmdList);
+        ri->Geo.SetIndexBuffer(cmdList);
         ri->SetPrimitiveTopology(cmdList);
         auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndex);
         cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);

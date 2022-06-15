@@ -3,6 +3,7 @@
 #include "PassConstants.h"
 #include "Texture.h"
 #include "../dx12/DescriptorHeap.h"
+#include "RenderItem.h"
 
 class FrameResource
 {
@@ -16,7 +17,7 @@ public:
 
 	ComPtr<ID3D12CommandAllocator> m_cmdAlloc = nullptr;
 	UploadBuffer<PassConstants> m_passCb;
-	UploadBuffer<ObjectConstants> m_objectCb;
+	UploadBuffer<ObjectConstants::ObjectProperties> m_objectCb;
 	ViewID passIndex=-1;
 	ViewID objectIndex=-1;
 

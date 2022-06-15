@@ -24,26 +24,7 @@ void Model::LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList
     m_directory =  path.substr(0, path.find_last_of('/'))+"/";
 	std::vector<Geometry::MeshData> meshes;
     ProcessNode(scene->mRootNode, scene, cmList, meshes);
-
-    auto submeshes = Submesh::GetSubmeshes(meshes);
-
-    auto sizeOfStruct = sizeof(Geometry::Vertex);
-    std::vector<Geometry::Vertex> vertices;
-    std::vector<std::uint16_t>     indices;
-    for (int i = 0; i < meshes.size(); i++)
-    {
-        vertices.insert(vertices.end(), meshes[i].Vertices.begin(), meshes[i].Vertices.end());
-        indices.insert(indices.end(), meshes[i].GetIndices16().begin(), meshes[i].GetIndices16().end());
-    }
-    m_mesh.Init(Device::GetDevice(), cmList,
-        vertices.data(), GetVectorSize(vertices)  , sizeOfStruct,
-        indices.data(), GetVectorSize(indices) , DXGI_FORMAT_R16_UINT);
-
-    for (int i = 0; i < submeshes.size(); i++)
-    {
-        m_mesh.DrawArgs[std::to_string(i)] = submeshes[i];
-    }
-    
+    m_mesh = Mesh(meshes, cmList, "model");
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList, 
@@ -152,7 +133,7 @@ void Model::DrawModel(ID3D12GraphicsCommandList* cmdList)
     m_mesh.SetIndexBuffer(cmdList);
     m_mesh.SetVertexBuffer(cmdList);
     for(auto& i:m_mesh.DrawArgs)
-		i.second.Draw(cmdList);
+		i.Draw(cmdList);
 }
 
 

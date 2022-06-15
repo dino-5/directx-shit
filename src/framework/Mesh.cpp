@@ -1,4 +1,5 @@
 #include "include/Mesh.h"
+#include "dx12/Device.h"
 
 
 Mesh::Mesh(
@@ -8,6 +9,24 @@ Mesh::Mesh(
 {
 	Init(device, cmList, vertexData, vertexDataSize, structSize, indexData, indexDataSize, format);
 }
+
+Mesh::Mesh(std::vector < Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name) :
+	Name(name)
+{
+    DrawArgs = Submesh::GetSubmeshes(mesh);
+    std::vector<Geometry::Vertex> vertices;
+    std::vector<std::uint16_t> indices;
+    for (auto& i : mesh)
+    {
+        vertices.insert(vertices.end(), i.Vertices.begin(), i.Vertices.end());
+		indices.insert(indices.end(), i.GetIndices16().begin(), i.GetIndices16().end());
+    }
+
+    Init(Device::GetDevice(), cmdList,
+        vertices.data(), GetVectorSize(vertices), sizeof(Geometry::Vertex),
+        indices.data(), GetVectorSize(indices));
+}
+
 void Mesh::Init(
 	ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
 	const void* vertexData, UINT vertexDataSize, UINT structSize,
