@@ -32,6 +32,8 @@ bool App::Initialize()
     BuildPSO();
     InitImgui();
     CreateTextures();
+    DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
+    m_model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
@@ -51,7 +53,7 @@ void App::BuildDescriptorHeaps()
     UINT objCount = m_renderItems.size();
     UINT numberOfTextures = 2;
     UINT numberOfPassDescriptors = 1;
-    UINT numDescriptors = (objCount + numberOfPassDescriptors + numberOfTextures) * NumFrames;
+    UINT numDescriptors = 15;// (objCount + numberOfPassDescriptors + numberOfTextures)* NumFrames;
     m_passCbvOffset = objCount * NumFrames;
     m_textureCbvOffset = m_passCbvOffset + numberOfPassDescriptors * NumFrames;
     m_cbvHeap.Init(numDescriptors, DescriptorHeapType::CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -159,97 +161,47 @@ void App::BuildShadersAndInputLayout()
 
 void App::BuildGeometry()
 {
-    UINT countOfMeshes = 2;
-    Geometry generator;
+    UINT countOfMeshes = 1;
     std::vector<Geometry::MeshData> mesh(countOfMeshes);
-    std::vector<Submesh> submeshes(countOfMeshes);
 
     std::vector<std::string> submeshNames = {
         "box",
-        "cylinder"
     };
 
-    mesh[0] = generator.CreateBox(10, 5, 10, 3);
-    mesh[1] = generator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+    mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
 
-    UINT vertexOffset = 0;
-    UINT indexOffset = 0;
-    UINT totalVertexCount = 0;
+    std::vector<Submesh> submeshes = Submesh::GetSubmeshes(mesh);
 
-    for (int i=0;i<mesh.size();i++)
-    {
-        UINT meshElementVertexOffset = vertexOffset;
-        UINT meshElementIndexOffset = indexOffset;
-
-        submeshes[i].BaseVertexLocation = meshElementVertexOffset;
-        submeshes[i].StartIndexLocation = meshElementIndexOffset;
-        submeshes[i].IndexCount = mesh[i].Indices32.size();
-
-        vertexOffset += mesh[i].Vertices.size();
-        indexOffset += mesh[i].Indices32.size();
-        totalVertexCount += mesh[i].Vertices.size();
-    }
-
-	std::vector<Vertex> vertices(totalVertexCount);
-    UINT k = 0;
-
-    for (auto& i : mesh)
-    {
-		for (size_t j = 0; j < i.Vertices.size(); ++j, ++k)
-		{
-			vertices[k].Pos = i.Vertices[j].Position;
-			vertices[k].Normal = i.Vertices[j].Normal;
-            vertices[k].Tex = i.Vertices[j].Tex;
-		}
-    }
-
+    std::vector<Geometry::Vertex> vertices;
     std::vector<std::uint16_t> indices;
     for (auto& i : mesh)
+    {
+        vertices.insert(vertices.end(), i.Vertices.begin(), i.Vertices.end());
 		indices.insert(indices.end(), i.Indices32.begin(), i.Indices32.end());
+    }
 
-    const UINT vbByteSize = vertices.size() * sizeof(Vertex);
-    const UINT ibByteSize = indices.size() * sizeof(std::uint16_t);
-
-	mBoxGeo = std::make_unique<Mesh>();
-	mBoxGeo->Name = "boxGeo";
-    mBoxGeo->Init(Device::GetDevice(), mCommandList,
-        vertices.data(), vbByteSize, sizeof(Vertex),
-        indices.data(), ibByteSize, DXGI_FORMAT_R16_UINT);
+	mBoxGeo.Name = "boxGeo";
+    mBoxGeo.Init(Device::GetDevice(), mCommandList,
+        vertices.data(), GetVectorSize(vertices), sizeof(Vertex),
+        indices.data(), GetVectorSize(indices), DXGI_FORMAT_R16_UINT);
 
     for(int i=0;i<submeshes.size();i++)
-		mBoxGeo->DrawArgs[submeshNames[i]] = submeshes[i];
+		mBoxGeo.DrawArgs[submeshNames[i]] = submeshes[i];
 }
 
 void App::CreateRenderItem(const char* renderItemName, XMMATRIX& matrix)
 {
-    RenderItem rItem;
-    XMStoreFloat4x4(&rItem.objectParam.World, matrix);
-    rItem.m_objCbIndex = 0;
-    rItem.Geo = mBoxGeo.get();
-    rItem.m_indexCount = mBoxGeo->DrawArgs[renderItemName].IndexCount;
-    rItem.m_startIndexLocation= mBoxGeo->DrawArgs[renderItemName].StartIndexLocation;
-    rItem.m_baseVertexLocation= mBoxGeo->DrawArgs[renderItemName].BaseVertexLocation;
-    rItem.m_name = std::string(renderItemName);
-    m_renderItems.push_back(std::move(rItem));
+    m_renderItems.push_back(std::move(RenderItem(mBoxGeo, renderItemName, matrix)));
 }
 
 void App::CreateRenderItem(const char* renderItemName, XMFLOAT4X4& matrix)
 {
-    RenderItem rItem;
-    rItem.objectParam.World = matrix;
-    rItem.m_objCbIndex = 0;
-    rItem.Geo = mBoxGeo.get();
-    rItem.m_indexCount = mBoxGeo->DrawArgs[renderItemName].IndexCount;
-    rItem.m_startIndexLocation= mBoxGeo->DrawArgs[renderItemName].StartIndexLocation;
-    rItem.m_baseVertexLocation= mBoxGeo->DrawArgs[renderItemName].BaseVertexLocation;
-    rItem.m_name = std::string(renderItemName);
-    m_renderItems.push_back(std::move(rItem));
+    m_renderItems.push_back(std::move(RenderItem(mBoxGeo, renderItemName, matrix)));
 }
 
 void App::BuildRenderItems()
 {
     CreateRenderItem("box",XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
-
     for (auto& e : m_renderItems)
         m_opaqueItems.push_back(&e);
 }
@@ -396,14 +348,12 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
     for (size_t i = 0; i < ritems.size(); ++i)
     {
         auto ri = ritems[i];
-        if (!ri->m_indexCount)
-            continue;
         ri->Geo->SetVertexBuffer(cmdList);
         ri->Geo->SetIndexBuffer(cmdList);
         ri->SetPrimitiveTopology(cmdList);
         auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndex);
         cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
-        cmdList->DrawIndexedInstanced(ri->m_indexCount, 1, ri->m_startIndexLocation, ri->m_baseVertexLocation, 0);
+        ri->DrawIndexedInstanced(cmdList);
     }
 }
 
@@ -454,7 +404,8 @@ void App::Draw(const GameTimer& gt)
     mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
 
     DrawRenderItems(mCommandList.Get(), m_opaqueItems);
-
+    m_model.DrawModel(mCommandList.Get());
+    
     auto lv = ImGuiSettings::GetDescriptorHeap();
     mCommandList->SetDescriptorHeaps(1, &lv);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());

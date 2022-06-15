@@ -4,3 +4,4 @@
 .gitignore.swp
 .gitignore~
 ./App.pdb
+*.pdb

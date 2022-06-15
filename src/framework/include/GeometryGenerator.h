@@ -62,7 +62,7 @@ public:
 		std::vector<uint16> mIndices16;
 	};
 
-	MeshData CreateBox(float width=0, float height=0, float depth=0, uint32 numSubdivisions=0);
+	static MeshData CreateBox(float width=0, float height=0, float depth=0, uint32 numSubdivisions=0);
 	MeshData CreateSphere(float radius, uint32 sliceCount, uint32 stackCount);
 	MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
 	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);

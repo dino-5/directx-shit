@@ -27,17 +27,18 @@ class Model
             std::cout<<"bye"<<std::endl;
         }
 
-        std::vector<Mesh> GetMesh() { return m_meshes; }
+        Mesh GetMesh() { return m_mesh; }
         void DrawModel(ID3D12GraphicsCommandList* cmdList);
 
     private:
         std::vector<Texture> m_textures;
-        std::vector<Mesh> m_meshes;
+        Mesh m_mesh;
         std::string m_directory;
 
     private:
         void LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList);
-        void ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList);
+        void ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList, 
+            std::vector<Geometry::MeshData>&);
         Geometry::MeshData ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList);
         std::vector<TextureHandle> LoadMaterialTextures(aiMaterial* mat,
             aiTextureType type, std::string typeName, ComPtr<ID3D12GraphicsCommandList> cmList);

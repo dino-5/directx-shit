@@ -11,7 +11,7 @@ public:
 	void Init(ID3D12Device* device, UINT passCount, UINT objectCount);
 
 	FrameResource() = default;
-	FrameResource(const FrameResource&&) ;
+	FrameResource(FrameResource&&) ;
 	FrameResource& operator=(const FrameResource&) = delete;
 
 	ComPtr<ID3D12CommandAllocator> m_cmdAlloc = nullptr;

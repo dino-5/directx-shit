@@ -14,6 +14,7 @@
 #include "Texture.h"
 #include "../dx12/DescriptorHeap.h"
 #include "Camera.h"
+#include "Model.h"
 
 
 using namespace DirectX;
@@ -78,7 +79,7 @@ private:
 
     std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
 
-	std::unique_ptr<Mesh> mBoxGeo = nullptr;
+    Mesh mBoxGeo;
 
     ComPtr<ID3DBlob> mvsByteCode = nullptr;
     ComPtr<ID3DBlob> mpsByteCode = nullptr;
@@ -104,9 +105,10 @@ private:
 
     float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-
     std::vector<Texture> m_textures;
     ComPtr<ID3D12Resource> m_texture[3];
+
+    Model m_model;
 
 
     POINT mLastMousePos;

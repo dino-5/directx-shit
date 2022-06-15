@@ -14,7 +14,7 @@ void FrameResource::Init(ID3D12Device* device, UINT passCount, UINT objectCount)
 	m_objectCb.Init(device, objectCount, true);
 }
 
-FrameResource::FrameResource(const FrameResource&& obj) :
+FrameResource::FrameResource(FrameResource&& obj) :
 	m_passCb(std::move(obj.m_passCb)),
 	m_objectCb(std::move(obj.m_objectCb)),
 	m_cmdAlloc(obj.m_cmdAlloc),

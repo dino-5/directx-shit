@@ -22,7 +22,7 @@ void Mesh::Init(
 
 	VertexByteStride = structSize;
 	VertexBufferByteSize = vertexDataSize;
-	IndexFormat = format;
+	//IndexFormat = format;
 	IndexBufferByteSize = indexDataSize;
 }
 

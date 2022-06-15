@@ -22,6 +22,11 @@ struct Vertex
 struct ObjectConstants
 {
     XMFLOAT4X4 World = MathHelper::Identity4x4();
+	ObjectConstants() = default;
+	ObjectConstants(XMFLOAT4X4 world) : World(world) {}
+	ObjectConstants(XMMATRIX world) {
+		XMStoreFloat4x4(&World, world);
+	}
  };
 
 enum class Key {
@@ -31,3 +36,9 @@ enum class Key {
 	D = 68,
 	SWITCH_CAMERA = 192
 };
+
+template<typename T>
+unsigned int GetVectorSize(std::vector<T> vec)
+{
+	return vec.size() * sizeof(T);
+}

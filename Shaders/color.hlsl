@@ -83,9 +83,9 @@ float4 PS(VertexOut input) : SV_Target
 
     float4 result = diffuse + ambient +specular;
 
+    return pixelColor;
     return result;
     return specularPixelColor;
-    return pixelColor;
 }
 
 
