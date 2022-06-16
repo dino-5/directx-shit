@@ -1,5 +1,57 @@
 #include "include/Mesh.h"
 #include "dx12/Device.h"
+#include "dx12/DescriptorHeap.h"
+
+void Submesh::Draw(ID3D12GraphicsCommandList* cmList)
+{
+	if (IndexCount)
+	{
+		cmList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
+	}
+}
+
+std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> Submesh::GetSubmeshes(std::vector<Geometry::MeshData> mesh)
+{
+	std::vector<Submesh> submeshes(mesh.size());
+	UINT vertexOffset = 0;
+	UINT indexOffset = 0;
+	for (int i=0;i<mesh.size();i++)
+	{
+		submeshes[i].BaseVertexLocation = vertexOffset;
+		submeshes[i].StartIndexLocation = indexOffset;
+		submeshes[i].IndexCount = mesh[i].Indices32.size();
+
+		vertexOffset += mesh[i].Vertices.size();
+		indexOffset += mesh[i].Indices32.size();
+	}
+	return { { std::vector<TextureHandle>(), submeshes} };
+}
+
+std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >>
+Submesh::GetSubmeshes(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh)
+{
+	std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> submeshes;
+	UINT vertexOffset = 0;
+	UINT indexOffset = 0;
+	for (auto& i : mesh)
+	{
+		for (int j = 0; j < i.second.size(); j++)
+		{
+			Submesh submesh;
+			submesh.BaseVertexLocation = vertexOffset;
+			submesh.StartIndexLocation = indexOffset;
+			submesh.IndexCount = i.second[j].Indices32.size();
+
+			vertexOffset += i.second[j].Vertices.size();
+			indexOffset += i.second[j].Indices32.size();
+			if (j == 0)
+				submeshes.push_back({ i.first, {submesh} });
+			else
+				submeshes.back().second.push_back(submesh);
+		}
+	}
+	return submeshes;
+}
 
 
 Mesh::Mesh(
@@ -10,7 +62,27 @@ Mesh::Mesh(
 	Init(device, cmList, vertexData, vertexDataSize, structSize, indexData, indexDataSize, format);
 }
 
-Mesh::Mesh(std::vector < Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name) :
+Mesh::Mesh(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh,
+	ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name)
+{
+    DrawArgs = Submesh::GetSubmeshes(mesh);
+    std::vector<Geometry::Vertex> vertices;
+    std::vector<std::uint16_t> indices;
+    for (auto& i : mesh)
+    {
+		for (int j = 0; j < i.second.size(); j++)
+		{
+			vertices.insert(vertices.end(), i.second[j].Vertices.begin(), i.second[j].Vertices.end());
+			indices.insert(indices.end(), i.second[j].GetIndices16().begin(), i.second[j].GetIndices16().end());
+		}
+    }
+
+    Init(Device::GetDevice(), cmdList,
+        vertices.data(), GetVectorSize(vertices), sizeof(Geometry::Vertex),
+        indices.data(), GetVectorSize(indices));
+}
+
+Mesh::Mesh(std::vector <Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name) :
 	Name(name)
 {
     DrawArgs = Submesh::GetSubmeshes(mesh);

@@ -55,8 +55,12 @@ public:
 
 	void DrawIndexedInstanced(ID3D12GraphicsCommandList* cmList)
 	{
-		for(auto& i: Geo.DrawArgs)
-			i.Draw(cmList);
+		for (auto& i : Geo.DrawArgs)
+		{
+			BindTextures(i.first, cmList);
+			for(auto& submesh: i.second)
+				submesh.Draw(cmList);
+		}
 	}
 
 	void Update();

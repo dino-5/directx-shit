@@ -24,7 +24,6 @@ bool App::Initialize()
     InitCamera();
     BuildRootSignature();
     BuildShadersAndInputLayout();
-    BuildGeometry();
     BuildRenderItems();
     BuildFrameResources();
     BuildDescriptorHeaps();
@@ -159,27 +158,13 @@ void App::BuildShadersAndInputLayout()
     };
 }
 
-void App::BuildGeometry()
+void App::BuildRenderItems()
 {
     UINT countOfMeshes = 1;
     std::vector<Geometry::MeshData> mesh(countOfMeshes);
     mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
     mBoxGeo = Mesh(mesh, mCommandList, "box");
-}
-
-void App::CreateRenderItem(const char* renderItemName, XMMATRIX& matrix)
-{
-    m_renderItems.push_back(std::move(RenderItem(mBoxGeo, renderItemName, matrix)));
-}
-
-void App::CreateRenderItem(const char* renderItemName, XMFLOAT4X4& matrix)
-{
-    m_renderItems.push_back(std::move(RenderItem(mBoxGeo, renderItemName, matrix)));
-}
-
-void App::BuildRenderItems()
-{
-    CreateRenderItem("box",XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+    m_renderItems.push_back(RenderItem(mesh, mCommandList, "box"));
     for (auto& e : m_renderItems)
         m_opaqueItems.push_back(&e);
 }
@@ -237,8 +222,8 @@ void App::CreateTextures()
     DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
     for (int i = 0; i < NumFrames; i++)
     {
-        m_textures.push_back(Texture("textures/container2.png",          Device::GetDevice(), mCommandList));
-        m_textures.push_back(Texture("textures/container2_specular.png", Device::GetDevice(), mCommandList));
+        m_textures.push_back(Texture("textures/container2.png",          Device::GetDevice(), mCommandList, "container_diffuse"));
+        m_textures.push_back(Texture("textures/container2_specular.png", Device::GetDevice(), mCommandList , "container_specular"));
     }
 }
 

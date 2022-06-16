@@ -3,13 +3,22 @@
 #include "include/d3dUtil.h"
 #include "dx12/DescriptorHeap.h"
 
-Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList)
-          //DescriptorHeap& srvHeap)
+void BindTextures(std::vector<TextureHandle>& textures, ID3D12GraphicsCommandList* cmdList)
 {
-    Init(path, device, commandList);
+	for (int j=0; j<textures.size(); j++)
+	{
+		auto textureHandle = DescriptorHeapManager::CurrentSRVHeap->GetGPUHandle(textures[j]);
+		cmdList->SetGraphicsRootDescriptorTable(2+j, textureHandle);
+	}
 }
 
-void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList)
+Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList, std::string s)
+          //DescriptorHeap& srvHeap)
+{
+    Init(path, device, commandList, s);
+}
+
+void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList, std::string s)
           //DescriptorHeap& srvHeap)
 {
 
@@ -63,5 +72,11 @@ void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12Graphics
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = 1;
     index = DescriptorHeapManager::CurrentSRVHeap->CreateSRV(srvDesc, m_texture.Get());
-    m_name = path;
+    m_name = s;
+}
+TextureHandle TextureColection::CreateTexture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmdList, std::string s)
+{
+    if(static_textures.find(path)==static_textures.end())
+		static_textures[path] = Texture(path, device, cmdList, s);
+    return static_textures[path].GetHandle();
 }

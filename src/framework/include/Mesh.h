@@ -13,28 +13,9 @@ struct Submesh
 		BaseVertexLocation(baseVertexLoc) {}
 	Submesh() = default;
 
-	void Draw(ID3D12GraphicsCommandList* cmList)
-	{
-		if(IndexCount)
-			cmList->DrawIndexedInstanced(IndexCount, 1, StartIndexLocation, BaseVertexLocation, 0);
-	}
-
-	static std::vector<Submesh> GetSubmeshes(std::vector<Geometry::MeshData> mesh)
-	{
-		std::vector<Submesh> submeshes(mesh.size());
-		UINT vertexOffset = 0;
-		UINT indexOffset = 0;
-		for (int i=0;i<mesh.size();i++)
-		{
-			submeshes[i].BaseVertexLocation = vertexOffset;
-			submeshes[i].StartIndexLocation = indexOffset;
-			submeshes[i].IndexCount = mesh[i].Indices32.size();
-
-			vertexOffset += mesh[i].Vertices.size();
-			indexOffset += mesh[i].Indices32.size();
-		}
-		return submeshes;
-	}
+	void Draw(ID3D12GraphicsCommandList* cmList);
+	static std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> GetSubmeshes(std::vector<Geometry::MeshData> mesh);
+	static std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> GetSubmeshes(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh);
 };
 
 struct Mesh
@@ -42,6 +23,8 @@ struct Mesh
 public:
 	Mesh() = default;
 	Mesh(std::vector < Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
+	Mesh(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh,
+		ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
 	Mesh(
 		ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
 		const void* vertexData, UINT vertexDataSize, UINT structSize,
@@ -82,7 +65,7 @@ public:
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	std::vector<Submesh> DrawArgs;
+	std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> DrawArgs;
 	std::unordered_map<std::string, TextureHandle> m_textures;
 
 };

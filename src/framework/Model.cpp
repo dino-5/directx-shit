@@ -8,6 +8,16 @@
 #include <sstream>
 #include "dx12/DescriptorHeap.h"
 
+int FindVector(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& meshes, std::vector<TextureHandle>& textures)
+{
+    for (int i=0;i<meshes.size();i++)
+    {
+        if (meshes[i].first == textures)
+            return i;
+    }
+    return -1;
+}
+
 
 
 void Model::LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList)
@@ -22,18 +32,28 @@ void Model::LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList
         return;
     }
     m_directory =  path.substr(0, path.find_last_of('/'))+"/";
-	std::vector<Geometry::MeshData> meshes;
+    std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >> meshes;
     ProcessNode(scene->mRootNode, scene, cmList, meshes);
     m_mesh = Mesh(meshes, cmList, "model");
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList, 
-    std::vector<Geometry::MeshData>& meshes)
+    std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& meshes)
 {
     for(unsigned int i=0; i<node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(ProcessMesh(mesh, scene, cmList));
+        auto meshElement = ProcessMesh(mesh, scene, cmList);
+
+        int indx = FindVector(meshes, meshElement.first);
+        if (indx==-1)
+        {
+            meshes.push_back({ meshElement.first, {meshElement.second}  });
+        }
+        else
+        {
+            meshes[indx].second.push_back(meshElement.second);
+        }
     }
 
     for(unsigned int i=0;i < node->mNumChildren; i++)
@@ -42,7 +62,7 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12Graphic
     }
 }
 
-Geometry::MeshData Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList)
+std::pair<std::vector<TextureHandle> ,Geometry::MeshData> Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList)
 {
     std::vector<Geometry::Vertex> vertices;
     std::vector<unsigned int> indices;
@@ -87,7 +107,7 @@ Geometry::MeshData Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr
         std::vector<TextureHandle> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", cmList);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
-    return Geometry::MeshData(vertices, indices);
+    return { textures, Geometry::MeshData(vertices, indices) };
 }
 
 std::vector<TextureHandle> Model::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName,
@@ -99,41 +119,22 @@ std::vector<TextureHandle> Model::LoadMaterialTextures(aiMaterial* mat, aiTextur
         aiString str;
         mat->GetTexture(type, i, &str);
 
-        bool skip =false;
-        for(unsigned int j=0;j<m_textures.size();j++)
-        {
-            if(std::strcmp(m_textures[j].m_name.data(), str.C_Str())==0)
-            {
-                textures.push_back(m_textures[j].GetHandle());
-                skip = true;
-                break;
-            }
-        }
-        if(!skip)
-        {
-            const char* dir = "";
-            std::string name(str.C_Str());
-            Texture texture((m_directory+name).c_str(), Device::GetDevice(), cmList);
-            texture.m_name = name;
-            textures.push_back(texture.GetHandle());
-            m_textures.push_back(texture);
-        }
+		std::string name(str.C_Str());
+		textures.push_back(TextureColection::CreateTexture((m_directory+name).c_str(), Device::GetDevice(), cmList, name));
     }
     return textures;
 }
 
 void Model::DrawModel(ID3D12GraphicsCommandList* cmdList)
 {
-
-    auto textureHandle1 = DescriptorHeapManager::CurrentSRVHeap->GetGPUHandle(m_textures[0].GetHandle());
-    cmdList->SetGraphicsRootDescriptorTable(2, textureHandle1);
-
-    auto textureHandle2 = DescriptorHeapManager::CurrentSRVHeap->GetGPUHandle(m_textures[1].GetHandle());
-    cmdList->SetGraphicsRootDescriptorTable(3, textureHandle1);
     m_mesh.SetIndexBuffer(cmdList);
     m_mesh.SetVertexBuffer(cmdList);
-    for(auto& i:m_mesh.DrawArgs)
-		i.Draw(cmdList);
+    for (auto& i : m_mesh.DrawArgs)
+    {
+        BindTextures(i.first, cmdList);
+        for(auto& submesh: i.second)
+			submesh.Draw(cmdList);
+    }
 }
 
 
