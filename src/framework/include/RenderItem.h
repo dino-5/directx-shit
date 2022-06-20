@@ -44,16 +44,21 @@ struct ObjectConstants
 
  };
 
+class Model;
+
 class RenderItem
 {
 public:
+	static inline uint16_t g_objectCBIndex = 0;
 	RenderItem() = default;
 	RenderItem(Mesh& mesh, std::string name, ObjectConstants obj) :
 		Geo(mesh),
 		m_transformation(obj), 
-		m_name(name)
+		m_name(name),
+		m_objCbIndex(g_objectCBIndex++)
 	{ }
 	RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
+	RenderItem(Model model, std::string name="");
 
 	void DrawIndexedInstanced(ID3D12GraphicsCommandList* cmList)
 	{
@@ -62,6 +67,19 @@ public:
 			BindTextures(i.first, cmList);
 			for(auto& submesh: i.second)
 				submesh.Draw(cmList);
+		}
+	}
+
+	void Draw(ID3D12GraphicsCommandList* cmdList)
+	{
+		Geo.SetIndexBuffer(cmdList);
+		Geo.SetVertexBuffer(cmdList);
+		SetPrimitiveTopology(cmdList);
+		for (auto& i : Geo.DrawArgs)
+		{
+			BindTextures(i.first, cmdList);
+			for(auto& submesh: i.second)
+				submesh.Draw(cmdList);
 		}
 	}
 

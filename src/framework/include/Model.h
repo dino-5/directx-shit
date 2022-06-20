@@ -31,7 +31,7 @@ class Model
         Mesh GetMesh() { return m_mesh; }
         void DrawModel(ID3D12GraphicsCommandList* cmdList);
 
-    private:
+    public:
         Mesh m_mesh;
         std::string m_directory;
 

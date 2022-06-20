@@ -4,6 +4,7 @@
 #include "Texture.h"
 #include "../dx12/DescriptorHeap.h"
 #include "RenderItem.h"
+#include <vector>
 
 class FrameResource
 {
@@ -18,6 +19,7 @@ public:
 	ComPtr<ID3D12CommandAllocator> m_cmdAlloc = nullptr;
 	UploadBuffer<PassConstants> m_passCb;
 	UploadBuffer<ObjectConstants::ObjectProperties> m_objectCb;
+	std::vector<ViewID> objectIndexes;
 	ViewID passIndex=-1;
 	ViewID objectIndex=-1;
 

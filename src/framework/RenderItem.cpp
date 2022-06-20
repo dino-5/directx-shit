@@ -1,6 +1,7 @@
 #include "include/RenderItem.h"
 #include "include/ImGuiSettings.h"
 #include "dx12/Device.h"
+#include "include/Model.h"
 
 void ObjectConstants::SetTranslation(float x, float y, float z)
 {
@@ -48,10 +49,14 @@ void ObjectConstants::OnImGuiRender()
 }
 
 RenderItem::RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList,
-	std::string name):   m_name(name)
+	std::string name):   m_name(name),
+		m_objCbIndex(g_objectCBIndex++)
 {
 	Geo = Mesh(meshes, cmdList, name);
 }
+
+RenderItem::RenderItem(Model model, std::string name) : Geo(model.m_mesh), m_name(name), m_objCbIndex(g_objectCBIndex++)
+{}
 
 void RenderItem::SetPrimitiveTopology(ID3D12GraphicsCommandList* cmList)
 {

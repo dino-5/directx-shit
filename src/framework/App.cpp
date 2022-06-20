@@ -24,15 +24,13 @@ bool App::Initialize()
     InitCamera();
     BuildRootSignature();
     BuildShadersAndInputLayout();
+    BuildDescriptorHeaps();
     BuildRenderItems();
     BuildFrameResources();
-    BuildDescriptorHeaps();
 	BuildConstantBuffers();
     BuildPSO();
     InitImgui();
     CreateTextures();
-    DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
-    m_model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
@@ -52,7 +50,7 @@ void App::BuildDescriptorHeaps()
     UINT objCount = m_renderItems.size();
     UINT numberOfTextures = 2;
     UINT numberOfPassDescriptors = 1;
-    UINT numDescriptors = 15;// (objCount + numberOfPassDescriptors + numberOfTextures)* NumFrames;
+    UINT numDescriptors = 20;// (objCount + numberOfPassDescriptors + numberOfTextures)* NumFrames;
     m_passCbvOffset = objCount * NumFrames;
     m_textureCbvOffset = m_passCbvOffset + numberOfPassDescriptors * NumFrames;
     m_cbvHeap.Init(numDescriptors, DescriptorHeapType::CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -67,10 +65,11 @@ void App::BuildConstantBuffers()
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex)
     {
         auto objectCB = m_frameResources[frameIndex].m_objectCb.Resource();
+		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
         for (UINT i = 0; i < objCount; ++i)
         {
-            D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-            m_frameResources[frameIndex].objectIndex = m_cbvHeap.CreateCBV(cbAddress, objCBByteSize);
+            m_frameResources[frameIndex].objectIndexes[i] = m_cbvHeap.CreateCBV(cbAddress, objCBByteSize);
+            cbAddress += objCBByteSize;
         }
     }
 
@@ -160,11 +159,15 @@ void App::BuildShadersAndInputLayout()
 
 void App::BuildRenderItems()
 {
+    DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
     UINT countOfMeshes = 1;
     std::vector<Geometry::MeshData> mesh(countOfMeshes);
     mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
     mBoxGeo = Mesh(mesh, mCommandList, "box");
     m_renderItems.push_back(RenderItem(mesh, mCommandList, "box"));
+
+    m_model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
+    m_renderItems.push_back(RenderItem(m_model, "model"));
     for (auto& e : m_renderItems)
         m_opaqueItems.push_back(&e);
 }
@@ -307,16 +310,12 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
 
     ID3D12Resource* objectCB = m_currentFrameResource->m_objectCb.Resource();
 
-    // For each render item...
     for (size_t i = 0; i < ritems.size(); ++i)
     {
         auto ri = ritems[i];
-        ri->Geo.SetVertexBuffer(cmdList);
-        ri->Geo.SetIndexBuffer(cmdList);
-        ri->SetPrimitiveTopology(cmdList);
-        auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndex);
+        auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndexes[i]);
         cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
-        ri->DrawIndexedInstanced(cmdList);
+        ri->Draw(cmdList);
     }
 }
 
@@ -367,7 +366,7 @@ void App::Draw(const GameTimer& gt)
     mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
 
     DrawRenderItems(mCommandList.Get(), m_opaqueItems);
-    m_model.DrawModel(mCommandList.Get());
+    //m_model.DrawModel(mCommandList.Get());
     
     auto lv = ImGuiSettings::GetDescriptorHeap();
     mCommandList->SetDescriptorHeaps(1, &lv);
