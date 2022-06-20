@@ -8,6 +8,7 @@
 
 struct ObjectConstants
 {
+	static inline const int framesToUpdate = 3;
 	struct ObjectProperties
 	{
 		XMFLOAT4X4 World = MathHelper::Identity4x4();
@@ -37,6 +38,7 @@ struct ObjectConstants
 	float Translation[3] = { 0,0,0 };
 	float Scale[3] = { 1,1,1 };
 	float Rotate[3] = { 0,0,0 };
+	int m_framesToUpdate = framesToUpdate;
 
 	ObjectProperties properties;
 

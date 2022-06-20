@@ -24,6 +24,7 @@ void ObjectConstants::Update()
 {
 	XMStoreFloat4x4(&properties.World,XMMatrixScaling(Scale[0], Scale[1], Scale[2]) * 
 		XMMatrixTranslation(Translation[0], Translation[1], Translation[2]));
+	m_framesToUpdate = framesToUpdate;
 }
 
 void ObjectConstants::OnImGuiRender()
@@ -47,7 +48,7 @@ void ObjectConstants::OnImGuiRender()
 }
 
 RenderItem::RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList,
-	std::string name):m_name(name)
+	std::string name):   m_name(name)
 {
 	Geo = Mesh(meshes, cmdList, name);
 }

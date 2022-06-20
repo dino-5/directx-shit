@@ -237,15 +237,15 @@ void App::OnResize()
 
 void App::UpdateObjectCB(const GameTimer& gt)
 {
-    for (auto& e : m_renderItems)
+    for (auto& renderItem : m_renderItems)
     {
-        if (e.numFramesDirty > 0)
+        if (renderItem.m_transformation.m_framesToUpdate)
         {
-            XMMATRIX world = XMLoadFloat4x4(&e.m_transformation.properties.World);
+            XMMATRIX world = XMLoadFloat4x4(&renderItem.m_transformation.properties.World);
 			ObjectConstants::ObjectProperties constants;
             XMStoreFloat4x4(&constants.World, XMMatrixTranspose(world));
-            m_currentFrameResource->m_objectCb.CopyData(e.m_objCbIndex, constants);
-            e.numFramesDirty--;
+            m_currentFrameResource->m_objectCb.CopyData(renderItem.m_objCbIndex, constants);
+            renderItem.m_transformation.m_framesToUpdate--;
         }
     }
 }
