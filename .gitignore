@@ -6,3 +6,4 @@
 ./App.pdb
 *.pdb
 *.pdb
+*.lib
