@@ -273,11 +273,35 @@ void Camera::RotateY(float angle)
 	mViewDirty = true;
 }
 
+XMMATRIX Camera::LookAt(XMFLOAT4 pos, XMFLOAT4 dir)
+{
+	XMVECTOR L = XMVector4Normalize(XMLoadFloat4(&dir));
+	XMVECTOR P = XMLoadFloat4(&pos);
+	XMVECTOR y{ 0.0f, 1.0f, 0.0f , 0.0f };
+	XMVECTOR R = -XMVector3Cross(L, y);
+	XMVECTOR U = XMVector3Cross(L, R);
+	return XMMatrixLookAtLH(P, P + L, U);
+}
+XMMATRIX Camera::LookAt(XMFLOAT3 pos , XMFLOAT3 dir)
+{
+	XMVECTOR L = XMVector3Normalize(XMLoadFloat3(&dir));
+	XMVECTOR P = XMLoadFloat3(&pos);
+	XMVECTOR y{ 0.0f, 1.0f, 0.0f };
+	XMVECTOR R = XMVector3Cross(L, y);
+	XMVECTOR U = XMVector3Cross(L, R);
+	return XMMatrixLookAtLH(P, P + L, U);
+}
+
+XMMATRIX Camera::Ortho()
+{
+	return XMMatrixOrthographicLH(20, 20, 0.0f, 1000.0f);
+	return XMMatrixOrthographicOffCenterLH(0, m_width, 0, m_height, 1.0f, 1000.0f);
+}
+
 void Camera::UpdateViewMatrix()
 {
 	if(mViewDirty)
 	{
-		XMVECTOR R = XMLoadFloat3(&mRight);
 		XMVECTOR U = XMLoadFloat3(&mUp);
 		mLook.x = cos(to_radians(m_yaw)) * cos(to_radians(m_pitch));
 		mLook.z = sin(to_radians(m_yaw)) * cos(to_radians(m_pitch));
@@ -303,6 +327,13 @@ void Camera::OnMouseMove(int xpos, int ypos, bool update)
 	}
 	float dx = lastx - xpos;
 	float dy = lasty - ypos;
+	const float minCameraVelocity = 0.9;
+	if (xpos<0)
+		dx = minCameraVelocity;
+	else if(xpos > m_width)
+	{
+		dx = -minCameraVelocity;
+	}
 	float sens = 0.1f;
 	lastx = xpos;
 	lasty = ypos;
@@ -313,8 +344,6 @@ void Camera::OnMouseMove(int xpos, int ypos, bool update)
 		m_yaw += dx;
 		m_pitch += dy;
 		mViewDirty = true;
-		//Pitch(m_pitch);
-		//RotateY(m_yaw);
 	}
 	else
 	if (m_pitch > 89.0f)

@@ -55,6 +55,13 @@ ViewID DescriptorHeap::CreateRTV(ID3D12Resource* resource)
     return currentDescriptorIndex++;
 }
 
+ViewID DescriptorHeap::CreateDSV(ID3D12Resource* res, D3D12_DEPTH_STENCIL_VIEW_DESC desc)
+{
+    auto handle = GetCPUHandle(currentDescriptorIndex);
+	Device::GetDevice()->CreateDepthStencilView(res, &desc, handle);
+    return currentDescriptorIndex++;
+}
+
 D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetCPUHandle(ViewID index)const
 {
 	auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart());

@@ -67,7 +67,7 @@ public:
 	MeshData CreateGeosphere(float radius, uint32 numSubdivisions);
 	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
 	MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
-	MeshData CreateQuad(float x, float y, float w, float h, float depth);
+	static MeshData CreateQuad();
 
 private:
 	void Subdivide(MeshData& meshData);

@@ -48,13 +48,11 @@ private:
 	void BuildConstantBuffers();
     void BuildRootSignature();
     void BuildShadersAndInputLayout();
-    void BuildGeometry();
     void BuildPSO();
     void BuildFrameResources();
     void BuildRenderItems();
     void CreateTextures();
-    void CreateRenderItem(const char* submeshName, XMMATRIX& matrix);
-	void CreateRenderItem(const char* submeshName, XMFLOAT4X4& matrix);
+    void PrepareForShadows();
 
     void InitImgui();
     void DrawImgui();
@@ -62,8 +60,14 @@ private:
     void UpdateObjectCB(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
     void UpdateCamera(const GameTimer& gt);
+    void UpdateShadowPassCB();
 
 private:
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> shadowMaps[NumFrames];
+    ViewID depthHandle[NumFrames];
+    ViewID srvHandle[NumFrames];
+    DescriptorHeap m_depthHeap;
 
     std::vector<RenderItem> m_renderItems;
     std::vector<RenderItem*> m_opaqueItems;
@@ -74,13 +78,8 @@ private:
     int m_frameIndex = 0;
     
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-    //ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
-    DescriptorHeap m_cbvHeap;
-
-    std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
-
-    Mesh mBoxGeo;
-
+    ComPtr<ID3D12RootSignature> emptyRootSignature = nullptr;
+    ComPtr<ID3D12RootSignature> quadRootSignature = nullptr;
     ComPtr<ID3DBlob> mvsByteCode = nullptr;
     ComPtr<ID3DBlob> mpsByteCode = nullptr;
 
@@ -88,6 +87,11 @@ private:
     std::unordered_map <std::string, ComPtr<ID3DBlob>> m_shaders;
 
     std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSO ;
+
+    DescriptorHeap m_cbvHeap;
+
+    Mesh mBoxGeo;
+
     float m_isWireFrame = false;
 
     XMFLOAT3 mEyePos = { 0.0f, .75f, -7.0f };
@@ -96,12 +100,8 @@ private:
     Camera m_camera;
 
     PassConstants m_mainPassCB;
-
-    float mTheta = 1.5f*XM_PI;
-    float mPhi = XM_PIDIV4;
-    float mRadius = 15.0f;
-    UINT m_passCbvOffset = 0;
-    UINT m_textureCbvOffset = 0;
+    imguiConstants mainPassImGui;
+    PassConstants m_shadowPassCB;
 
     float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -109,7 +109,7 @@ private:
     ComPtr<ID3D12Resource> m_texture[3];
 
     Model m_model;
-
+    bool load_texture = false;
 
     POINT mLastMousePos;
 };

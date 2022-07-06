@@ -42,7 +42,7 @@ public:
 	ViewID CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& desc, ID3D12Resource* res);
 	ViewID CreateCBV(D3D12_GPU_VIRTUAL_ADDRESS, unsigned int size);
 	ViewID CreateRTV(ID3D12Resource* resource);
-	ViewID CreateDSV();
+	ViewID CreateDSV(ID3D12Resource* res, D3D12_DEPTH_STENCIL_VIEW_DESC desc);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(ViewID index)const;
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(ViewID index)const;

@@ -10,11 +10,9 @@ void ObjectConstants::SetTranslation(float x, float y, float z)
 	Translation[2] = z;
 }
 
-void ObjectConstants::SetScale(float x, float y, float z)
+void ObjectConstants::SetScale(float x)
 {
-	Scale[0] = x;
-	Scale[1] = y;
-	Scale[2] = z;
+	Scale = x;
 }
 
 void ObjectConstants::SetRotation(XMMATRIX matrix)
@@ -23,7 +21,7 @@ void ObjectConstants::SetRotation(XMMATRIX matrix)
 
 void ObjectConstants::Update()
 {
-	XMStoreFloat4x4(&properties.World,XMMatrixScaling(Scale[0], Scale[1], Scale[2]) * 
+	XMStoreFloat4x4(&properties.World,XMMatrixScaling(Scale, Scale, Scale) * 
 		XMMatrixTranslation(Translation[0], Translation[1], Translation[2]));
 	m_framesToUpdate = framesToUpdate;
 }
@@ -41,7 +39,7 @@ void ObjectConstants::OnImGuiRender()
 		Update();
 	}
 	
-	if (ImGui::SliderFloat3("scale", Scale, min_scale, max_scale))
+	if (ImGui::SliderFloat("scale", &Scale, min_scale, max_scale))
 	{
 		Update();
 	}

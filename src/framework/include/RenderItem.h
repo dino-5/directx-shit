@@ -29,14 +29,15 @@ struct ObjectConstants
 
 	void SetTranslation(float, float, float);
 	void SetTranslation(XMMATRIX);
-	void SetScale(float, float, float);
+	void SetScale(float);
 	void SetScale(XMMATRIX);
 	void SetRotation(XMMATRIX);
 	void Update();
 	void OnImGuiRender();
 
 	float Translation[3] = { 0,0,0 };
-	float Scale[3] = { 1,1,1 };
+	float Scale = 1;
+	//float Scale[3] = { 1,1,1 };
 	float Rotate[3] = { 0,0,0 };
 	int m_framesToUpdate = framesToUpdate;
 
@@ -60,24 +61,26 @@ public:
 	RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
 	RenderItem(Model model, std::string name="");
 
-	void DrawIndexedInstanced(ID3D12GraphicsCommandList* cmList)
+	void DrawIndexedInstanced(ID3D12GraphicsCommandList* cmList, bool fl)
 	{
 		for (auto& i : Geo.DrawArgs)
 		{
-			BindTextures(i.first, cmList);
+			if(fl)
+				BindTextures(i.first, cmList);
 			for(auto& submesh: i.second)
 				submesh.Draw(cmList);
 		}
 	}
 
-	void Draw(ID3D12GraphicsCommandList* cmdList)
+	void Draw(ID3D12GraphicsCommandList* cmdList ,bool fl)
 	{
 		Geo.SetIndexBuffer(cmdList);
 		Geo.SetVertexBuffer(cmdList);
 		SetPrimitiveTopology(cmdList);
 		for (auto& i : Geo.DrawArgs)
 		{
-			BindTextures(i.first, cmdList);
+			if(fl)
+				BindTextures(i.first, cmdList);
 			for(auto& submesh: i.second)
 				submesh.Draw(cmdList);
 		}

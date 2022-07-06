@@ -74,7 +74,7 @@ Geometry::MeshData Geometry::CreateBox(float width, float height, float depth, u
         vec1 = XMLoadFloat3(&vertices[i]);
         vec2 = XMLoadFloat3(&vertices[i+1]);
         XMVECTOR v2 = XMVectorSubtract(vec1, vec2);
-        XMVECTOR norm = XMVector3Cross(v2, v1);
+        XMVECTOR norm = XMVector3Cross(v1, v2);
         XMFLOAT3 Norm;
         XMStoreFloat3(&Norm, XMVector3Normalize(norm));
 
@@ -148,6 +148,22 @@ Geometry::MeshData Geometry::CreateBox(float width, float height, float depth, u
 	}
 
     return mesh;
+}
+
+Geometry::MeshData Geometry::CreateQuad()
+{
+    Geometry::MeshData result;
+    result.Vertices = {
+        {-1.0f, -1.0f, .0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, // 0
+        {+1.0f, +1.0f, .0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f}, // 1
+        {+1.0f, -1.0f, .0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f}, // 2 
+        {-1.0f, +1.0f, .0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}, // 3
+    };
+    result.Indices32 = {
+        0, 1, 2,
+        0, 3, 1
+    };
+    return result;
 }
 
 void Geometry::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)

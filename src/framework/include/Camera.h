@@ -8,6 +8,9 @@
 class Camera
 {
 public:
+	static XMMATRIX LookAt(XMFLOAT4, XMFLOAT4);
+	static XMMATRIX LookAt(XMFLOAT3, XMFLOAT3);
+	XMMATRIX Ortho();
 
 	Camera();
 	~Camera();

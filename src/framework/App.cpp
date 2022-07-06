@@ -5,7 +5,7 @@ using namespace DirectX;
 
 
 App::App(HINSTANCE hInstance)
-: D3DApp(hInstance) 
+: D3DApp(hInstance) , mainPassImGui(m_mainPassCB)
 {
 }
 
@@ -31,6 +31,7 @@ bool App::Initialize()
     BuildPSO();
     InitImgui();
     CreateTextures();
+    //PrepareForShadows();
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
@@ -51,36 +52,11 @@ void App::BuildDescriptorHeaps()
     UINT numberOfTextures = 2;
     UINT numberOfPassDescriptors = 1;
     UINT numDescriptors = 20;// (objCount + numberOfPassDescriptors + numberOfTextures)* NumFrames;
-    m_passCbvOffset = objCount * NumFrames;
-    m_textureCbvOffset = m_passCbvOffset + numberOfPassDescriptors * NumFrames;
     m_cbvHeap.Init(numDescriptors, DescriptorHeapType::CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 }
 
 void App::BuildConstantBuffers()
 {
-    UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-
-    UINT objCount = (UINT)m_opaqueItems.size();
-
-    for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex)
-    {
-        auto objectCB = m_frameResources[frameIndex].m_objectCb.Resource();
-		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-        for (UINT i = 0; i < objCount; ++i)
-        {
-            m_frameResources[frameIndex].objectIndexes[i] = m_cbvHeap.CreateCBV(cbAddress, objCBByteSize);
-            cbAddress += objCBByteSize;
-        }
-    }
-
-    UINT passCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
-
-    for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex)
-    {
-        auto passCB = m_frameResources[frameIndex].m_passCb.Resource();
-        D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
-        m_frameResources[frameIndex].passIndex = m_cbvHeap.CreateCBV(cbAddress, passCBByteSize);
-    }
 }
 
 void App::BuildRootSignature()
@@ -88,23 +64,17 @@ void App::BuildRootSignature()
     const int numberOfRootArguments = 4;
 	CD3DX12_ROOT_PARAMETER slotRootParameter[numberOfRootArguments];
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
-	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+	CD3DX12_DESCRIPTOR_RANGE srvTable2;
+    srvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
-    cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE cbvTable3;
-    cbvTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-
-
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[3].InitAsDescriptorTable(1, &cbvTable3, D3D12_SHADER_VISIBILITY_PIXEL);
+	CD3DX12_DESCRIPTOR_RANGE srvTable3;
+    srvTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+    
+    slotRootParameter[0].InitAsConstantBufferView(0);
+    slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable2, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[3].InitAsDescriptorTable(1, &srvTable3, D3D12_SHADER_VISIBILITY_PIXEL);
 
     D3D12_STATIC_SAMPLER_DESC sampler = {};
     sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -148,6 +118,7 @@ void App::BuildShadersAndInputLayout()
     
     m_shaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\color.hlsl", nullptr, "VS", "vs_5_1");
     m_shaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\color.hlsl", nullptr, "PS", "ps_5_1");
+    m_shaders["shadowsPS"] = d3dUtil::CompileShader(L"Shaders\\shadows.hlsl", nullptr, "PS", "ps_5_1");
 
     mInputLayout =
     {
@@ -161,10 +132,24 @@ void App::BuildRenderItems()
 {
     DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
     UINT countOfMeshes = 1;
-    std::vector<Geometry::MeshData> mesh(countOfMeshes);
-    mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
-    mBoxGeo = Mesh(mesh, mCommandList, "box");
-    m_renderItems.push_back(RenderItem(mesh, mCommandList, "box"));
+    {
+		std::vector<Geometry::MeshData> mesh(countOfMeshes);
+		mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
+		mBoxGeo = Mesh(mesh, mCommandList, "box");
+		m_renderItems.push_back(RenderItem(mesh, mCommandList, "box"));
+    }
+
+    {
+		std::vector<Geometry::MeshData> mesh(countOfMeshes);
+        mesh[0] = Geometry::CreateQuad();
+        std::vector<TextureHandle> grassTexture(1);
+        grassTexture[0] =
+            TextureColection::CreateTexture("textures/grass.png", Device::GetDevice(), mCommandList, "grass");
+        std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >> val =
+        { { grassTexture, mesh } };
+        mBoxGeo = Mesh(val, mCommandList, "quad");
+		m_renderItems.push_back(RenderItem(mesh, mCommandList, "quad"));
+    }
 
     m_model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
     m_renderItems.push_back(RenderItem(m_model, "model"));
@@ -210,7 +195,7 @@ void App::BuildFrameResources()
 {
     for (int i = 0; i < NumFrames; ++i)
     {
-        m_frameResources.push_back(std::move(FrameResource(Device::GetDevice(), 1, m_renderItems.size())));
+        m_frameResources.push_back(std::move(FrameResource(Device::GetDevice(), 2, m_renderItems.size())));
     }
 }
 
@@ -228,6 +213,55 @@ void App::CreateTextures()
         m_textures.push_back(Texture("textures/container2.png",          Device::GetDevice(), mCommandList, "container_diffuse"));
         m_textures.push_back(Texture("textures/container2_specular.png", Device::GetDevice(), mCommandList , "container_specular"));
     }
+}
+
+void App::PrepareForShadows()
+{
+    m_depthHeap.Init(3, DescriptorHeapType::DSV);
+	D3D12_RESOURCE_DESC depthStencilDesc;
+	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Alignment = 0;
+	depthStencilDesc.Width = mClientWidth;
+	depthStencilDesc.Height = mClientHeight;
+	depthStencilDesc.DepthOrArraySize = 1;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+
+	depthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+	depthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    for (int i = 0; i < NumFrames; i++)
+    {
+		D3D12_CLEAR_VALUE optClear;
+		optClear.Format = mDepthStencilFormat;
+		optClear.DepthStencil.Depth = 1.0f;
+		optClear.DepthStencil.Stencil = 0;
+		ThrowIfFailed(Device::GetDevice()->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&depthStencilDesc,
+			D3D12_RESOURCE_STATE_COMMON,
+			&optClear,
+			IID_PPV_ARGS(shadowMaps[i].GetAddressOf())));
+
+		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+		dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		dsvDesc.Format = mDepthStencilFormat;
+		dsvDesc.Texture2D.MipSlice = 0;
+        depthHandle[i] = m_depthHeap.CreateDSV(shadowMaps[i].Get(), dsvDesc);
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+        srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvHandle[i] = m_cbvHeap.CreateSRV(srvDesc, shadowMaps[i].Get());
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(shadowMaps[i].Get(),
+			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+    }
+	
 }
 
 void App::OnResize()
@@ -262,17 +296,52 @@ void App::UpdateMainPassCB(const GameTimer& gt)
     XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
     XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
     XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+    XMMATRIX shadowView{};
+    {
+		XMMATRIX shadowview = Camera::LookAt(m_mainPassCB.lightPos, m_mainPassCB.lightDir);
+        shadowView = shadowview;
+        shadowView = XMMatrixMultiply(shadowview, proj);
+    }
 
-    XMStoreFloat4x4(&m_mainPassCB.View, XMMatrixTranspose(view));
-    XMStoreFloat4x4(&m_mainPassCB.InvView, XMMatrixTranspose(invView));
-    XMStoreFloat4x4(&m_mainPassCB.Proj, XMMatrixTranspose(proj));
-    XMStoreFloat4x4(&m_mainPassCB.InvProj, XMMatrixTranspose(invProj));
-    XMStoreFloat4x4(&m_mainPassCB.ViewProj, XMMatrixTranspose(viewProj));
+    XMStoreFloat4x4(&m_mainPassCB.View,        XMMatrixTranspose(view));
+    XMStoreFloat4x4(&m_mainPassCB.InvView,     XMMatrixTranspose(invView));
+    XMStoreFloat4x4(&m_mainPassCB.Proj,        XMMatrixTranspose(proj));
+    XMStoreFloat4x4(&m_mainPassCB.InvProj,     XMMatrixTranspose(invProj));
+    XMStoreFloat4x4(&m_mainPassCB.ViewProj,    XMMatrixTranspose(viewProj));
     XMStoreFloat4x4(&m_mainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-    XMStoreFloat4(&m_mainPassCB.EyePosW, m_camera.GetPosition());
+    XMStoreFloat4x4(&m_mainPassCB.shadowView,  XMMatrixTranspose(shadowView));
+    XMStoreFloat4  (&m_mainPassCB.EyePosW,     m_camera.GetPosition());
 
     m_currentFrameResource->m_passCb.CopyData(0, m_mainPassCB);
 
+}
+
+void App::UpdateShadowPassCB()
+{
+    XMMATRIX view = Camera::LookAt(m_mainPassCB.lightPos, m_mainPassCB.lightDir);
+    XMMATRIX proj = XMLoadFloat4x4(&mProj);
+
+    XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+    XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
+    XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
+    XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+    XMMATRIX shadowView{};
+    {
+		XMMATRIX shadowview = Camera::LookAt(m_mainPassCB.lightPos, m_mainPassCB.lightDir);
+        shadowView = shadowview;
+        shadowView = XMMatrixMultiply(shadowview, proj);
+    }
+
+    XMStoreFloat4x4(&m_shadowPassCB.View,        XMMatrixTranspose(view));
+    XMStoreFloat4x4(&m_shadowPassCB.InvView,     XMMatrixTranspose(invView));
+    XMStoreFloat4x4(&m_shadowPassCB.Proj,        XMMatrixTranspose(proj));
+    XMStoreFloat4x4(&m_shadowPassCB.InvProj,     XMMatrixTranspose(invProj));
+    XMStoreFloat4x4(&m_shadowPassCB.ViewProj,    XMMatrixTranspose(viewProj));
+    XMStoreFloat4x4(&m_shadowPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+    XMStoreFloat4x4(&m_shadowPassCB.shadowView,  XMMatrixTranspose(shadowView));
+    m_shadowPassCB.EyePosW  = m_mainPassCB.lightPos;
+
+    m_currentFrameResource->m_passCb.CopyData(1, m_shadowPassCB);
 }
 
 void App::Update(const GameTimer& gt)
@@ -293,6 +362,7 @@ void App::Update(const GameTimer& gt)
 	// Update the constant buffer with the latest worldViewProj matrix.
     UpdateObjectCB(gt);
     UpdateMainPassCB(gt);
+    //UpdateShadowPassCB();
 }
 
 void App::DrawImgui()
@@ -302,6 +372,7 @@ void App::DrawImgui()
         renderItem.OnImGuiRender();
     }
     m_camera.OnImGui();
+    mainPassImGui.OnImGui();
 }
 
 void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
@@ -314,8 +385,10 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
     {
         auto ri = ritems[i];
         auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndexes[i]);
-        cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
-        ri->Draw(cmdList);
+        auto cbvHandle1 = m_frameResources[m_frameIndex].m_objectCb.Resource()->GetGPUVirtualAddress() +
+            i * m_frameResources[m_frameIndex].m_objectCb.mElementByteSize;
+        cmdList->SetGraphicsRootConstantBufferView(0, cbvHandle1);
+        ri->Draw(cmdList, load_texture);
     }
 }
 
@@ -338,43 +411,106 @@ void App::Draw(const GameTimer& gt)
     }
     else
     {
-        ThrowIfFailed(mCommandList->Reset(currentCmdAlloc.Get(), mPSO["opaque"].Get()));
+        ThrowIfFailed(mCommandList->Reset(currentCmdAlloc.Get(), mPSO["shadows"].Get()));
     }
 
-	ImGuiSettings::StartFrame();
-    DrawImgui();
-	ImGuiSettings::EndFrame();
-
-    mCommandList->RSSetViewports(1, &mScreenViewport);
-    mCommandList->RSSetScissorRects(1, &mScissorRect);
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-    mCommandList->ClearRenderTargetView(CurrentBackBufferView(), clear_color, 0, nullptr);
-    mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+    // shadow pass
+    load_texture = false;
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvHeap.GetHeap()};
-	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+    //*
+    //*/
+ //   
+    if (true)
+    {
+        // main pass 
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+		mCommandList->SetPipelineState(mPSO["opaque"].Get());
+		load_texture = true;
 
-    auto passCbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].passIndex);
-    mCommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
+		mCommandList->RSSetViewports(1, &mScreenViewport);
+		mCommandList->RSSetScissorRects(1, &mScissorRect);
+		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), clear_color, 0, nullptr);
+		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-    auto textureHandle1 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2].index);
-    mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle1);
+		auto passCbvAddress = m_frameResources[m_frameIndex].m_passCb.Resource()->GetGPUVirtualAddress();
+		mCommandList->SetGraphicsRootConstantBufferView(1, passCbvAddress);
 
-    auto textureHandle2 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2+1].index);
-    mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
+		auto textureHandle1 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2].index);
+		mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle1);
 
-    DrawRenderItems(mCommandList.Get(), m_opaqueItems);
-    //m_model.DrawModel(mCommandList.Get());
-    
-    auto lv = ImGuiSettings::GetDescriptorHeap();
-    mCommandList->SetDescriptorHeaps(1, &lv);
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+		auto textureHandle2 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2+1].index);
+		mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
 
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+		UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
+		ID3D12Resource* objectCB = m_currentFrameResource->m_objectCb.Resource();
+
+		DrawRenderItems(mCommandList.Get(), m_opaqueItems);
+		
+		ImGuiSettings::StartFrame();
+		DrawImgui();
+		ImGuiSettings::EndFrame();
+
+		auto lv = ImGuiSettings::GetDescriptorHeap();
+		mCommandList->SetDescriptorHeaps(1, &lv);
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+
+
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+
+    }
+    if (false)
+    {
+        // main pass 
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(shadowMaps[m_frameIndex].Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+		mCommandList->SetPipelineState(mPSO["opaque"].Get());
+		load_texture = true;
+
+		mCommandList->RSSetViewports(1, &mScreenViewport);
+		mCommandList->RSSetScissorRects(1, &mScissorRect);
+		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), clear_color, 0, nullptr);
+		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+
+		auto passCbvAddress = m_frameResources[m_frameIndex].m_passCb.Resource()->GetGPUVirtualAddress();
+		mCommandList->SetGraphicsRootConstantBufferView(1, passCbvAddress);
+
+		auto textureHandle1 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2].index);
+		mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle1);
+
+		auto textureHandle2 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2+1].index);
+		mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
+
+		auto textureHandle3 = m_cbvHeap.GetGPUHandle(srvHandle[m_frameIndex]);
+		mCommandList->SetGraphicsRootDescriptorTable(4, textureHandle3);
+
+		DrawRenderItems(mCommandList.Get(), m_opaqueItems);
+		
+		ImGuiSettings::StartFrame();
+		DrawImgui();
+		ImGuiSettings::EndFrame();
+
+		auto lv = ImGuiSettings::GetDescriptorHeap();
+		mCommandList->SetDescriptorHeaps(1, &lv);
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+
+
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+    }
 	ThrowIfFailed(mCommandList->Close());
  
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
@@ -402,6 +538,7 @@ void App::OnMouseMove()
     ShowCursor(!m_camera.IsCameraOn());
     POINT p{};
     GetCursorPos(&p);
+    ScreenToClient(mhMainWnd, &p);
 	m_camera.OnMouseMove(p.x, p.y);
 }
 
