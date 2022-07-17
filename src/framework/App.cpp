@@ -132,29 +132,60 @@ void App::BuildRenderItems()
 {
     DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
     UINT countOfMeshes = 1;
+    if(0)
     {
 		std::vector<Geometry::MeshData> mesh(countOfMeshes);
 		mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
-		mBoxGeo = Mesh(mesh, mCommandList, "box");
-		m_renderItems.push_back(RenderItem(mesh, mCommandList, "box"));
+        RenderItem box(mesh, mCommandList, "box");
+		m_renderItems.push_back(box);
+        box.m_state = RenderItem::RenderItemState::REFLECTED;
+		box.m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
+		box.m_objCbIndex = RenderItem::g_objectCBIndex++;
+		m_renderItems.push_back(box);
     }
 
+    if(0)
     {
 		std::vector<Geometry::MeshData> mesh(countOfMeshes);
         mesh[0] = Geometry::CreateQuad();
-        std::vector<TextureHandle> grassTexture(1);
+        std::vector<TextureHandle> grassTexture(2);
         grassTexture[0] =
             TextureColection::CreateTexture("textures/grass.png", Device::GetDevice(), mCommandList, "grass");
+        grassTexture[1] = grassTexture[0];
         std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >> val =
         { { grassTexture, mesh } };
-        mBoxGeo = Mesh(val, mCommandList, "quad");
-		m_renderItems.push_back(RenderItem(mesh, mCommandList, "quad"));
+        Mesh quad = Mesh(val, mCommandList, "quad");
+		m_renderItems.push_back(RenderItem(quad, "quad", RenderItem::RenderItemState::TRANSPARENT_STATE));
     }
 
     m_model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
-    m_renderItems.push_back(RenderItem(m_model, "model"));
+    RenderItem model(m_model, "model");
+    m_renderItems.push_back(model);
+    model.m_state = RenderItem::RenderItemState::REFLECTED;
+    model.m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
+	model.m_objCbIndex = RenderItem::g_objectCBIndex++;
+    m_renderItems.push_back(model);
+
+    m_renderItems.reserve(4); 
     for (auto& e : m_renderItems)
-        m_opaqueItems.push_back(&e);
+        if (e.m_state == RenderItem::RenderItemState::OPAQUE_STATE)
+            m_opaqueItems.push_back(&e);
+        else if (e.m_state == RenderItem::RenderItemState::REFLECTED)
+			m_reflectedItems.push_back(&e);
+        else
+            m_transparentItems.push_back(&e);
+
+
+   {
+		std::vector<Geometry::MeshData> mesh(countOfMeshes);
+        mesh[0] = Geometry::CreateMirror();
+        RenderItem mirror(mesh, mCommandList, "mirrror");
+		m_renderItems.push_back(mirror);
+        m_mirror.push_back(&m_renderItems.back());
+    }
+
+
+  
 }
 
 void App::BuildPSO()
@@ -186,9 +217,74 @@ void App::BuildPSO()
     opaquePsoDesc.DSVFormat = mDepthStencilFormat;
     ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSO["opaque"])));
 
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
-    opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSO["opaque_wireframe"])));
+    D3D12_DEPTH_STENCIL_DESC mirrorDepthStencilDesc;
+    mirrorDepthStencilDesc.DepthEnable = true;
+    mirrorDepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    mirrorDepthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+    mirrorDepthStencilDesc.StencilEnable = true;
+    mirrorDepthStencilDesc.StencilReadMask = 0xff;
+    mirrorDepthStencilDesc.StencilWriteMask = 0xff;
+
+    mirrorDepthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+    mirrorDepthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+    mirrorDepthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+    mirrorDepthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+    mirrorDepthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+    mirrorDepthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+    mirrorDepthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+    mirrorDepthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC stencilMirrorPsoDesc = opaquePsoDesc;
+    stencilMirrorPsoDesc.DepthStencilState = mirrorDepthStencilDesc;
+    stencilMirrorPsoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
+    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&stencilMirrorPsoDesc,
+        IID_PPV_ARGS(&mPSO["stencilMirror"])));
+
+    D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
+    reflectionsDSS.DepthEnable = true;
+    reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    reflectionsDSS.StencilEnable = true;
+    reflectionsDSS.StencilReadMask = 0xff;
+    reflectionsDSS.StencilWriteMask = 0xff;
+
+    reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+    reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+    reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+    reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+    // We are not rendering backfacing polygons, so these settings do not matter.
+    reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+    reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+    reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+    reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC drawReflectionsPsoDesc = opaquePsoDesc;
+    drawReflectionsPsoDesc.DepthStencilState = reflectionsDSS;
+    //drawReflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+    //drawReflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
+    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&drawReflectionsPsoDesc,
+        IID_PPV_ARGS(&mPSO["drawStencilReflections"])));
+
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = opaquePsoDesc;
+
+    D3D12_RENDER_TARGET_BLEND_DESC blendStateDesc{0};
+	blendStateDesc.BlendEnable = true;
+	blendStateDesc.LogicOpEnable = false;
+	blendStateDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	blendStateDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendStateDesc.BlendOp = D3D12_BLEND_OP_ADD;
+    blendStateDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+    blendStateDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendStateDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+    blendStateDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+    blendStateDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+    transparentPsoDesc.BlendState.RenderTarget[0] = blendStateDesc;
+    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&transparentPsoDesc,
+        IID_PPV_ARGS(&mPSO["transparent"])));
 }
 
 void App::BuildFrameResources()
@@ -362,7 +458,6 @@ void App::Update(const GameTimer& gt)
 	// Update the constant buffer with the latest worldViewProj matrix.
     UpdateObjectCB(gt);
     UpdateMainPassCB(gt);
-    //UpdateShadowPassCB();
 }
 
 void App::DrawImgui()
@@ -386,7 +481,7 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
         auto ri = ritems[i];
         auto cbvHandle = m_cbvHeap.GetGPUHandle(m_frameResources[m_frameIndex].objectIndexes[i]);
         auto cbvHandle1 = m_frameResources[m_frameIndex].m_objectCb.Resource()->GetGPUVirtualAddress() +
-            i * m_frameResources[m_frameIndex].m_objectCb.mElementByteSize;
+            ri->m_objCbIndex * m_frameResources[m_frameIndex].m_objectCb.mElementByteSize;
         cmdList->SetGraphicsRootConstantBufferView(0, cbvHandle1);
         ri->Draw(cmdList, load_texture);
     }
@@ -414,12 +509,7 @@ void App::Draw(const GameTimer& gt)
         ThrowIfFailed(mCommandList->Reset(currentCmdAlloc.Get(), mPSO["shadows"].Get()));
     }
 
-    // shadow pass
-    load_texture = false;
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvHeap.GetHeap()};
-    //*
-    //*/
- //   
     if (true)
     {
         // main pass 
@@ -447,57 +537,23 @@ void App::Draw(const GameTimer& gt)
 
 		UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
-		ID3D12Resource* objectCB = m_currentFrameResource->m_objectCb.Resource();
+        mCommandList->OMSetStencilRef(0);
 
 		DrawRenderItems(mCommandList.Get(), m_opaqueItems);
-		
-		ImGuiSettings::StartFrame();
-		DrawImgui();
-		ImGuiSettings::EndFrame();
 
-		auto lv = ImGuiSettings::GetDescriptorHeap();
-		mCommandList->SetDescriptorHeaps(1, &lv);
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), mCommandList.Get());
+        mCommandList->SetPipelineState(mPSO["stencilMirror"].Get());
+        mCommandList->OMSetStencilRef(1);
+		DrawRenderItems(mCommandList.Get(), m_mirror);
 
+        mCommandList->SetPipelineState(mPSO["drawStencilReflections"].Get());
+        DrawRenderItems(mCommandList.Get(), m_reflectedItems);
 
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+        // transparent items
 
-
-    }
-    if (false)
-    {
-        // main pass 
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(shadowMaps[m_frameIndex].Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE,
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-
-		mCommandList->SetPipelineState(mPSO["opaque"].Get());
+		mCommandList->SetPipelineState(mPSO["transparent"].Get());
 		load_texture = true;
-
-		mCommandList->RSSetViewports(1, &mScreenViewport);
-		mCommandList->RSSetScissorRects(1, &mScissorRect);
-		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), clear_color, 0, nullptr);
-		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
-		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-
-		auto passCbvAddress = m_frameResources[m_frameIndex].m_passCb.Resource()->GetGPUVirtualAddress();
-		mCommandList->SetGraphicsRootConstantBufferView(1, passCbvAddress);
-
-		auto textureHandle1 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2].index);
-		mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle1);
-
-		auto textureHandle2 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2+1].index);
-		mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
-
-		auto textureHandle3 = m_cbvHeap.GetGPUHandle(srvHandle[m_frameIndex]);
-		mCommandList->SetGraphicsRootDescriptorTable(4, textureHandle3);
-
-		DrawRenderItems(mCommandList.Get(), m_opaqueItems);
-		
+		DrawRenderItems(mCommandList.Get(), m_transparentItems);
+        //imgui shit 		
 		ImGuiSettings::StartFrame();
 		DrawImgui();
 		ImGuiSettings::EndFrame();
@@ -510,8 +566,9 @@ void App::Draw(const GameTimer& gt)
 		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
+
     }
-	ThrowIfFailed(mCommandList->Close());
+  	ThrowIfFailed(mCommandList->Close());
  
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);

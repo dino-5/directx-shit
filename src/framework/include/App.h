@@ -72,6 +72,8 @@ private:
     std::vector<RenderItem> m_renderItems;
     std::vector<RenderItem*> m_opaqueItems;
     std::vector<RenderItem*> m_transparentItems;
+    std::vector<RenderItem*> m_reflectedItems;
+    std::vector<RenderItem*> m_mirror;
 
     std::vector<FrameResource> m_frameResources;
     FrameResource* m_currentFrameResource = nullptr;
@@ -102,6 +104,7 @@ private:
     PassConstants m_mainPassCB;
     imguiConstants mainPassImGui;
     PassConstants m_shadowPassCB;
+    PassConstants m_reflectedPassCB;
 
     float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 

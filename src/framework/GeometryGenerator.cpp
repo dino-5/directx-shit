@@ -150,6 +150,23 @@ Geometry::MeshData Geometry::CreateBox(float width, float height, float depth, u
     return mesh;
 }
 
+Geometry::MeshData Geometry::CreateMirror()
+{
+    Geometry::MeshData result;
+    result.Vertices = {
+        {-.5f, -1.0f, .0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, // 0
+        {+.5f, +1.0f, .0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f}, // 1
+        {+.5f, -1.0f, .0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f}, // 2 
+        {-.5f, +1.0f, .0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}, // 3
+    };
+    result.Indices32 = {
+        0, 1, 2,
+        0, 3, 1
+    };
+    return result;
+
+}
+
 Geometry::MeshData Geometry::CreateQuad()
 {
     Geometry::MeshData result;

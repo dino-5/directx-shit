@@ -68,6 +68,7 @@ public:
 	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount);
 	MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
 	static MeshData CreateQuad();
+	static MeshData CreateMirror();
 
 private:
 	void Subdivide(MeshData& meshData);

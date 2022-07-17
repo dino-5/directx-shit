@@ -15,8 +15,8 @@ public:
     DirectX::XMFLOAT4X4 shadowView = MathHelper::Identity4x4();
 
     DirectX::XMFLOAT4 EyePosW    = { 0.0f, 0.0f, 0.0f, 1.0f};
-    DirectX::XMFLOAT4 lightPos   = { 5.0f, 3.0f, 2.0f, 1.0f };
-    DirectX::XMFLOAT4 lightDir   = {-5.0f,-3.0f,-2.0f,-1.0f };
+    DirectX::XMFLOAT4 lightPos   = { 0.0f, 3.0f,-2.0f, 1.0f };
+    DirectX::XMFLOAT4 lightDir   = { 0.0f,-3.0f, 2.0f,-1.0f };
     DirectX::XMFLOAT4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
 

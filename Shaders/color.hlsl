@@ -64,6 +64,7 @@ SamplerState g_sampler : register(s0);
 
 float4 PS(VertexOut input) : SV_Target
 {
+    
     float4 white = float4(1.0f, 1.0f, 1.0f, 1.0f);
     float4 red   = float4(1.0f, .0f, .0f, 1.0f);
 
@@ -85,11 +86,13 @@ float4 PS(VertexOut input) : SV_Target
 
     float4 result = diffuse+ ambient + specular;
     //result = float4(1.0f, 0.0f, 0.0f, 1.0f) * shadow + ambient + specular * shadow;
+    //if(result.a < 0.1)
+    //    discard;
 
+    return pixelColor;
     return result;
     return diffuse;
     return normal;
-    return pixelColor;
     return specularPixelColor;
 }
 

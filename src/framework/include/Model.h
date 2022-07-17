@@ -22,7 +22,7 @@ class Model
             Init(path, cmList);
         }
         Model() = default;
-        void Init(char* path, ComPtr<ID3D12GraphicsCommandList> cmList)
+        void Init(const char* path, ComPtr<ID3D12GraphicsCommandList> cmList)
         {
             LoadModel(path, cmList);
             std::cout<<"bye"<<std::endl;

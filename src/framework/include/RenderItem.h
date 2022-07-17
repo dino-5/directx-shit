@@ -8,6 +8,12 @@
 
 struct ObjectConstants
 {
+public:
+	enum class ObjectConstantsState
+	{
+		NONE,
+		REFLECTED
+	};
 	static inline const int framesToUpdate = 3;
 	struct ObjectProperties
 	{
@@ -35,14 +41,14 @@ struct ObjectConstants
 	void Update();
 	void OnImGuiRender();
 
+public:
 	float Translation[3] = { 0,0,0 };
 	float Scale = 1;
-	//float Scale[3] = { 1,1,1 };
 	float Rotate[3] = { 0,0,0 };
 	int m_framesToUpdate = framesToUpdate;
 
 	ObjectProperties properties;
-
+	ObjectConstantsState m_state = ObjectConstantsState::NONE;
  };
 
 class Model;
@@ -50,16 +56,30 @@ class Model;
 class RenderItem
 {
 public:
+	enum class RenderItemState
+	{
+		OPAQUE_STATE,
+		TRANSPARENT_STATE,
+		REFLECTED
+	};
 	static inline uint16_t g_objectCBIndex = 0;
 	RenderItem() = default;
-	RenderItem(Mesh& mesh, std::string name, ObjectConstants obj) :
+	RenderItem(Mesh& mesh, std::string name, ObjectConstants obj, RenderItemState state = RenderItemState::OPAQUE_STATE) :
 		Geo(mesh),
 		m_transformation(obj), 
 		m_name(name),
-		m_objCbIndex(g_objectCBIndex++)
-	{ }
-	RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
-	RenderItem(Model model, std::string name="");
+		m_objCbIndex(g_objectCBIndex++),
+		m_state(state)
+	{
+		if (m_state == RenderItemState::REFLECTED)
+		{
+			m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
+		}
+	}
+	RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name,
+	RenderItemState state = RenderItemState::OPAQUE_STATE);
+	RenderItem(Model model, std::string name="", RenderItemState state = RenderItemState::OPAQUE_STATE);
+	RenderItem(Mesh& model, std::string name="", RenderItemState state = RenderItemState::OPAQUE_STATE);
 
 	void DrawIndexedInstanced(ID3D12GraphicsCommandList* cmList, bool fl)
 	{
@@ -100,5 +120,6 @@ public:
 	D3D12_PRIMITIVE_TOPOLOGY m_primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	std::string m_name;
+	RenderItemState m_state;
 };
 
