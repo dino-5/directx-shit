@@ -2,9 +2,9 @@
 #include "include/Mesh.h"
 #include "include/Texture.h"
 #include "dx12/Device.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include <external/assimp/Importer.hpp>
+#include <external/assimp/scene.h>
+#include <external/assimp/postprocess.h>
 #include <sstream>
 #include "dx12/DescriptorHeap.h"
 
@@ -26,7 +26,7 @@ void Model::LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate);
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
-        std::wstringstream stream;
+        std::stringstream stream;
         stream<<"ERROR::ASSIMP::"<<importer.GetErrorString()<<std::endl;
         OutputDebugString(stream.str().c_str());
         return;
