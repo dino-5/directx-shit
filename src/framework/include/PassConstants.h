@@ -36,28 +36,28 @@ public:
     void OnImGui()
     {
 
-		ImGui::Begin("light");
+		ImGuiSettings::Begin("light");
 		{
 			float min_translation = -10;
 			float max_translation = 10;
 
 			float min_scale = -10;
 			float max_scale = 10;
-			if (ImGui::SliderFloat3("pos", lightPos, min_translation, max_translation))
+			if (ImGuiSettings::SliderFloat3("pos", lightPos, min_translation, max_translation))
 			{
                 m_obj.lightPos.x = lightPos[0];
                 m_obj.lightPos.y = lightPos[1];
                 m_obj.lightPos.z = lightPos[2];
 			}
 			
-			if (ImGui::SliderFloat3("dir", lightDir, min_scale, max_scale))
+			if (ImGuiSettings::SliderFloat3("dir", lightDir, min_scale, max_scale))
 			{
                 m_obj.lightDir.x = lightDir[0];
                 m_obj.lightDir.y = lightDir[1];
                 m_obj.lightDir.z = lightDir[2];
 			}
 		}
-		ImGui::End();
+		ImGuiSettings::End();
     }
 
     PassConstants& m_obj;

@@ -1,6 +1,9 @@
 #include "include/ImGuiSettings.h"
-#include "imgui/backends/imgui_impl_win32.h"
-#include "imgui/backends/imgui_impl_dx12.h"
+#include "external/imgui/imgui.h"
+#include "external/imgui/imgui_impl_dx12.h"
+#include "external/imgui/imgui_impl_win32.h"
+#include "external/imgui/imgui_impl_win32.h"
+#include "external/imgui/imgui_impl_dx12.h"
 
 void ImGuiSettings::Init(HWND hwnd, ID3D12Device* device, int numFrames)
 {
@@ -55,5 +58,26 @@ void ImGuiSettings::StartFrame()
 void ImGuiSettings::EndFrame()
 {
 	ImGui::Render();
+}
+
+
+void ImGuiSettings::Begin(std::string name)
+{
+    ImGui::Begin(name.c_str());
+}
+
+void ImGuiSettings::End()
+{
+    ImGui::End();
+}
+
+bool ImGuiSettings::SliderFloat3(std::string name, float* ptr, float min, float max)
+{
+    return ImGui::SliderFloat3(name.c_str(), ptr, min, max);
+}
+
+bool ImGuiSettings::SliderFloat(std::string name, float* ptr, float min, float max)
+{
+    return ImGui::SliderFloat(name.c_str(), ptr, min, max);
 }
 

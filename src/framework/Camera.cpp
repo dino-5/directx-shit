@@ -224,11 +224,11 @@ XMMATRIX Camera::GetView()
 
 void Camera::OnImGui()
 {
-	ImGui::Begin("Camera Position");
+	ImGuiSettings::Begin("Camera Position");
 	{
-		ImGui::SliderFloat3("pos", &mPosition.x, -50, 50);
+		ImGuiSettings::SliderFloat3("pos", &mPosition.x, -50, 50);
 	}
-	ImGui::End();
+	ImGuiSettings::End();
 }
 
 XMMATRIX Camera::GetProj()const
@@ -351,5 +351,3 @@ void Camera::OnMouseMove(int xpos, int ypos, bool update)
 	if (m_pitch < -89.0f)
 		m_pitch = -89.0f;
 }
-
-

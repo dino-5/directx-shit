@@ -80,5 +80,3 @@ ID3D12DescriptorHeap* DescriptorHeap::GetHeap()
 {
     return m_heap.Get();
 }
-
-

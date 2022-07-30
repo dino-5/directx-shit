@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <string>
-#include <assimp/material.h>
+#include "external/assimp/material.h"
 #include "Mesh.h"
 #include "Texture.h"
 #include <iostream>

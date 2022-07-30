@@ -1,0 +1,7 @@
+﻿  App.cpp
+D:\dev\projects\learning\directx-shit\src\Demo\App.cpp(48,42): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+D:\dev\projects\learning\directx-shit\src\Demo\App.cpp(48,28): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+D:\dev\projects\learning\directx-shit\src\Demo\App.cpp(53,41): warning C4267: 'initializing': conversion from 'size_t' to 'UINT', possible loss of data
+D:\dev\projects\learning\directx-shit\src\Demo\App.cpp(287,105): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+D:\dev\projects\learning\directx-shit\src\Demo\App.cpp(584,39): warning C4244: '=': conversion from 'UINT64' to 'UINT', possible loss of data
+  Demo.vcxproj -> D:\dev\projects\learning\directx-shit\Demo.exe

@@ -151,12 +151,14 @@ D3D12_INDEX_BUFFER_VIEW Mesh::IndexBufferView()const
 
 void Mesh::SetVertexBuffer(ID3D12GraphicsCommandList* cmList)
 {
-	cmList->IASetVertexBuffers(0, 1, &VertexBufferView());
+	auto view = VertexBufferView();
+	cmList->IASetVertexBuffers(0, 1, &view);
 }
 
 void Mesh::SetIndexBuffer(ID3D12GraphicsCommandList* cmList)
 {
-	cmList->IASetIndexBuffer(&IndexBufferView());
+	auto view = IndexBufferView();
+	cmList->IASetIndexBuffer(&view);
 }
 
 // We can free this memory after we finish upload to the GPU.

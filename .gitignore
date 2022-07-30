@@ -8,3 +8,9 @@
 *.pdb
 *.lib
 *.exe
+*.dll
+*.exe
+*.exe
+*.exp
+*.lib
+*.suo

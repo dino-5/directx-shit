@@ -1,0 +1,19 @@
+﻿  Camera.cpp
+  d3dUtil.cpp
+  DescriptorHeap.cpp
+  Device.cpp
+  PipelineStates.cpp
+  PSO.cpp
+  RootSignature.cpp
+  FrameResource.cpp
+  GameTimer.cpp
+  GeometryGenerator.cpp
+  ImGuiSettings.cpp
+  MathHelper.cpp
+  Mesh.cpp
+  Model.cpp
+  PassConstants.cpp
+  RenderItem.cpp
+  Texture.cpp
+  Generating Code...
+  Framework.vcxproj -> D:\dev\projects\learning\directx-shit\x64\Debug\Framework.lib

@@ -42,12 +42,12 @@ void ObjectConstants::OnImGuiRender()
 
 	float min_scale = 1;
 	float max_scale = 5;
-	if (ImGui::SliderFloat3("pos", Translation, min_translation, max_translation))
+	if (ImGuiSettings::SliderFloat3("pos", Translation, min_translation, max_translation))
 	{
 		Update();
 	}
 	
-	if (ImGui::SliderFloat("scale", &Scale, min_scale, max_scale))
+	if (ImGuiSettings::SliderFloat("scale", &Scale, min_scale, max_scale))
 	{
 		Update();
 	}
@@ -100,10 +100,10 @@ void RenderItem::Update()
 
 void RenderItem::OnImGuiRender()
 {
-	ImGui::Begin(m_name.c_str());
+	ImGuiSettings::Begin(m_name.c_str());
 	{
 		m_transformation.OnImGuiRender();
 	}
-	ImGui::End();
+	ImGuiSettings::End();
 }
 
