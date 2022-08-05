@@ -1,5 +1,8 @@
 /x64
 /.vs
+/src/Demo/x64
+/src/external/x64
+/src/Framework/x64
 ..gitignore.un~
 .gitignore.swp
 .gitignore~
@@ -14,3 +17,6 @@
 *.exp
 *.lib
 *.suo
+*.tlog
+*.obj
+*.idb
