@@ -6,16 +6,17 @@
 #include <variant>
 #include "../include/common.h"
 
+enum class DescriptorRangeType
+{
+	SRV = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+	UAV = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+	CBV = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+	SAMPLER = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+};
+
 class DescriptorRange
 {
 public:
-	enum class DescriptorRangeType
-	{
-		SRV = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		UAV = D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-		CBV = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
-		SAMPLER = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-	};
 	DescriptorRange() = default;
 	DescriptorRange(DescriptorRangeType type, uint numberOfDescriptors, uint baseShaderRegister, 
 		uint registerSpace=0, uint offset= D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
@@ -26,25 +27,26 @@ public:
 	D3D12_DESCRIPTOR_RANGE m_range;
 };
 
+enum class RootArgumentType
+{
+	TABLE    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+	CONSTANT = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+	CBV      = D3D12_ROOT_PARAMETER_TYPE_CBV	,
+	SRV      = D3D12_ROOT_PARAMETER_TYPE_SRV	,
+	UAV      = D3D12_ROOT_PARAMETER_TYPE_UAV	,
+};
+
+enum class ShaderVisibility
+{
+	ALL      = D3D12_SHADER_VISIBILITY_ALL	,
+	VERTEX   = D3D12_SHADER_VISIBILITY_VERTEX,
+	GEOMETRY = D3D12_SHADER_VISIBILITY_GEOMETRY,
+	PIXEL    = D3D12_SHADER_VISIBILITY_PIXEL,
+};
+
 class RootArgument
 {
 public:
-	enum class RootArgumentType
-	{
-        TABLE    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-        CONSTANT = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
-        CBV      = D3D12_ROOT_PARAMETER_TYPE_CBV	,
-        SRV      = D3D12_ROOT_PARAMETER_TYPE_SRV	,
-        UAV      = D3D12_ROOT_PARAMETER_TYPE_UAV	,
-	};
-
-	enum class ShaderVisibility
-	{
-        ALL      = D3D12_SHADER_VISIBILITY_ALL	,
-        VERTEX   = D3D12_SHADER_VISIBILITY_VERTEX,
-        GEOMETRY = D3D12_SHADER_VISIBILITY_GEOMETRY,
-        PIXEL    = D3D12_SHADER_VISIBILITY_PIXEL,
-	};
 	RootArgument() =default;
     static RootArgument CreateTable(uint numberOfDescriptorRanges, DescriptorRange& range,
 		ShaderVisibility vis = ShaderVisibility::PIXEL);

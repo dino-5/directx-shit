@@ -3,6 +3,10 @@
 #include "framework/dx12/PSO.h"
 #include "external/imgui/imgui.h"
 #include "external/imgui/imgui_impl_dx12.h"
+#include "Framework/dx12/RootSignature.h"
+#include "Framework/dx12/PipelineStates.h"
+#include "Framework/dx12/PSO.h"
+
 
 using namespace DirectX;
 
@@ -33,7 +37,6 @@ bool App::Initialize()
     BuildPSO();
     InitImgui();
     CreateTextures();
-    //PrepareForShadows();
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
@@ -60,71 +63,22 @@ void App::BuildDescriptorHeaps()
 void App::BuildRootSignature()
 {
     const int numberOfRootArguments = 4;
-	CD3DX12_ROOT_PARAMETER slotRootParameter[numberOfRootArguments];
+    RootArguments rootArguments(numberOfRootArguments);
+    rootArguments[0] = RootArgument::CreateCBV(0);
+    rootArguments[1] = RootArgument::CreateCBV(1);
+    auto srvRange1 = DescriptorRange(DescriptorRangeType::SRV, 1, 0);
+    rootArguments[2] = RootArgument::CreateTable(1, srvRange1,
+        ShaderVisibility::PIXEL);
 
-
-	CD3DX12_DESCRIPTOR_RANGE srvTable2;
-    srvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-	CD3DX12_DESCRIPTOR_RANGE srvTable3;
-    srvTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
-    
-    slotRootParameter[0].InitAsConstantBufferView(0);
-    slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsDescriptorTable(1, &srvTable2, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[3].InitAsDescriptorTable(1, &srvTable3, D3D12_SHADER_VISIBILITY_PIXEL);
-
-    D3D12_STATIC_SAMPLER_DESC sampler = {};
-    sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-    sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-    sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-    sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-    sampler.MipLODBias = 0;
-    sampler.MaxAnisotropy = 0;
-    sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-    sampler.MinLOD = 0.0f;
-    sampler.MaxLOD = D3D12_FLOAT32_MAX;
-    sampler.ShaderRegister = 0;
-    sampler.RegisterSpace = 0;
-    sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(numberOfRootArguments, slotRootParameter, 1, &sampler, 
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if(errorBlob != nullptr)
-	{
-		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-	}
-	ThrowIfFailed(hr);
-
-	ThrowIfFailed(Device::GetDevice()->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&mRootSignature)));
+    auto srvRange2 = DescriptorRange(DescriptorRangeType::SRV, 1, 1);
+    rootArguments[3] = RootArgument::CreateTable(1, srvRange2,
+        ShaderVisibility::PIXEL);
+    m_rootSignatures["default"] = RootSignature(rootArguments);
 }
 
 void App::BuildShadersAndInputLayout()
 {
-    HRESULT hr = S_OK;
     
-    std::wstring homeDir = L"D:/dev/projects/learning/directx-shit/";
-    m_shaders["standardVS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", nullptr, "VS", "vs_5_1");
-    m_shaders["opaquePS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", nullptr, "PS", "ps_5_1");
-    m_shaders["shadowsPS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/shadows.hlsl", nullptr, "PS", "ps_5_1");
-
-    mInputLayout =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "TEXTURE",  0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-    };
 }
 
 void App::BuildRenderItems()
@@ -183,101 +137,44 @@ void App::BuildRenderItems()
 
 void App::BuildPSO()
 {
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
+    std::wstring homeDir = L"D:/dev/projects/learning/directx-shit/";
+    m_shaders["standardVS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", nullptr, "VS", "vs_5_1");
+    m_shaders["opaquePS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", nullptr, "PS", "ps_5_1");
+    m_shaders["shadowsPS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/shadows.hlsl", nullptr, "PS", "ps_5_1");
+    Shader::CreateShader({"colorVertex", "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "VS", ShaderType::VERTEX});
+    Shader::CreateShader({"colorPixel", "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "PS", ShaderType::PIXEL});
 
-    ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-    opaquePsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-    opaquePsoDesc.pRootSignature = mRootSignature.Get();
-    opaquePsoDesc.VS =
+    std::vector<InputLayoutElement> inputLayout =
     {
-        reinterpret_cast<BYTE*>(m_shaders["standardVS"]->GetBufferPointer()),
-        m_shaders["standardVS"]->GetBufferSize()
+        InputLayoutElement("POSITION", Format::float3),
+        InputLayoutElement("NORMAL",   Format::float3),
+        InputLayoutElement("TEXTURE",  Format::float2),
     };
-    opaquePsoDesc.PS =
+    InputLayout layout(inputLayout);
+    
+    m_pso["default"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"], BlendState(), DepthStencilState(),
+        RasterizerState());
+
     {
-        reinterpret_cast<BYTE*>(m_shaders["opaquePS"]->GetBufferPointer()),
-        m_shaders["opaquePS"]->GetBufferSize()
-    };
-    opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-    opaquePsoDesc.SampleMask = UINT_MAX;
-    opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    opaquePsoDesc.NumRenderTargets = 1;
-    opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
-    opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-    opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-    opaquePsoDesc.DSVFormat = mDepthStencilFormat;
-    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSO["opaque"])));
+		StencilOpDesc op(StencilOP::KEEP, StencilOP::KEEP, StencilOP::REPLACE, ComparisonFunc::ALWAYS);
+		DepthStencilState dsState(DepthState(true, DepthWriteMask::ALL, ComparisonFunc::LESS), StencilState(true, 0xff, 0xff, op, op));
+		m_pso["stencilMirror"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"],
+			BlendState(WriteEnable::NONE), dsState, RasterizerState());
+    }
 
-    D3D12_DEPTH_STENCIL_DESC mirrorDepthStencilDesc;
-    mirrorDepthStencilDesc.DepthEnable = true;
-    mirrorDepthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-    mirrorDepthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-    mirrorDepthStencilDesc.StencilEnable = true;
-    mirrorDepthStencilDesc.StencilReadMask = 0xff;
-    mirrorDepthStencilDesc.StencilWriteMask = 0xff;
+    {
+		StencilOpDesc op(StencilOP::KEEP, StencilOP::KEEP, StencilOP::KEEP, ComparisonFunc::EQUAL);
+		DepthStencilState dsState(DepthState(true, DepthWriteMask::ALL, ComparisonFunc::LESS), StencilState(true, 0xff, 0xff, op, op));
+		m_pso["drawStencilReflections"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"],
+			BlendState(), dsState, RasterizerState(CullMode::BACK, true));
+    }
 
-    mirrorDepthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-    mirrorDepthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-    mirrorDepthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
-    mirrorDepthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-
-    mirrorDepthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-    mirrorDepthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-    mirrorDepthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
-    mirrorDepthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC stencilMirrorPsoDesc = opaquePsoDesc;
-    stencilMirrorPsoDesc.DepthStencilState = mirrorDepthStencilDesc;
-    stencilMirrorPsoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
-    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&stencilMirrorPsoDesc,
-        IID_PPV_ARGS(&mPSO["stencilMirror"])));
-
-    D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
-    reflectionsDSS.DepthEnable = true;
-    reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-    reflectionsDSS.StencilEnable = true;
-    reflectionsDSS.StencilReadMask = 0xff;
-    reflectionsDSS.StencilWriteMask = 0xff;
-
-    reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-    reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-    reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-    reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-    // We are not rendering backfacing polygons, so these settings do not matter.
-    reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-    reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-    reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-    reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC drawReflectionsPsoDesc = opaquePsoDesc;
-    drawReflectionsPsoDesc.DepthStencilState = reflectionsDSS;
-    //drawReflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-    //drawReflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
-    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&drawReflectionsPsoDesc,
-        IID_PPV_ARGS(&mPSO["drawStencilReflections"])));
-
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = opaquePsoDesc;
-
-    D3D12_RENDER_TARGET_BLEND_DESC blendStateDesc{0};
-	blendStateDesc.BlendEnable = true;
-	blendStateDesc.LogicOpEnable = false;
-	blendStateDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-	blendStateDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-	blendStateDesc.BlendOp = D3D12_BLEND_OP_ADD;
-    blendStateDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-    blendStateDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
-	blendStateDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    blendStateDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
-    blendStateDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-    transparentPsoDesc.BlendState.RenderTarget[0] = blendStateDesc;
-    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&transparentPsoDesc,
-        IID_PPV_ARGS(&mPSO["transparent"])));
+    {
+        ColorBlendEquation eq(BlendColorFactor::SRC_ALPHA, BlendColorFactor::INV_SRC_ALPHA, BlendOP::ADD);
+        BlendState blend(eq, AlphaBlendEquation{});
+		m_pso["transparent"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"],
+			BlendState(), DepthStencilState(), RasterizerState());
+    }
 }
 
 void App::BuildFrameResources()
@@ -306,55 +203,6 @@ void App::CreateTextures()
 
 void App::PrepareForShadows()
 {
-    m_depthHeap.Init(3, DescriptorHeapType::DSV);
-	D3D12_RESOURCE_DESC depthStencilDesc;
-	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	depthStencilDesc.Alignment = 0;
-	depthStencilDesc.Width = mClientWidth;
-	depthStencilDesc.Height = mClientHeight;
-	depthStencilDesc.DepthOrArraySize = 1;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-
-	depthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-	depthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-    for (int i = 0; i < NumFrames; i++)
-    {
-		D3D12_CLEAR_VALUE optClear;
-		optClear.Format = mDepthStencilFormat;
-		optClear.DepthStencil.Depth = 1.0f;
-		optClear.DepthStencil.Stencil = 0;
-
-        auto heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		ThrowIfFailed(Device::GetDevice()->CreateCommittedResource(
-			&heapProperty,
-			D3D12_HEAP_FLAG_NONE,
-			&depthStencilDesc,
-			D3D12_RESOURCE_STATE_COMMON,
-			&optClear,
-			IID_PPV_ARGS(shadowMaps[i].GetAddressOf())));
-
-		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-		dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		dsvDesc.Format = mDepthStencilFormat;
-		dsvDesc.Texture2D.MipSlice = 0;
-        depthHandle[i] = m_depthHeap.CreateDSV(shadowMaps[i].Get(), dsvDesc);
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-        srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        srvDesc.Texture2D.MipLevels = 1;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvHandle[i] = m_cbvHeap.CreateSRV(srvDesc, shadowMaps[i].Get());
-
-        auto resourceTransition = CD3DX12_RESOURCE_BARRIER::Transition(shadowMaps[i].Get(),
-            D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-		mCommandList->ResourceBarrier(1, &resourceTransition);
-    }
-	
 }
 
 void App::OnResize()
@@ -458,7 +306,6 @@ void App::Update(const GameTimer& gt)
         WaitForSingleObject(eventHandle, INFINITE);
         CloseHandle(eventHandle);
     }
-	// Update the constant buffer with the latest worldViewProj matrix.
     UpdateObjectCB(gt);
     UpdateMainPassCB(gt);
 }
@@ -519,7 +366,8 @@ void App::Draw(const GameTimer& gt)
         auto resourceTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		mCommandList->ResourceBarrier(1, &resourceTransition);
-		mCommandList->SetPipelineState(mPSO["opaque"].Get());
+		//mCommandList->SetPipelineState(mPSO["opaque"].Get());
+		mCommandList->SetPipelineState(m_pso["default"]);
 		load_texture = true;
 
 		mCommandList->RSSetViewports(1, &mScreenViewport);
@@ -530,7 +378,7 @@ void App::Draw(const GameTimer& gt)
         auto dsvBuffer = DepthStencilView();
 		mCommandList->OMSetRenderTargets(1, &backBuffer, true, &dsvBuffer);
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+		mCommandList->SetGraphicsRootSignature(m_rootSignatures["default"]);
 
 		auto passCbvAddress = m_frameResources[m_frameIndex].m_passCb.Resource()->GetGPUVirtualAddress();
 		mCommandList->SetGraphicsRootConstantBufferView(1, passCbvAddress);
@@ -547,16 +395,16 @@ void App::Draw(const GameTimer& gt)
 
 		DrawRenderItems(mCommandList.Get(), m_opaqueItems);
 
-        mCommandList->SetPipelineState(mPSO["stencilMirror"].Get());
+        mCommandList->SetPipelineState(m_pso["stencilMirror"]);
         mCommandList->OMSetStencilRef(1);
 		DrawRenderItems(mCommandList.Get(), m_mirror);
 
-        mCommandList->SetPipelineState(mPSO["drawStencilReflections"].Get());
+        mCommandList->SetPipelineState(m_pso["drawStencilReflections"]);
         DrawRenderItems(mCommandList.Get(), m_reflectedItems);
 
         // transparent items
 
-		mCommandList->SetPipelineState(mPSO["transparent"].Get());
+		mCommandList->SetPipelineState(m_pso["transparent"]);
 		load_texture = true;
 		DrawRenderItems(mCommandList.Get(), m_transparentItems);
         //imgui shit 		

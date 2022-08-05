@@ -20,6 +20,9 @@
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
+class RootSignature;
+class PSO;
+class ShaderInfo;
 
 class App : public D3DApp
 {
@@ -45,7 +48,6 @@ private:
 
     void InitCamera();
     void BuildDescriptorHeaps();
-	void BuildConstantBuffers();
     void BuildRootSignature();
     void BuildShadersAndInputLayout();
     void BuildPSO();
@@ -59,7 +61,6 @@ private:
 
     void UpdateObjectCB(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
-    void UpdateCamera(const GameTimer& gt);
     void UpdateShadowPassCB();
 
 private:
@@ -79,16 +80,16 @@ private:
     FrameResource* m_currentFrameResource = nullptr;
     int m_frameIndex = 0;
     
-    ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+    std::unordered_map<std::string, RootSignature> m_rootSignatures;
     ComPtr<ID3D12RootSignature> emptyRootSignature = nullptr;
     ComPtr<ID3D12RootSignature> quadRootSignature = nullptr;
     ComPtr<ID3DBlob> mvsByteCode = nullptr;
     ComPtr<ID3DBlob> mpsByteCode = nullptr;
 
-    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
     std::unordered_map <std::string, ComPtr<ID3DBlob>> m_shaders;
 
     std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSO ;
+    std::unordered_map<std::string, PSO> m_pso;
 
     DescriptorHeap m_cbvHeap;
 

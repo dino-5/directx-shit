@@ -2,47 +2,51 @@
 #include "PipelineStates.h"
 #include "RootSignature.h"
 #include "Device.h"
+#include "Framework/include/d3dUtil.h"
 
-D3D12_SHADER_BYTECODE PSO::GetShader(ComPtr<ID3D10Blob> blob,std::wstring info, std::string name)
+D3D12_SHADER_BYTECODE PSO::GetShader(std::string name)
 {
-    blob= d3dUtil::CompileShader(info, nullptr, name, "vs_5_1");
+    auto shader = Shader::GetShader(name);
     return 
     {
-        reinterpret_cast<BYTE*>(blob->GetBufferPointer()),
-        VS->GetBufferSize()
+        reinterpret_cast<BYTE*>(shader->GetBufferPointer()),
+        shader->GetBufferSize()
     };
 }
-D3D12_SHADER_BYTECODE PSO::GetPixelShader(ShaderInfo info)
+
+PSO::PSO(std::string vertexShader, std::string pixelShader, InputLayout layout, RootSignature rootSignature, BlendState blendState,
+	DepthStencilState dsState, RasterizerState rasterState)
 {
-    return GetShader(PS, info.pixelShader, "PS");
+    m_psoDesc.InputLayout = layout;
+    m_psoDesc.pRootSignature = rootSignature;
+    m_psoDesc.VS = GetShader(vertexShader);
+    m_psoDesc.PS = GetShader(pixelShader);
+    m_psoDesc.RasterizerState = rasterState;
+    m_psoDesc.BlendState = blendState;
+    m_psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    m_psoDesc.SampleMask = UINT_MAX;
+    m_psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    m_psoDesc.NumRenderTargets = 1;
+    m_psoDesc.RTVFormats[0] = backBufferFormat;
+    m_psoDesc.SampleDesc.Count = msaaState ? 4 : 1;
+    m_psoDesc.SampleDesc.Quality = msaaState ? (msaaQuality - 1) : 0;
+    m_psoDesc.DSVFormat = dsvBufferFormat;
+    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
+
 }
 
-D3D12_SHADER_BYTECODE PSO::GetVertexShader(ShaderInfo info)
+void Shader::CreateShader(ShaderInfo info)
 {
-    return GetShader(VS, info.vertexShader, "VS");
+    if (FindShader(info.shaderName)) {}
+    else
+    {
+        m_shaders[info.shaderName] = d3dUtil::CompileShader(std::wstring(info.path.begin(), info.path.end()),
+            nullptr, info.entryPoint, info.type == ShaderType::VERTEX ? "vs_5_1" : "ps_5_1");
+    }
 }
 
-PSO::PSO(ShaderInfo shaders, InputLayout layout, RootSignature rootSignature, BlendState blendState,
-	DepthStencilState dsState)
+Shader::Shader(ShaderInfo info) :m_name(info.shaderName)
 {
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
-
-    ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-    opaquePsoDesc.InputLayout = layout;
-    opaquePsoDesc.pRootSignature = rootSignature;
-    opaquePsoDesc.VS = GetVertexShader(shaders);
-    opaquePsoDesc.PS = GetPixelShader(shaders);
-    opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    opaquePsoDesc.BlendState = blendState;
-    opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-    opaquePsoDesc.SampleMask = UINT_MAX;
-    opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    opaquePsoDesc.NumRenderTargets = 1;
-    opaquePsoDesc.RTVFormats[0] = backBufferFormat;
-    opaquePsoDesc.SampleDesc.Count = msaaState ? 4 : 1;
-    opaquePsoDesc.SampleDesc.Quality = msaaState ? (msaaQuality - 1) : 0;
-    opaquePsoDesc.DSVFormat = dsvBufferFormat;
-    ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_pso)));
-
-   }
+	CreateShader(info);
+	m_shader = m_shaders[info.shaderName];
+}

@@ -6,14 +6,15 @@
 #include <vector>
 #include "../include/common.h"
 
+enum class Format
+{
+	float3 = DXGI_FORMAT_R32G32B32_FLOAT,
+	float2 = DXGI_FORMAT_R32G32_FLOAT,
+};
+
 class InputLayoutElement
 {
 public:
-	enum class Format
-	{
-		float3 = DXGI_FORMAT_R32G32B32_FLOAT,
-		float2 = DXGI_FORMAT_R32G32_FLOAT,
-	};
 	unsigned int GetFormatSize();
 	unsigned int GetOffset()const { return m_offset; }
 	InputLayoutElement(std::string name, Format format, unsigned int offset=0) : 
@@ -38,7 +39,11 @@ class InputLayout
 {
 public:
 	InputLayout() = default;
-	InputLayout(std::vector<InputLayoutElement> layout) : m_layout(layout) {}
+	InputLayout(std::vector<InputLayoutElement> layout)
+	{
+		for (auto& i : layout)
+			AddLayoutElement(i);
+	}
 	void AddLayoutElement(InputLayoutElement el)
 	{
 		if (m_layout.size())
@@ -97,12 +102,23 @@ enum class BlendAlphaFactor
 	INV_DST_ALPHA = D3D12_BLEND_INV_DEST_ALPHA,
 };
 
+enum class WriteEnable : uint
+{
+        RED = D3D12_COLOR_WRITE_ENABLE_RED	,
+        GREEN = D3D12_COLOR_WRITE_ENABLE_GREEN	,
+        BLUE = D3D12_COLOR_WRITE_ENABLE_BLUE,
+        ALPHA = D3D12_COLOR_WRITE_ENABLE_ALPHA,
+        ALL = D3D12_COLOR_WRITE_ENABLE_ALL,
+		NONE = 0
+};
+
 template<typename Factor>
 struct BlendEquation 
 {
-	Factor srcFactor;
-	Factor dstFactor;
-	BlendOP op;
+	Factor srcFactor = Factor::ONE;
+	Factor dstFactor = Factor::ZERO;
+	BlendOP op = BlendOP::ADD;
+	BlendEquation(Factor src= Factor::ONE, Factor dst =Factor::ZERO, BlendOP o = BlendOP::ADD) : srcFactor(src), dstFactor(dst), op(o) {}
 };
 
 using ColorBlendEquation = BlendEquation<BlendColorFactor>;
@@ -116,8 +132,9 @@ public:
 		DEFAULT,
 		TRANSPARENT
 	};
-	BlendState(ColorBlendEquation cl_eq, AlphaBlendEquation al_eq);
-	BlendState();
+	BlendState(ColorBlendEquation cl_eq, AlphaBlendEquation al_eq,
+		WriteEnable wr = WriteEnable::ALL);
+	BlendState(WriteEnable wr = WriteEnable::ALL);
 	operator D3D12_BLEND_DESC()const { return m_desc;  }
 
 public:
@@ -165,14 +182,20 @@ struct DepthState
 	bool isEnabled           = true;
 	DepthWriteMask writeMask = DepthWriteMask::ALL;
 	ComparisonFunc depthFunc = ComparisonFunc::LESS;
+	DepthState(bool Enabled, DepthWriteMask Mask, ComparisonFunc Func): isEnabled(Enabled), writeMask(Mask), depthFunc(Func)
+	{}
 };
 
 struct StencilOpDesc
 {
-	StencilOP failOP           = StencilOP::KEEP;
-	StencilOP depthFailOP      = StencilOP::KEEP;
-	StencilOP passOP           = StencilOP::KEEP;
-	ComparisonFunc stencilFunc = ComparisonFunc::ALWAYS;
+	StencilOP failOP           ;
+	StencilOP depthFailOP      ;
+	StencilOP passOP           ;
+	ComparisonFunc stencilFunc ;
+	StencilOpDesc(StencilOP fail= StencilOP::KEEP, StencilOP depthFail= StencilOP::KEEP, StencilOP pass= StencilOP::KEEP,
+		ComparisonFunc func = ComparisonFunc::ALWAYS) 
+		:failOP(fail), depthFailOP(depthFail), passOP(pass), stencilFunc(func)
+	{}
 	operator D3D12_DEPTH_STENCILOP_DESC()
 	{
 		return { CastType(failOP), CastType(depthFailOP), CastType(passOP), CastType(stencilFunc) };
@@ -184,8 +207,11 @@ struct StencilState
 	bool isEnabled             = true;
 	uint8 readMask             = 0xff;
 	uint8 writeMask            = 0xff;
-	StencilOpDesc frontFace;
-	StencilOpDesc backFace;
+	StencilOpDesc frontFace = StencilOpDesc();
+	StencilOpDesc backFace  = StencilOpDesc();
+	StencilState(bool Enabled = true, uint8 read = 0xff, uint8 write = 0xff,
+		StencilOpDesc front = StencilOpDesc(), StencilOpDesc back = StencilOpDesc()) : isEnabled(Enabled), readMask(read), writeMask(write),
+		frontFace(front), backFace(back) {}
 };
 
 class DepthStencilState
@@ -202,6 +228,26 @@ public:
 
 public:
 	D3D12_DEPTH_STENCIL_DESC m_desc;
+};
+
+enum class CullMode
+{
+	NONE  = D3D12_CULL_MODE_NONE,
+	FRONT = D3D12_CULL_MODE_FRONT,
+	BACK  =D3D12_CULL_MODE_BACK
+};
+
+class RasterizerState
+{
+public:
+	RasterizerState(CullMode cull = CullMode::BACK, bool frontCounterClockwise = false);
+	operator D3D12_RASTERIZER_DESC()
+	{
+		return m_desc;
+	}
+
+public:
+	D3D12_RASTERIZER_DESC m_desc;
 };
 
 

@@ -21,16 +21,16 @@ unsigned int InputLayoutElement::GetFormatSize()
 {
 	switch (m_format)
 	{
-	case InputLayoutElement::Format::float3:
+	case Format::float3:
 		return 3 * sizeof(float);
-	case InputLayoutElement::Format::float2:
+	case Format::float2:
 		return 2 * sizeof(float);
 	default:
 		return 0;
 	}
 }
 
-BlendState::BlendState(ColorBlendEquation cl_eq, AlphaBlendEquation al_eq)
+BlendState::BlendState(ColorBlendEquation cl_eq, AlphaBlendEquation al_eq, WriteEnable wr)
 {
 	m_desc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	m_desc.RenderTarget[0].BlendEnable    = true;
@@ -42,12 +42,13 @@ BlendState::BlendState(ColorBlendEquation cl_eq, AlphaBlendEquation al_eq)
     m_desc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 	m_desc.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
     m_desc.RenderTarget[0].LogicOp        = D3D12_LOGIC_OP_NOOP;
-    m_desc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    m_desc.RenderTarget[0].RenderTargetWriteMask = static_cast<D3D12_COLOR_WRITE_ENABLE>(wr);
 }
 
-BlendState::BlendState()
+BlendState::BlendState(WriteEnable wr)
 {
 	m_desc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    m_desc.RenderTarget[0].RenderTargetWriteMask = static_cast<D3D12_COLOR_WRITE_ENABLE>(wr);
 }
 
 DepthStencilState::DepthStencilState()
@@ -75,4 +76,11 @@ DepthStencilState::DepthStencilState(DepthState depthState, StencilState stencil
 {
 	SetDepthState(depthState);
 	SetStencilState(stencilState);
+}
+
+RasterizerState::RasterizerState(CullMode cull, bool frontCounterClockwise)
+{
+	m_desc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	m_desc.CullMode = static_cast<D3D12_CULL_MODE>(cull);
+	m_desc.FrontCounterClockwise = frontCounterClockwise;
 }
