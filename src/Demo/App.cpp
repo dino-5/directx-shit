@@ -30,13 +30,11 @@ bool App::Initialize()
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
     InitCamera();
     BuildRootSignature();
-    BuildShadersAndInputLayout();
     BuildDescriptorHeaps();
     BuildRenderItems();
     BuildFrameResources();
     BuildPSO();
     InitImgui();
-    CreateTextures();
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
@@ -54,7 +52,6 @@ void App::InitCamera()
 void App::BuildDescriptorHeaps()
 {
     UINT objCount = m_renderItems.size();
-    UINT numberOfTextures = 2;
     UINT numberOfPassDescriptors = 1;
     UINT numDescriptors = 20;// (objCount + numberOfPassDescriptors + numberOfTextures)* NumFrames;
     m_cbvHeap.Init(numDescriptors, DescriptorHeapType::CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
@@ -76,26 +73,10 @@ void App::BuildRootSignature()
     m_rootSignatures["default"] = RootSignature(rootArguments);
 }
 
-void App::BuildShadersAndInputLayout()
-{
-    
-}
-
 void App::BuildRenderItems()
 {
     DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
     UINT countOfMeshes = 1;
-    if(0)
-    {
-		std::vector<Geometry::MeshData> mesh(countOfMeshes);
-		mesh[0] = Geometry::CreateBox(10, 5, 10, 3);
-        RenderItem box(mesh, mCommandList, "box");
-		m_renderItems.push_back(box);
-        box.m_state = RenderItem::RenderItemState::REFLECTED;
-		box.m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
-		box.m_objCbIndex = RenderItem::g_objectCBIndex++;
-		m_renderItems.push_back(box);
-    }
 
     if(0)
     {
@@ -110,15 +91,16 @@ void App::BuildRenderItems()
         Mesh quad = Mesh(val, mCommandList, "quad");
 		m_renderItems.push_back(RenderItem(quad, "quad", RenderItem::RenderItemState::TRANSPARENT_STATE));
     }
-    m_model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
-    RenderItem model(m_model, "model");
-    m_renderItems.push_back(model);
-    model.m_state = RenderItem::RenderItemState::REFLECTED;
-    model.m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
-	model.m_objCbIndex = RenderItem::g_objectCBIndex++;
-    m_renderItems.push_back(model);
+    Model model; 
+    model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
+    RenderItem model_item(model, "model");
+    m_renderItems.push_back(model_item);
+    model_item.m_state = RenderItem::RenderItemState::REFLECTED;
+    model_item.m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
+	model_item.m_objCbIndex = RenderItem::g_objectCBIndex++;
+    m_renderItems.push_back(model_item);
 
-    m_renderItems.reserve(4); 
+    m_renderItems.reserve(3);
     for (auto& e : m_renderItems)
         if (e.m_state == RenderItem::RenderItemState::OPAQUE_STATE)
             m_opaqueItems.push_back(&e);
@@ -138,9 +120,6 @@ void App::BuildRenderItems()
 void App::BuildPSO()
 {
     std::wstring homeDir = L"D:/dev/projects/learning/directx-shit/";
-    m_shaders["standardVS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", nullptr, "VS", "vs_5_1");
-    m_shaders["opaquePS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", nullptr, "PS", "ps_5_1");
-    m_shaders["shadowsPS"] = d3dUtil::CompileShader(L"D:/dev/projects/learning/directx-shit/src/Shaders/shadows.hlsl", nullptr, "PS", "ps_5_1");
     Shader::CreateShader({"colorVertex", "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "VS", ShaderType::VERTEX});
     Shader::CreateShader({"colorPixel", "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "PS", ShaderType::PIXEL});
 
@@ -151,29 +130,37 @@ void App::BuildPSO()
         InputLayoutElement("TEXTURE",  Format::float2),
     };
     InputLayout layout(inputLayout);
+    ShaderInputGroup shaderBase{ "colorVertex", "colorPixel", &layout, &m_rootSignatures["default"] };
+
+    PSO base;
+    base.SetShaderInputGroup(shaderBase);
     
-    m_pso["default"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"], BlendState(), DepthStencilState(),
-        RasterizerState());
+    m_pso["default"] = base.Compile();
 
     {
 		StencilOpDesc op(StencilOP::KEEP, StencilOP::KEEP, StencilOP::REPLACE, ComparisonFunc::ALWAYS);
-		DepthStencilState dsState(DepthState(true, DepthWriteMask::ALL, ComparisonFunc::LESS), StencilState(true, 0xff, 0xff, op, op));
-		m_pso["stencilMirror"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"],
-			BlendState(WriteEnable::NONE), dsState, RasterizerState());
+		DepthStencilState dsState(DepthState(true, DepthWriteMask::ZERO, ComparisonFunc::LESS), StencilState(true, 0xff, 0xff, op, op));
+        base.SetDepthStencilState(dsState);
+        base.SetBlendState(BlendState(WriteEnable::NONE));
+        m_pso["stencilMirror"] = base.Compile();
     }
 
     {
 		StencilOpDesc op(StencilOP::KEEP, StencilOP::KEEP, StencilOP::KEEP, ComparisonFunc::EQUAL);
 		DepthStencilState dsState(DepthState(true, DepthWriteMask::ALL, ComparisonFunc::LESS), StencilState(true, 0xff, 0xff, op, op));
-		m_pso["drawStencilReflections"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"],
-			BlendState(), dsState, RasterizerState(CullMode::BACK, true));
+        base.SetDepthStencilState(dsState);
+        base.SetBlendState();
+        base.SetRasterizerState(RasterizerState(CullMode::BACK, true));
+        m_pso["drawStencilReflections"] = base.Compile();
     }
 
     {
         ColorBlendEquation eq(BlendColorFactor::SRC_ALPHA, BlendColorFactor::INV_SRC_ALPHA, BlendOP::ADD);
         BlendState blend(eq, AlphaBlendEquation{});
-		m_pso["transparent"] = PSO("colorVertex", "colorPixel", layout, m_rootSignatures["default"],
-			BlendState(), DepthStencilState(), RasterizerState());
+        base.SetDepthStencilState();
+        base.SetBlendState(blend);
+        base.SetRasterizerState();
+        m_pso["transparent"] = base.Compile();
     }
 }
 
@@ -191,19 +178,6 @@ void App::InitImgui()
 
 }
 
-void App::CreateTextures()
-{
-    DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
-    for (int i = 0; i < NumFrames; i++)
-    {
-        m_textures.push_back(Texture("textures/container2.png",          Device::GetDevice(), mCommandList, "container_diffuse"));
-        m_textures.push_back(Texture("textures/container2_specular.png", Device::GetDevice(), mCommandList , "container_specular"));
-    }
-}
-
-void App::PrepareForShadows()
-{
-}
 
 void App::OnResize()
 {
@@ -260,37 +234,6 @@ void App::UpdateMainPassCB(const GameTimer& gt)
 
 }
 
-void App::UpdateShadowPassCB()
-{
-    XMMATRIX view = Camera::LookAt(m_mainPassCB.lightPos, m_mainPassCB.lightDir);
-    XMMATRIX proj = XMLoadFloat4x4(&mProj);
-
-    XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-    auto viewDeterm = XMMatrixDeterminant(view);
-    XMMATRIX invView = XMMatrixInverse(&viewDeterm, view);
-    auto projDeterm = XMMatrixDeterminant(proj);
-    XMMATRIX invProj = XMMatrixInverse(&projDeterm, proj);
-    auto viewProjDeterm = XMMatrixDeterminant(viewProj);
-    XMMATRIX invViewProj = XMMatrixInverse(&viewProjDeterm, viewProj);
-    XMMATRIX shadowView{};
-    {
-		XMMATRIX shadowview = Camera::LookAt(m_mainPassCB.lightPos, m_mainPassCB.lightDir);
-        shadowView = shadowview;
-        shadowView = XMMatrixMultiply(shadowview, proj);
-    }
-
-    XMStoreFloat4x4(&m_shadowPassCB.View,        XMMatrixTranspose(view));
-    XMStoreFloat4x4(&m_shadowPassCB.InvView,     XMMatrixTranspose(invView));
-    XMStoreFloat4x4(&m_shadowPassCB.Proj,        XMMatrixTranspose(proj));
-    XMStoreFloat4x4(&m_shadowPassCB.InvProj,     XMMatrixTranspose(invProj));
-    XMStoreFloat4x4(&m_shadowPassCB.ViewProj,    XMMatrixTranspose(viewProj));
-    XMStoreFloat4x4(&m_shadowPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-    XMStoreFloat4x4(&m_shadowPassCB.shadowView,  XMMatrixTranspose(shadowView));
-    m_shadowPassCB.EyePosW  = m_mainPassCB.lightPos;
-
-    m_currentFrameResource->m_passCb.CopyData(1, m_shadowPassCB);
-}
-
 void App::Update(const GameTimer& gt)
 {
     OnMouseMove();
@@ -333,7 +276,8 @@ void App::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<
         auto cbvHandle1 = m_frameResources[m_frameIndex].m_objectCb.Resource()->GetGPUVirtualAddress() +
             ri->m_objCbIndex * m_frameResources[m_frameIndex].m_objectCb.mElementByteSize;
         cmdList->SetGraphicsRootConstantBufferView(0, cbvHandle1);
-        ri->Draw(cmdList, load_texture);
+        // todo: get rid of this useless true 
+        ri->Draw(cmdList, true);
     }
 }
 
@@ -350,25 +294,17 @@ void App::Draw(const GameTimer& gt)
 
     ComPtr<ID3D12CommandAllocator> currentCmdAlloc = m_currentFrameResource->m_cmdAlloc;
 	ThrowIfFailed(currentCmdAlloc->Reset());
-    if (m_isWireFrame)
-    {
-        ThrowIfFailed(mCommandList->Reset(currentCmdAlloc.Get(), mPSO["opaque_wireframe"].Get()));
-    }
-    else
-    {
-        ThrowIfFailed(mCommandList->Reset(currentCmdAlloc.Get(), mPSO["shadows"].Get()));
-    }
-
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvHeap.GetHeap()};
+    ThrowIfFailed(mCommandList->Reset(currentCmdAlloc.Get(), nullptr));
+
+
     if (true)
     {
         // main pass 
         auto resourceTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		mCommandList->ResourceBarrier(1, &resourceTransition);
-		//mCommandList->SetPipelineState(mPSO["opaque"].Get());
 		mCommandList->SetPipelineState(m_pso["default"]);
-		load_texture = true;
 
 		mCommandList->RSSetViewports(1, &mScreenViewport);
 		mCommandList->RSSetScissorRects(1, &mScissorRect);
@@ -382,12 +318,6 @@ void App::Draw(const GameTimer& gt)
 
 		auto passCbvAddress = m_frameResources[m_frameIndex].m_passCb.Resource()->GetGPUVirtualAddress();
 		mCommandList->SetGraphicsRootConstantBufferView(1, passCbvAddress);
-
-		auto textureHandle1 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2].index);
-		mCommandList->SetGraphicsRootDescriptorTable(2, textureHandle1);
-
-		auto textureHandle2 = m_cbvHeap.GetGPUHandle(m_textures[m_frameIndex*2+1].index);
-		mCommandList->SetGraphicsRootDescriptorTable(3, textureHandle2);
 
 		UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
@@ -405,7 +335,6 @@ void App::Draw(const GameTimer& gt)
         // transparent items
 
 		mCommandList->SetPipelineState(m_pso["transparent"]);
-		load_texture = true;
 		DrawRenderItems(mCommandList.Get(), m_transparentItems);
         //imgui shit 		
 		ImGuiSettings::StartFrame();

@@ -74,7 +74,7 @@ public:
 #undef TRANSPARENT
 enum class BlendOP
 {
-	ADD,
+	ADD=1,
 	SUBTRACT,
 	REV_SUBTRACT
 };

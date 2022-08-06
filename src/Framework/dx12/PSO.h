@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "PipelineStates.h"
 
 class InputLayout;
 class BlendState;
@@ -57,18 +58,33 @@ public:
 	
 };
 
+struct ShaderInputGroup
+{
+	std::string vertexShader;
+	std::string pixelShader;
+	InputLayout* layout;
+	RootSignature* rootSignature;
+
+	void SetVS(std::string name) { vertexShader = name;  }
+	void SetPS(std::string name) { pixelShader= name;  }
+	void SetLayout(InputLayout& l) { layout = &l;  }
+	void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
+};
+
 class PSO
 {
 public:
 	PSO()=default;
-	PSO(std::string vertexShader, std::string pixelShader, InputLayout layout, RootSignature rootSignature ,
-		BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
-	void SetBlendState       (BlendState&);
-	void SetDepthStencilState(DepthStencilState&);
-	void SetInputLayout      (InputLayout&);
-	void SetVertexShader     (Shader&);
-	void SetPixelShader      (Shader&);
-	void SetRootSignature    (RootSignature&);
+	PSO(ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+	PSO Compile();
+	void SetBlendState       (BlendState blend=BlendState());
+	void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
+	void SetRasterizerState  (RasterizerState raster = RasterizerState());
+	void SetShaderInputGroup (ShaderInputGroup&);
+	~PSO()
+	{
+		
+	}
 
 	operator ID3D12PipelineState* ()
 	{
@@ -87,8 +103,10 @@ private:
 public:
 	ComPtr<ID3D12PipelineState> m_pso;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};
-	ComPtr<ID3DBlob> VS;
-	ComPtr<ID3DBlob> PS;
+	BlendState        m_blend;
+	DepthStencilState m_ds;
+	RasterizerState   m_rast;
+	ShaderInputGroup  m_shader;
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT dsvBufferFormat  = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	uint msaaQuality = 0;

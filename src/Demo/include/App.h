@@ -49,26 +49,17 @@ private:
     void InitCamera();
     void BuildDescriptorHeaps();
     void BuildRootSignature();
-    void BuildShadersAndInputLayout();
     void BuildPSO();
     void BuildFrameResources();
     void BuildRenderItems();
-    void CreateTextures();
-    void PrepareForShadows();
 
     void InitImgui();
     void DrawImgui();
 
     void UpdateObjectCB(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
-    void UpdateShadowPassCB();
 
 private:
-
-    Microsoft::WRL::ComPtr<ID3D12Resource> shadowMaps[NumFrames];
-    ViewID depthHandle[NumFrames];
-    ViewID srvHandle[NumFrames];
-    DescriptorHeap m_depthHeap;
 
     std::vector<RenderItem> m_renderItems;
     std::vector<RenderItem*> m_opaqueItems;
@@ -81,21 +72,12 @@ private:
     int m_frameIndex = 0;
     
     std::unordered_map<std::string, RootSignature> m_rootSignatures;
-    ComPtr<ID3D12RootSignature> emptyRootSignature = nullptr;
-    ComPtr<ID3D12RootSignature> quadRootSignature = nullptr;
     ComPtr<ID3DBlob> mvsByteCode = nullptr;
     ComPtr<ID3DBlob> mpsByteCode = nullptr;
 
-    std::unordered_map <std::string, ComPtr<ID3DBlob>> m_shaders;
-
-    std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSO ;
     std::unordered_map<std::string, PSO> m_pso;
 
     DescriptorHeap m_cbvHeap;
-
-    Mesh mBoxGeo;
-
-    float m_isWireFrame = false;
 
     XMFLOAT3 mEyePos = { 0.0f, .75f, -7.0f };
     XMFLOAT4X4 mView = MathHelper::Identity4x4();
@@ -104,16 +86,7 @@ private:
 
     PassConstants m_mainPassCB;
     imguiConstants mainPassImGui;
-    PassConstants m_shadowPassCB;
     PassConstants m_reflectedPassCB;
 
     float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-    std::vector<Texture> m_textures;
-    ComPtr<ID3D12Resource> m_texture[3];
-
-    Model m_model;
-    bool load_texture = false;
-
-    POINT mLastMousePos;
 };
