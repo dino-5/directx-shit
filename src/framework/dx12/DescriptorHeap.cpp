@@ -1,6 +1,8 @@
 #include "DescriptorHeap.h"
 #include "Device.h"
 #include "../include/d3dx12.h"
+#include "dx12/Resource.h"
+#include "include/Util.h"
 
 DescriptorHeap::DescriptorHeap(UINT numDesc, DescriptorHeapType type, D3D12_DESCRIPTOR_HEAP_FLAGS flags):heapSize(numDesc)
 {
@@ -30,36 +32,36 @@ void DescriptorHeap::Init(UINT numDesc, DescriptorHeapType type, D3D12_DESCRIPTO
 }
 
 
-ViewID DescriptorHeap::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& desc, ID3D12Resource* res)
+void DescriptorHeap::CreateSRV(Resource& res, D3D12_SHADER_RESOURCE_VIEW_DESC& desc)
 {
-    auto handle = GetCPUHandle(currentDescriptorIndex); 
-    Device::GetDevice()->CreateShaderResourceView(res, &desc, handle);
-    return currentDescriptorIndex++;
+    res.srv.HandleCPU = GetCPUHandle(currentDescriptorIndex); 
+    res.srv.HandleGPU = GetGPUHandle(currentDescriptorIndex);
+    res.srv.HeapIndex = currentDescriptorIndex;
+    Device::GetDevice()->CreateShaderResourceView(res, &desc, res.srv.HandleCPU);
+    currentDescriptorIndex++;
 }
 
-ViewID DescriptorHeap::CreateCBV(D3D12_GPU_VIRTUAL_ADDRESS address, unsigned int size)
+void DescriptorHeap::CreateUAV(Resource& res, D3D12_UNORDERED_ACCESS_VIEW_DESC& desc)
 {
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-	cbvDesc.BufferLocation = address;
-	cbvDesc.SizeInBytes = size;
-
-    auto handle = GetCPUHandle(currentDescriptorIndex);
-	Device::GetDevice()->CreateConstantBufferView(&cbvDesc, handle);
-    return currentDescriptorIndex++;
+    res.uav.HandleCPU = GetCPUHandle(currentDescriptorIndex); 
+    res.uav.HandleGPU = GetGPUHandle(currentDescriptorIndex);
+    Device::GetDevice()->CreateUnorderedAccessView(res, nullptr, &desc, res.uav.HandleCPU);
+    currentDescriptorIndex++;
 }
 
-ViewID DescriptorHeap::CreateRTV(ID3D12Resource* resource)
+
+void DescriptorHeap::CreateRTV(Resource& res)
 {
-    auto handle = GetCPUHandle(currentDescriptorIndex);
-    Device::GetDevice()->CreateRenderTargetView(resource, nullptr, handle);
-    return currentDescriptorIndex++;
+    res.rtv.HandleCPU = GetCPUHandle(currentDescriptorIndex); 
+    Device::GetDevice()->CreateRenderTargetView(res, nullptr, res.rtv.HandleCPU);
+    currentDescriptorIndex++;
 }
 
-ViewID DescriptorHeap::CreateDSV(ID3D12Resource* res, D3D12_DEPTH_STENCIL_VIEW_DESC desc)
+void DescriptorHeap::CreateDSV(Resource& res, D3D12_DEPTH_STENCIL_VIEW_DESC desc)
 {
-    auto handle = GetCPUHandle(currentDescriptorIndex);
-	Device::GetDevice()->CreateDepthStencilView(res, &desc, handle);
-    return currentDescriptorIndex++;
+    res.dsv.HandleCPU = GetCPUHandle(currentDescriptorIndex); 
+	Device::GetDevice()->CreateDepthStencilView(res, &desc, res.dsv.HandleCPU);
+    currentDescriptorIndex++;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::GetCPUHandle(ViewID index)const

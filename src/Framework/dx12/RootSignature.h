@@ -52,6 +52,10 @@ public:
 		ShaderVisibility vis = ShaderVisibility::PIXEL);
 	static RootArgument CreateCBV(uint shaderRegiste, uint registerSpace = 0, 
 		ShaderVisibility vis = ShaderVisibility::ALL);
+	static RootArgument CreateConstants(UINT num32BitValues,
+		UINT shaderRegister,
+		UINT registerSpace = 0,
+		ShaderVisibility visibility = ShaderVisibility::ALL);
 	operator D3D12_ROOT_PARAMETER() const { return m_argument; }
 
 private:

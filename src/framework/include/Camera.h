@@ -2,7 +2,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "d3dUtil.h"
+#include "Util.h"
 #include "common.h"
 
 class Camera
@@ -17,7 +17,7 @@ public:
 
 	// Get/Set world camera position.
 	DirectX::XMVECTOR GetPosition()const;
-	DirectX::XMFLOAT3 GetPosition3f()const;
+	const float* GetPosition3f()const;
 	void SetPosition(float x, float y, float z);
 	void SetPosition(const DirectX::XMFLOAT3& v);
 	void SetWindowSize(float width, float height);
@@ -75,11 +75,12 @@ public:
 	XMVECTOR GetVector(DirectX::XMFLOAT3 fl);
 	void OnImGui();
 	bool IsCameraOn()const { return m_cameraOn;  }
+	void ChangeState() { m_cameraOn = !m_cameraOn; }
 
 private:
 
 	// Camera coordinate system with coordinates relative to world space.
-	DirectX::XMFLOAT3 mPosition = { 0.0f, 0.0f, -7.0f };
+	float mPosition [3] = {0.0f, 0.0f, -7.0f};
 	DirectX::XMFLOAT3 mRight = { 1.0f, 0.0f, 0.0f };
 	DirectX::XMFLOAT3 mUp = { 0.0f, 1.0f, 0.0f };
 	DirectX::XMFLOAT3 mLook = { 0.0f, 0.0f, 1.0f };
@@ -105,7 +106,7 @@ private:
 	// Cache View/Proj matrices.
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-	bool m_cameraOn = true;
+	bool m_cameraOn = false;
 };
 
 #endif // CAMERA_H

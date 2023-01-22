@@ -5,6 +5,7 @@
 #include <string>
 #include "Mesh.h"
 
+#include "Framework/dx12/PSO.h"
 
 struct ObjectConstants
 {
@@ -52,6 +53,8 @@ public:
  };
 
 class Model;
+class Resource;
+
 
 class RenderItem
 {
@@ -60,7 +63,8 @@ public:
 	{
 		OPAQUE_STATE,
 		TRANSPARENT_STATE,
-		REFLECTED
+		REFLECTED,
+		BOX
 	};
 	static inline uint16_t g_objectCBIndex = 0;
 	RenderItem() = default;
@@ -116,10 +120,21 @@ public:
 	UINT  m_objCbIndex = 0;
 	Mesh Geo;
 	ObjectConstants m_transformation;
+	Material* material = nullptr;
 
 	D3D12_PRIMITIVE_TOPOLOGY m_primitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	std::string m_name;
 	RenderItemState m_state;
+};
+
+class RenderContext
+{
+public:
+	RenderContext() = default;
+
+private:
+	PSO* m_pso;
+	std::vector<RenderItem*> m_renderItems;
 };
 

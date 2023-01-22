@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "Texture.h"
-#include "d3dUtil.h"
+#include "Util.h"
 #include "GeometryGenerator.h"
 
 struct Submesh
@@ -14,8 +14,8 @@ struct Submesh
 	Submesh() = default;
 
 	void Draw(ID3D12GraphicsCommandList* cmList);
-	static std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> GetSubmeshes(std::vector<Geometry::MeshData> mesh);
-	static std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> GetSubmeshes(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh);
+	static std::vector<std::pair< Material, std::vector<Submesh> >> GetSubmeshes(std::vector<Geometry::MeshData> mesh);
+	static std::vector<std::pair< Material, std::vector<Submesh> >> GetSubmeshes(std::vector<std::pair< Material, std::vector<Geometry::MeshData> >>& mesh);
 };
 
 struct Mesh
@@ -23,7 +23,7 @@ struct Mesh
 public:
 	Mesh() = default;
 	Mesh(std::vector < Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
-	Mesh(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh,
+	Mesh(std::vector<std::pair<Material, std::vector<Geometry::MeshData>> >& mesh,
 		ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
 	Mesh(
 		ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
@@ -50,14 +50,14 @@ public:
 
 	std::string Name;
 
-	Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
-	Microsoft::WRL::ComPtr<ID3DBlob> IndexBufferCPU  = nullptr;
+	ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
+	ComPtr<ID3DBlob> IndexBufferCPU  = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferGPU = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
+	ComPtr<ID3D12Resource> VertexBufferGPU = nullptr;
+	ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
+	ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
+	ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
 
     // Data about the buffers.
 	UINT VertexByteStride = 0;
@@ -65,7 +65,6 @@ public:
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
-	std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> DrawArgs;
-	std::unordered_map<std::string, TextureHandle> m_textures;
+	std::vector<std::pair< Material, std::vector<Submesh> >> DrawArgs;
 
 };

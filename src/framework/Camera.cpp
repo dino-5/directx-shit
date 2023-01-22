@@ -26,24 +26,29 @@ Camera::~Camera()
 
 XMVECTOR Camera::GetPosition()const
 {
-	XMVECTOR result{ mPosition.x, mPosition.y, mPosition.z, 1.0f };
+	XMVECTOR result{ mPosition[0], mPosition[1], mPosition[2], 1.0f};
 	return result;
 }
 
-XMFLOAT3 Camera::GetPosition3f()const
+const float* Camera::GetPosition3f()const
 {
 	return mPosition;
 }
 
 void Camera::SetPosition(float x, float y, float z)
 {
-	mPosition = XMFLOAT3(x, y, z);
+	mPosition[0] = x;
+	mPosition[1] = y;
+	mPosition[2] = z;
+
 	mViewDirty = true;
 }
 
 void Camera::SetPosition(const XMFLOAT3& v)
 {
-	mPosition = v;
+	mPosition[0] = v.x;
+	mPosition[1] = v.y;
+	mPosition[2] = v.z;
 	mViewDirty = true;
 }
 
@@ -133,39 +138,33 @@ XMVECTOR Camera::GetVector(DirectX::XMFLOAT3 fl)
 void Camera::OnKeyDown(Key key)
 {
 	static time_t lastTimeSwitch = 0;
-	XMVECTOR position{ mPosition.x, mPosition.y, mPosition.z };
+	XMVECTOR position{ mPosition[0], mPosition[1], mPosition[2]};
 	XMVECTOR look{ mLook.x, mLook.y, mLook.z };
 	XMVECTOR y{0.0, 1.0, 0.0};
 	switch (key)
 	{
 	case Key::W:
-		if(m_cameraOn)
 			position += vel * look;
 		break;
 	case Key::A:
-		if(m_cameraOn)
 			position += XMVector3Cross(look, y) * vel;
 		break;
 	case Key::S:
-		if(m_cameraOn)
 			position -= vel * look;
 		break;
 	case Key::D:
-		if(m_cameraOn)
 			position -= XMVector3Cross(look, y) * vel;
 		break;
-	case Key::SWITCH_CAMERA:
-		if (time(nullptr) - lastTimeSwitch > 1)
-		{
-			m_cameraOn = !m_cameraOn;
-			lastTimeSwitch = time(nullptr);
-		}
 
 	default:
 		break;
 	}
 	mViewDirty = true;
-	XMStoreFloat3(&mPosition, position);
+	DirectX::XMFLOAT3 Position;
+	XMStoreFloat3(&Position, position);
+	mPosition[0] = Position.x;
+	mPosition[1] = Position.y;
+	mPosition[2] = Position.z;
 }
 
 void Camera::SetLens(float fovY, float aspect, float zn, float zf)
@@ -195,7 +194,11 @@ void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
 	XMVECTOR R = XMVector3Normalize(XMVector3Cross(worldUp, L));
 	XMVECTOR U = XMVector3Cross(L, R);
 
-	XMStoreFloat3(&mPosition, pos);
+	DirectX::XMFLOAT3 Position;
+	XMStoreFloat3(&Position, pos);
+	mPosition[0] = Position.x;
+	mPosition[1] = Position.y;
+	mPosition[2] = Position.z;
 	XMStoreFloat3(&mLook, L);
 	XMStoreFloat3(&mRight, R);
 	XMStoreFloat3(&mUp, U);
@@ -226,7 +229,7 @@ void Camera::OnImGui()
 {
 	ImGuiSettings::Begin("Camera Position");
 	{
-		ImGuiSettings::SliderFloat3("pos", &mPosition.x, -50, 50);
+		ImGuiSettings::SliderFloat3("pos", mPosition, -50, 50);
 	}
 	ImGuiSettings::End();
 }
@@ -307,7 +310,8 @@ void Camera::UpdateViewMatrix()
 		mLook.z = sin(to_radians(m_yaw)) * cos(to_radians(m_pitch));
 		mLook.y = sin(to_radians(m_pitch));
 		XMVECTOR L = XMLoadFloat3(&mLook);
-		XMVECTOR P = XMLoadFloat3(&mPosition);
+		DirectX::XMFLOAT3 Position(mPosition);
+		XMVECTOR P = XMLoadFloat3(&Position);
 		auto matrix = XMMatrixLookAtLH(P, P + L, U);
 		XMStoreFloat4x4(&mView, matrix);
 		mViewDirty = false;
@@ -341,8 +345,8 @@ void Camera::OnMouseMove(int xpos, int ypos, bool update)
 	dy *= sens;
 	if (m_cameraOn) // add disable of move camera
 	{
-		m_yaw += dx;
-		m_pitch += dy;
+		m_yaw -= dx;
+		m_pitch -= dy;
 		mViewDirty = true;
 	}
 	else

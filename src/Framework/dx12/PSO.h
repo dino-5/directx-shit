@@ -9,19 +9,15 @@
 #include <vector>
 #include <unordered_map>
 #include "PipelineStates.h"
-
-class InputLayout;
-class BlendState;
-class DepthStencilState;
-class Shader;
-class RootSignature;
-class RasterizerState;
+#include "RootSignature.h"
 
 enum class ShaderType
 {
 	VERTEX,
-	PIXEL
+	PIXEL,
+	COMPUTE
 };
+std::string GetShaderTypeString(ShaderType type);
 
 struct ShaderInfo
 {
@@ -30,6 +26,7 @@ struct ShaderInfo
 	std::string entryPoint;
 	ShaderType  type;
 };
+
 
 class Shader
 {
@@ -42,6 +39,10 @@ public:
 		if (FindShader(name))
 			return m_shaders[name].Get();
 		return nullptr;
+	}
+	static void Clear()
+	{
+		m_shaders.clear();
 	}
 
 private:
@@ -71,47 +72,70 @@ struct ShaderInputGroup
 	void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
 };
 
+
 class PSO
 {
 public:
 	PSO()=default;
 	PSO(ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
-	PSO Compile();
-	void SetBlendState       (BlendState blend=BlendState());
-	void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
-	void SetRasterizerState  (RasterizerState raster = RasterizerState());
-	void SetShaderInputGroup (ShaderInputGroup&);
-	~PSO()
-	{
-		
-	}
-
 	operator ID3D12PipelineState* ()
 	{
 		return m_pso.Get();
 	}
 
-	operator D3D12_GRAPHICS_PIPELINE_STATE_DESC()
-	{
-		return m_psoDesc;
-	}
-		
-
-private:
-	D3D12_SHADER_BYTECODE GetShader(std::string name);
+	static D3D12_SHADER_BYTECODE GetShader(std::string name);
 
 public:
 	ComPtr<ID3D12PipelineState> m_pso;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};
-	BlendState        m_blend;
-	DepthStencilState m_ds;
-	RasterizerState   m_rast;
-	ShaderInputGroup  m_shader;
+
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT dsvBufferFormat  = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	uint msaaQuality = 0;
 	bool msaaState = false;
 	
+};
+
+class RenderState
+{
+public:
+	RenderState()=default;
+	PSO Compile();
+	void SetBlendState       (BlendState blend=BlendState());
+	void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
+	void SetRasterizerState  (RasterizerState raster = RasterizerState());
+	void SetShaderInputGroup (ShaderInputGroup&);
+
+public:
+	BlendState        m_blend;
+	DepthStencilState m_ds;
+	RasterizerState   m_rast;
+	ShaderInputGroup  m_shader;
+};
+
+struct ComputeShaderInputGroup
+{
+	std::string computeShader;
+	RootSignature* rootSignature;
+
+	void SetCS(std::string name) { computeShader= name;  }
+	void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
+};
+
+
+class ComputePSO
+{
+public:
+	ComputePSO() = default;
+	ComputePSO(ComputeShaderInputGroup shaderGroup);
+	operator ID3D12PipelineState* ()
+	{
+		return m_pso.Get();
+	}
+
+
+private:
+	ComPtr<ID3D12PipelineState> m_pso;
 };
 
 #endif

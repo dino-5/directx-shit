@@ -1,23 +1,25 @@
 #pragma once
 
-#include "d3dUtil.h"
+#include "Util.h"
+#include "common.h"
+#include "Framework/dx12/Device.h"
 
-template<typename T>
 class UploadBuffer
 {
 public:
-    UploadBuffer(ID3D12Device* device, UINT elementCount, bool isConstantBuffer)  
+    UploadBuffer( uint elementCount, uint sizeOfType , bool isConstantBuffer)  
     {
-        Init(device, elementCount, isConstantBuffer);
+        Init(elementCount, sizeOfType, isConstantBuffer);
     }
 
-    void Init(ID3D12Device* device, UINT elementCount, bool isConstantBuffer) 
+    void Init(uint elementCount, uint sizeOfType, bool isConstantBuffer) 
     {
+        auto device = Device::GetDevice();
         mIsConstantBuffer = isConstantBuffer;
-        mElementByteSize = sizeof(T);
+        mElementByteSize = sizeOfType;
 
         if(isConstantBuffer)
-            mElementByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(T));
+            mElementByteSize = d3dUtil::CalcConstantBufferByteSize(sizeOfType);
 
         auto heapDesc = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
         auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mElementByteSize * elementCount); 
@@ -54,9 +56,9 @@ public:
         return mUploadBuffer.Get();
     }
 
-    void CopyData(int elementIndex, const T& data)
+    void CopyData(int elementIndex, const void* data)
     {
-        memcpy(&mMappedData[elementIndex*mElementByteSize], &data, sizeof(T));
+        memcpy(&mMappedData[elementIndex*mElementByteSize], data, mElementByteSize);
     }
 
 public:

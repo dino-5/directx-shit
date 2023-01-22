@@ -1,5 +1,6 @@
 #include "RootSignature.h"
 #include "Device.h"
+#include "include/Util.h"
 
 DescriptorRange::DescriptorRange(DescriptorRangeType type, uint numberOfDescriptors, uint baseShaderRegister,
 	uint registerSpace, uint offset)
@@ -18,6 +19,20 @@ RootArgument RootArgument::CreateTable(uint numberOfDescriptorRanges, Descriptor
 	val.m_argument.ShaderVisibility = CastType(vis);
 	val.m_argument.DescriptorTable.NumDescriptorRanges = 1;
 	val.m_argument.DescriptorTable.pDescriptorRanges = &range.m_range;
+	return val;
+}
+
+RootArgument RootArgument::CreateConstants(UINT num32BitValues,
+	UINT shaderRegister,
+	UINT registerSpace,
+	ShaderVisibility visibility)
+{
+	RootArgument val;
+	val.m_argument.Constants.Num32BitValues = num32BitValues;
+	val.m_argument.Constants.ShaderRegister= shaderRegister;
+	val.m_argument.Constants.RegisterSpace = registerSpace;
+	val.m_argument.ShaderVisibility = CastType(visibility);
+	val.m_argument.ParameterType = CastType(RootArgumentType::CONSTANT);
 	return val;
 }
 

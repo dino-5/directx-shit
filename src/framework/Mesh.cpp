@@ -10,7 +10,7 @@ void Submesh::Draw(ID3D12GraphicsCommandList* cmList)
 	}
 }
 
-std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> Submesh::GetSubmeshes(std::vector<Geometry::MeshData> mesh)
+std::vector<std::pair< Material, std::vector<Submesh> >> Submesh::GetSubmeshes(std::vector<Geometry::MeshData> mesh)
 {
 	std::vector<Submesh> submeshes(mesh.size());
 	UINT vertexOffset = 0;
@@ -24,13 +24,13 @@ std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> Subme
 		vertexOffset += mesh[i].Vertices.size();
 		indexOffset += mesh[i].Indices32.size();
 	}
-	return { { std::vector<TextureHandle>(), submeshes} };
+	return { { Material(), submeshes}};
 }
 
-std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >>
-Submesh::GetSubmeshes(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh)
+std::vector<std::pair< Material, std::vector<Submesh> >>
+Submesh::GetSubmeshes(std::vector<std::pair< Material, std::vector<Geometry::MeshData> >>& mesh)
 {
-	std::vector<std::pair< std::vector<TextureHandle>, std::vector<Submesh> >> submeshes;
+	std::vector<std::pair< Material, std::vector<Submesh> >> submeshes;
 	UINT vertexOffset = 0;
 	UINT indexOffset = 0;
 	for (auto& i : mesh)
@@ -62,7 +62,7 @@ Mesh::Mesh(
 	Init(device, cmList, vertexData, vertexDataSize, structSize, indexData, indexDataSize, format);
 }
 
-Mesh::Mesh(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& mesh,
+Mesh::Mesh(std::vector<std::pair< Material, std::vector<Geometry::MeshData>>>& mesh,
 	ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name)
 {
     DrawArgs = Submesh::GetSubmeshes(mesh);

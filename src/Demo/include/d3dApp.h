@@ -9,10 +9,11 @@
 #include <crtdbg.h>
 #endif
 
-#include "framework/include/d3dUtil.h"
+#include "framework/include/Util.h"
 #include "framework/include/GameTimer.h"
 #include "framework/dx12/DescriptorHeap.h"
 #include "framework/include/common.h"
+#include "Framework/dx12/Resource.h"
 
 // Link necessary d3d12 libraries.
 #pragma comment(lib,"d3dcompiler.lib")
@@ -68,7 +69,7 @@ protected:
 
 	void FlushCommandQueue();
 
-	ID3D12Resource* CurrentBackBuffer()const;
+	ID3D12Resource* CurrentBackBuffer();
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()const;
 	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView()const;
 
@@ -86,28 +87,25 @@ protected:
 	bool      mResizing = false;   // are the resize bars being dragged?
     bool      mFullscreenState = false;// fullscreen enabled
 
-	// Set true to use 4X MSAA (§4.1.8).  The default is false.
     bool      m4xMsaaState = false;    // 4X MSAA enabled
     UINT      m4xMsaaQuality = 0;      // quality level of 4X MSAA
 
-	// Used to keep track of the “delta-time” and game time (§4.4).
 	GameTimer mTimer;
 	
-    //Microsoft::WRL::ComPtr<IDXGIFactory4> mdxgiFactory;
-    Microsoft::WRL::ComPtr<IDXGISwapChain> mSwapChain;
-    //Microsoft::WRL::ComPtr<ID3D12Device> md3dDevice;
+    ComPtr<IDXGISwapChain> mSwapChain;
 
-    Microsoft::WRL::ComPtr<ID3D12Fence> mFence;
+    ComPtr<ID3D12Fence> mFence;
     UINT64 mCurrentFence = 0;
 	
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue> mCommandQueue;
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> mDirectCmdListAlloc;
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> mCommandList;
+    ComPtr<ID3D12CommandQueue> mCommandQueue;
+    ComPtr<ID3D12CommandAllocator> mDirectCmdListAlloc;
+    ComPtr<ID3D12GraphicsCommandList> mCommandList;
 
 	static const int SwapChainBufferCount = NumFrames;
 	int mCurrBackBuffer = 0;
-    Microsoft::WRL::ComPtr<ID3D12Resource> mSwapChainBuffer[NumFrames];
-    Microsoft::WRL::ComPtr<ID3D12Resource> mDepthStencilBuffer;
+	Resource m_swapChainBuffer[NumFrames];
+	Resource m_dsvBuffer;
+    ComPtr<ID3D12Resource> mDepthStencilBuffer;
 
 	DescriptorHeap m_rtvHeap;
 	DescriptorHeap m_dsvHeap;
@@ -119,7 +117,7 @@ protected:
 	D3D_DRIVER_TYPE md3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
     DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	int mClientWidth = 800;
-	int mClientHeight = 600;
+	int mClientWidth = 1200;
+	int mClientHeight = 800;
 };
 

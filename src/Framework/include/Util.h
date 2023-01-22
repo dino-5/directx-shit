@@ -27,17 +27,8 @@
 #include <cassert>
 #include "d3dx12.h"
 #include "MathHelper.h"
-#include "common.h"
 #include <minwinbase.h>
 
-#ifndef ThrowIfFailed
-#define ThrowIfFailed(x)                                              \
-{                                                                     \
-    HRESULT hr__ = (x);                                               \
-    std::wstring wfn = AnsiToWString(__FILE__);                       \
-    if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
-}
-#endif
 
 
 inline void d3dSetDebugName(IDXGIObject* obj, const char* name)

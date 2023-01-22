@@ -1,5 +1,6 @@
 #include "Device.h"
 #include "../external/stb/stb_image.h"
+#include "include/Util.h"
 
 
 void Device::GetHardwareAdapter(

@@ -8,7 +8,7 @@
 #include <sstream>
 #include "dx12/DescriptorHeap.h"
 
-int FindVector(std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& meshes, std::vector<TextureHandle>& textures)
+int FindVector(std::vector<std::pair< Material, std::vector<Geometry::MeshData> >>& meshes, Material& textures)
 {
     for (int i=0;i<meshes.size();i++)
     {
@@ -32,13 +32,13 @@ void Model::LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList
         return;
     }
     m_directory =  path.substr(0, path.find_last_of('/'))+"/";
-    std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >> meshes;
+    std::vector<std::pair< Material, std::vector<Geometry::MeshData> >> meshes;
     ProcessNode(scene->mRootNode, scene, cmList, meshes);
     m_mesh = Mesh(meshes, cmList, "model");
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList, 
-    std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>& meshes)
+    std::vector<std::pair< Material, std::vector<Geometry::MeshData> >>& meshes)
 {
     for(unsigned int i=0; i<node->mNumMeshes; i++)
     {
@@ -62,11 +62,11 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12Graphic
     }
 }
 
-std::pair<std::vector<TextureHandle> ,Geometry::MeshData> Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList)
+std::pair<Material ,Geometry::MeshData> Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList)
 {
     std::vector<Geometry::Vertex> vertices;
     std::vector<unsigned int> indices;
-    std::vector<TextureHandle> textures;
+    Material mat;
 
     for(unsigned int i=0; i<mesh->mNumVertices;i++)
     {
@@ -102,27 +102,22 @@ std::pair<std::vector<TextureHandle> ,Geometry::MeshData> Model::ProcessMesh(aiM
     if(mesh->mMaterialIndex>=0)
     {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        std::vector<TextureHandle> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", cmList);
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        std::vector<TextureHandle> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", cmList);
-        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+        mat.diffuseTexture = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", cmList);
+        mat.specularTexture = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", cmList);
     }
-    return { textures, Geometry::MeshData(vertices, indices) };
+    return { mat, Geometry::MeshData(vertices, indices) };
 }
 
-std::vector<TextureHandle> Model::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName,
+TextureHandle Model::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName,
     ComPtr<ID3D12GraphicsCommandList> cmList)
 {
-    std::vector<TextureHandle> textures;
-    for(unsigned int i=0; i<mat->GetTextureCount(type);i++)
-    {
-        aiString str;
-        mat->GetTexture(type, i, &str);
+    TextureHandle texture;
+	aiString str;
+	mat->GetTexture(type, 0, &str);
+	std::string name(str.C_Str());
+	texture= TextureColection::CreateTexture((m_directory+name).c_str(), Device::GetDevice(), cmList, name);
 
-		std::string name(str.C_Str());
-		textures.push_back(TextureColection::CreateTexture((m_directory+name).c_str(), Device::GetDevice(), cmList, name));
-    }
-    return textures;
+    return texture;
 }
 
 void Model::DrawModel(ID3D12GraphicsCommandList* cmdList)

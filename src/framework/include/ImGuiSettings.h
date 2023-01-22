@@ -16,24 +16,21 @@ public:
 		float max;
 
 	};
-	static inline std::vector<ImGuiElement> elements;
 public:
 	ImGuiSettings() = delete;
 	static void Init(HWND hwnd, ID3D12Device*, int numFrames);
-	static void Draw();
 	static void StartFrame();
 	static void EndFrame();
 	static void Begin(std::string name);
 	static void End();
+	static bool SliderFloat (std::string name, float* ptr, float min, float max);
+	static bool SliderFloat2(std::string name, float* ptr, float min, float max);
 	static bool SliderFloat3(std::string name, float* ptr, float min, float max);
-	static bool SliderFloat(std::string name, float* ptr, float min, float max);
+	static bool SliderFloat4(std::string name, float* ptr, float min, float max);
 
 	static ID3D12DescriptorHeap* GetDescriptorHeap() {
 		return g_pd3dSrvDescHeap;
 	}
-
-	static void AddItem(ImGuiElement);
-
 
 private:
 	struct FrameContext

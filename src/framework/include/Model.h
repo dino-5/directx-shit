@@ -38,9 +38,9 @@ class Model
     private:
         void LoadModel(std::string path, ComPtr<ID3D12GraphicsCommandList> cmList);
         void ProcessNode(aiNode* node, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList, 
-            std::vector<std::pair< std::vector<TextureHandle>, std::vector<Geometry::MeshData> >>&);
-        std::pair<std::vector<TextureHandle>, Geometry::MeshData> ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList);
-        std::vector<TextureHandle> LoadMaterialTextures(aiMaterial* mat,
+            std::vector<std::pair< Material, std::vector<Geometry::MeshData> >>&);
+        std::pair<Material, Geometry::MeshData> ProcessMesh(aiMesh* mesh, const aiScene* scene, ComPtr<ID3D12GraphicsCommandList> cmList);
+        TextureHandle LoadMaterialTextures(aiMaterial* mat,
             aiTextureType type, std::string typeName, ComPtr<ID3D12GraphicsCommandList> cmList);
 
 };

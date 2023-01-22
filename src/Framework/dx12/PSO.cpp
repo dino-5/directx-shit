@@ -1,7 +1,7 @@
 #include "PSO.h"
 #include "RootSignature.h"
 #include "Device.h"
-#include "Framework/include/d3dUtil.h"
+#include "Framework/include/Util.h"
 
 D3D12_SHADER_BYTECODE PSO::GetShader(std::string name)
 {
@@ -32,29 +32,44 @@ PSO::PSO(ShaderInputGroup shader, BlendState blendState,DepthStencilState dsStat
     ThrowIfFailed(Device::GetDevice()->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
 }
 
-void PSO::SetBlendState(BlendState blendState)
+void RenderState::SetBlendState(BlendState blendState)
 {
     m_blend = blendState;
 }
 
-void PSO::SetDepthStencilState(DepthStencilState ds)
+void RenderState::SetDepthStencilState(DepthStencilState ds)
 {
     m_ds = ds;
 }
 
-void PSO::SetRasterizerState(RasterizerState rast)
+void RenderState::SetRasterizerState(RasterizerState rast)
 {
     m_rast = rast;
 }
 
-void PSO::SetShaderInputGroup(ShaderInputGroup& shader)
+void RenderState::SetShaderInputGroup(ShaderInputGroup& shader)
 {
     m_shader = shader;
 }
 
-PSO PSO::Compile()
+PSO RenderState::Compile()
 {
     return PSO(m_shader, m_blend, m_ds, m_rast);
+}
+
+std::string GetShaderTypeString(ShaderType type)
+{
+    switch (type)
+    {
+    case ShaderType::VERTEX:
+        return "vs_5_1";
+    case ShaderType::PIXEL:
+        return "ps_5_1";
+    case ShaderType::COMPUTE:
+        return "cs_5_1";
+    default:
+        return "wrong shit";
+    }
 }
 
 void Shader::CreateShader(ShaderInfo info)
@@ -63,7 +78,7 @@ void Shader::CreateShader(ShaderInfo info)
     else
     {
         m_shaders[info.shaderName] = d3dUtil::CompileShader(std::wstring(info.path.begin(), info.path.end()),
-            nullptr, info.entryPoint, info.type == ShaderType::VERTEX ? "vs_5_1" : "ps_5_1");
+            nullptr, info.entryPoint, GetShaderTypeString(info.type) );
     }
 }
 
@@ -71,4 +86,13 @@ Shader::Shader(ShaderInfo info) :m_name(info.shaderName)
 {
 	CreateShader(info);
 	m_shader = m_shaders[info.shaderName];
+}
+
+ComputePSO::ComputePSO(ComputeShaderInputGroup shaderGroup)
+{
+    D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
+    desc.CS = PSO::GetShader(shaderGroup.computeShader);
+    desc.pRootSignature = *shaderGroup.rootSignature;
+    
+    ThrowIfFailed(Device::GetDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
 }

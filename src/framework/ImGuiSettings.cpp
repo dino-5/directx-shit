@@ -11,7 +11,6 @@ void ImGuiSettings::Init(HWND hwnd, ID3D12Device* device, int numFrames)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
     g_pd3dDevice = device;
 
     {
@@ -27,25 +26,6 @@ void ImGuiSettings::Init(HWND hwnd, ID3D12Device* device, int numFrames)
         DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
         g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
         g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
-}
-
-void ImGuiSettings::AddItem(ImGuiElement element)
-{
-	elements.push_back(element);
-}
-
-void ImGuiSettings::Draw()
-{
-	for (int i = 0; i < elements.size(); i++)
-	{
-		if (ImGui::Begin(elements[i].name))
-		{
-			if (elements[i].capacity == 3)
-				ImGui::SliderFloat3("name", elements[i].array[0], elements[i].min, elements[i].max);
-
-		}
-	}
-	ImGui::Render();
 }
 
 void ImGuiSettings::StartFrame()
@@ -71,13 +51,22 @@ void ImGuiSettings::End()
     ImGui::End();
 }
 
+bool ImGuiSettings::SliderFloat2(std::string name, float* ptr, float min, float max)
+{
+	return ImGui::SliderFloat2(name.c_str(), ptr, min, max);
+}
+
 bool ImGuiSettings::SliderFloat3(std::string name, float* ptr, float min, float max)
 {
-    return ImGui::SliderFloat3(name.c_str(), ptr, min, max);
+	return ImGui::SliderFloat3(name.c_str(), ptr, min, max);
+}
+
+bool ImGuiSettings::SliderFloat4(std::string name, float* ptr, float min, float max)
+{
+	return ImGui::SliderFloat4(name.c_str(), ptr, min, max);
 }
 
 bool ImGuiSettings::SliderFloat(std::string name, float* ptr, float min, float max)
 {
-    return ImGui::SliderFloat(name.c_str(), ptr, min, max);
+	return ImGui::SliderFloat(name.c_str(), ptr, min, max);
 }
-

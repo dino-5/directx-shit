@@ -6,11 +6,6 @@
 #include <vector>
 #include "../include/common.h"
 
-enum class Format
-{
-	float3 = DXGI_FORMAT_R32G32B32_FLOAT,
-	float2 = DXGI_FORMAT_R32G32_FLOAT,
-};
 
 class InputLayoutElement
 {

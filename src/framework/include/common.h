@@ -2,17 +2,34 @@
 #include<d3d12.h>
 #include<DirectXMath.h>
 #include"d3dx12.h"
-#include"MathHelper.h"
 #include<wrl/client.h>
+#include <string>
+#include <vector>
+
 template<typename T>
 using ComPtr = Microsoft::WRL::ComPtr <T>;
 using uint = unsigned int;
 using uint8 = unsigned char;
-#include"d3dUtil.h"
+
+
+static std::wstring to_wstring(std::string str)
+{
+	return std::wstring(str.begin(), str.end());
+}
+
+#ifndef ThrowIfFailed
+#define ThrowIfFailed(x)                                              \
+{                                                                     \
+    HRESULT hr__ = (x);                                               \
+    std::wstring wfn = to_wstring(__FILE__);                       \
+    if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
+}
+#endif
 
 static const int NumFrames=3;
 
 using namespace DirectX;
+
 
 struct Vertex
 {
@@ -30,8 +47,27 @@ enum class Key {
 	SWITCH_CAMERA = 192
 };
 
+enum class ResourceFlags
+{
+	NONE          = D3D12_RESOURCE_FLAG_NONE,
+	RENDER_TARGET = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+	DEPTH_STENCIL = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+	UNOURDERED    = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+	DENY_SHADER   = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE
+};
+
+enum class Format
+{
+	float3 = DXGI_FORMAT_R32G32B32_FLOAT,
+	float2 = DXGI_FORMAT_R32G32_FLOAT,
+};
+
+
 template<typename T>
 unsigned int GetVectorSize(std::vector<T> vec)
 {
 	return vec.size() * sizeof(T);
 }
+
+D3D12_RESOURCE_FLAGS CastType(ResourceFlags flag);
+

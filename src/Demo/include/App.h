@@ -1,6 +1,7 @@
 #pragma once
 
 #include "d3dApp.h"
+#include "BlurFilter.h"
 #include "framework/include/MathHelper.h"
 #include "framework/include/UploadBuffer.h"
 #include "framework/include/common.h"
@@ -52,12 +53,15 @@ private:
     void BuildPSO();
     void BuildFrameResources();
     void BuildRenderItems();
+    void BuildSkyBox();
+    void InitBlur();
 
     void InitImgui();
     void DrawImgui();
 
     void UpdateObjectCB(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
+    void UpdateLightCB(const GameTimer& gt);
 
 private:
 
@@ -66,9 +70,11 @@ private:
     std::vector<RenderItem*> m_transparentItems;
     std::vector<RenderItem*> m_reflectedItems;
     std::vector<RenderItem*> m_mirror;
+    std::vector<RenderItem*> m_box;
 
-    std::vector<FrameResource> m_frameResources;
-    FrameResource* m_currentFrameResource = nullptr;
+    static inline const int frameResBuffers = 3;
+    std::vector<FrameResource<frameResBuffers>> m_frameResources;
+    FrameResource<frameResBuffers>* m_currentFrameResource = nullptr;
     int m_frameIndex = 0;
     
     std::unordered_map<std::string, RootSignature> m_rootSignatures;
@@ -76,8 +82,11 @@ private:
     ComPtr<ID3DBlob> mpsByteCode = nullptr;
 
     std::unordered_map<std::string, PSO> m_pso;
+    std::unordered_map<std::string, ComputePSO> m_CSpso;
 
     DescriptorHeap m_cbvHeap;
+    Resource m_cubeMap;
+    Resource textureUploadHeap;
 
     XMFLOAT3 mEyePos = { 0.0f, .75f, -7.0f };
     XMFLOAT4X4 mView = MathHelper::Identity4x4();
@@ -85,8 +94,12 @@ private:
     Camera m_camera;
 
     PassConstants m_mainPassCB;
-    imguiConstants mainPassImGui;
+    ImguiConstants mainPassImGui;
     PassConstants m_reflectedPassCB;
+    BlurFilter m_blur;
+    bool reloadShaders = false;
+    //PointLight m_light;
+    SpotLight m_light;
 
     float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 };
