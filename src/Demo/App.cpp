@@ -1,8 +1,8 @@
-#include "framework/dx12/Device.h"
+#include "Framework/dx12/Device.h"
 #include "include/App.h"
-#include "framework/dx12/PSO.h"
+#include "Framework/dx12/PSO.h"
 #include "external/imgui/imgui.h"
-#include "external/imgui/imgui_impl_dx12.h"
+#include "external/imgui/backends/imgui_impl_dx12.h"
 #include "Framework/dx12/RootSignature.h"
 #include "Framework/dx12/PipelineStates.h"
 #include "Framework/dx12/PSO.h"
@@ -132,15 +132,6 @@ void App::BuildRenderItems()
         m_renderItems.push_back(ritem);
     }
 
-    Model model; 
-    model.Init("D:/dev/projects/learning/directx-shit/textures/models/backpack/backpack.obj", mCommandList);
-    RenderItem model_item(model, "model");
-    m_renderItems.push_back(model_item);
-    model_item.m_state = RenderItem::RenderItemState::REFLECTED;
-    model_item.m_transformation.m_state = ObjectConstants::ObjectConstantsState::REFLECTED;
-	model_item.m_objCbIndex = RenderItem::g_objectCBIndex++;
-    m_renderItems.push_back(model_item);
-
     m_renderItems.reserve(4);
     for (auto& e : m_renderItems)
         if (e.m_state == RenderItem::RenderItemState::OPAQUE_STATE)
@@ -163,15 +154,15 @@ void App::BuildRenderItems()
 void App::BuildPSO()
 {
     std::wstring homeDir = L"D:/dev/projects/learning/directx-shit/";
-    Shader::CreateShader({"colorVertex", "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "VS", ShaderType::VERTEX});
-    Shader::CreateShader({"colorPixel",  "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "PS", ShaderType::PIXEL});
-    Shader::CreateShader({"WhitePixel",  "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "WhiteBox", ShaderType::PIXEL});
+    Shader::CreateShader({"colorVertex", "Shaders/color.hlsl", "VS", ShaderType::VERTEX});
+    Shader::CreateShader({"colorPixel",  "Shaders/color.hlsl", "PS", ShaderType::PIXEL});
+    Shader::CreateShader({"WhitePixel",  "Shaders/color.hlsl", "WhiteBox", ShaderType::PIXEL});
 
-    Shader::CreateShader({"SkyBoxVS",  "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "SkyBoxVS", ShaderType::VERTEX});
-    Shader::CreateShader({"SkyBoxPS",  "D:/dev/projects/learning/directx-shit/src/Shaders/color.hlsl", "SkyBoxPS", ShaderType::PIXEL});
+    Shader::CreateShader({"SkyBoxVS",  "Shaders/color.hlsl", "SkyBoxVS", ShaderType::VERTEX});
+    Shader::CreateShader({"SkyBoxPS",  "Shaders/color.hlsl", "SkyBoxPS", ShaderType::PIXEL});
 
-    Shader::CreateShader({"blurVertCS",  "D:/dev/projects/learning/directx-shit/src/Shaders/Blur.hlsl",  "VertBlurCS", ShaderType::COMPUTE});
-    Shader::CreateShader({"blurHorCS",  "D:/dev/projects/learning/directx-shit/src/Shaders/Blur.hlsl",  "HorzBlurCS", ShaderType::COMPUTE});
+    Shader::CreateShader({"blurVertCS",  "Shaders/Blur.hlsl",  "VertBlurCS", ShaderType::COMPUTE});
+    Shader::CreateShader({"blurHorCS",  "Shaders/Blur.hlsl",  "HorzBlurCS", ShaderType::COMPUTE});
 
     std::vector<InputLayoutElement> inputLayout =
     {
@@ -284,7 +275,7 @@ void App::BuildSkyBox()
     faces.push_back("back.jpg");
     faces.push_back("front.jpg");
 
-    std::string rootDir = "D:/dev/projects/learning/directx-shit/textures/skybox/";
+    std::string rootDir = "../../textures/skybox/";
     int width, height;
     unsigned char* ptr = stbi_load((rootDir + faces[0]).c_str(), &width, &height, nullptr, 4);
     int a = sizeof(ptr);
@@ -482,11 +473,11 @@ void App::Draw(const GameTimer& gt)
 		mCommandList->SetGraphicsRootConstantBufferView(2, lightCbvAddress);
 
         bool fl_drawOpaqueItems      = bool(1);
-        bool fl_drawStencilMirror    = bool(0);
-        bool fl_drawReflectedItems   = bool(0);
-        bool fl_drawTransparentItems = bool(0);
-        bool fl_drawSkyBox           = bool(0);
-        bool fl_executeBlurPass      = bool(0);
+        bool fl_drawStencilMirror    = bool(1);
+        bool fl_drawReflectedItems   = bool(1);
+        bool fl_drawTransparentItems = bool(1);
+        bool fl_drawSkyBox           = bool(1);
+        bool fl_executeBlurPass      = bool(1);
 
         // simple draw of opaque items
         if(fl_drawOpaqueItems)

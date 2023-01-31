@@ -1,9 +1,9 @@
 #include "include/ImGuiSettings.h"
 #include "external/imgui/imgui.h"
-#include "external/imgui/imgui_impl_dx12.h"
-#include "external/imgui/imgui_impl_win32.h"
-#include "external/imgui/imgui_impl_win32.h"
-#include "external/imgui/imgui_impl_dx12.h"
+#include "external/imgui/backends/imgui_impl_dx12.h"
+#include "external/imgui/backends/imgui_impl_win32.h"
+#include "external/imgui/backends/imgui_impl_win32.h"
+#include "external/imgui/backends/imgui_impl_dx12.h"
 
 void ImGuiSettings::Init(HWND hwnd, ID3D12Device* device, int numFrames)
 {

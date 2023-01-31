@@ -1,8 +1,9 @@
 #include "Window.h"
 #include "framework/include/ImGuiSettings.h"
 #include "external/imgui/imgui.h"
-#include "external/imgui/imgui_impl_dx12.h"
+#include "external/imgui/backends/imgui_impl_dx12.h"
 #include "framework/dx12/Device.h"
+#include <string>
 
 LRESULT CALLBACK
 MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -106,11 +107,13 @@ WNDCLASS Window::CreateWindowClass(HINSTANCE inst, std::string name)
 	wc.hCursor       = LoadCursor(0, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
 	wc.lpszMenuName  = 0;
-	wc.lpszClassName = name.c_str();
+	wc.lpszClassName = std::wstring(name.begin(), name.end()).c_str();
 
 	if( !RegisterClass(&wc) )
 	{
-		MessageBox(0, "RegisterClass Failed.", 0, 0);
+		std::string message = "RegisterClass Failed";
+		std::wstring str = std::wstring(message.begin(), message.end()).c_str();
+		MessageBox(0, str.c_str(), 0, 0);
 	}
 	return wc;
 }
@@ -123,11 +126,13 @@ Window::Window(HINSTANCE inst, int w, int h, std::string name) : width(w), heigh
 	w = R.right - R.left;
 	h = R.bottom - R.top;
 
-	m_windowHandler = CreateWindow(windowName.c_str(), windowName.c_str(),
+	m_windowHandler = CreateWindow(wc.lpszClassName, wc.lpszClassName,
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, w, h, 0, 0, inst, 0); 
 	if( m_windowHandler)
 	{
-		MessageBox(0, "CreateWindow Failed.", 0, 0);
+		std::string message = "CreateWindow Failed.";
+		std::wstring str = std::wstring(message.begin(), message.end()).c_str();
+		MessageBox(0, str.c_str(), 0, 0);
 	}
 	ShowWindow(m_windowHandler, SW_SHOW);
 	UpdateWindow(m_windowHandler);
