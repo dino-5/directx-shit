@@ -28,7 +28,7 @@ class ShaderInfo;
 class App : public D3DApp
 {
 public:
-	App(HINSTANCE hInstance);
+	App();
     App(const App& rhs) = delete;
     App& operator=(const App& rhs) = delete;
 	~App();

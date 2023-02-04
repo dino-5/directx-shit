@@ -13,8 +13,8 @@
 using namespace DirectX;
 
 
-App::App(HINSTANCE hInstance)
-: D3DApp(hInstance) , mainPassImGui(m_mainPassCB)
+App::App()
+: D3DApp() , mainPassImGui(m_mainPassCB)
 {
 }
 

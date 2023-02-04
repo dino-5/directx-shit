@@ -11,7 +11,7 @@ int main()
 
     try
     {
-        App theApp(hInstance);
+        App theApp;
         if(!theApp.Initialize())
             return 0;
 

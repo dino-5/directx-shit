@@ -14,6 +14,7 @@
 #include "framework/dx12/DescriptorHeap.h"
 #include "framework/include/common.h"
 #include "Framework/dx12/Resource.h"
+#include "Framework/System/Window.h"
 
 // Link necessary d3d12 libraries.
 #pragma comment(lib,"d3dcompiler.lib")
@@ -26,7 +27,7 @@ class D3DApp
 {
 protected:
 
-    D3DApp(HINSTANCE hInstance);
+    D3DApp();
     D3DApp(const D3DApp& rhs) = delete;
     D3DApp& operator=(const D3DApp& rhs) = delete;
     virtual ~D3DApp();
@@ -79,7 +80,8 @@ protected:
 
     static D3DApp* mApp;
 
-    HINSTANCE mhAppInst = nullptr; // application instance handle
+	Window m_window;
+
     HWND      mhMainWnd = nullptr; // main window handle
 	bool      mAppPaused = false;  // is the application paused?
 	bool      mMinimized = false;  // is the application minimized?

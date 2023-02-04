@@ -23,8 +23,7 @@ D3DApp* D3DApp::GetApp()
     return mApp;
 }
 
-D3DApp::D3DApp(HINSTANCE hInstance)
-:	mhAppInst(hInstance)
+D3DApp::D3DApp()
 {
     // Only one D3DApp can be constructed.
     assert(mApp == nullptr);
@@ -35,11 +34,6 @@ D3DApp::~D3DApp()
 {
 	if(Device::GetDevice() != nullptr)
 		FlushCommandQueue();
-}
-
-HINSTANCE D3DApp::AppInst()const
-{
-	return mhAppInst;
 }
 
 HWND D3DApp::MainWnd()const
@@ -323,7 +317,7 @@ bool D3DApp::InitMainWindow()
 	wc.lpfnWndProc   = MainWndProc; 
 	wc.cbClsExtra    = 0;
 	wc.cbWndExtra    = 0;
-	wc.hInstance     = mhAppInst;
+	wc.hInstance     = nullptr;
 	wc.hIcon         = LoadIcon(0, IDI_APPLICATION);
 	wc.hCursor       = LoadCursor(0, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -343,7 +337,7 @@ bool D3DApp::InitMainWindow()
 	int height = R.bottom - R.top;
 
 	mhMainWnd = CreateWindow(L"MainWnd", mMainWndCaption.c_str(), 
-		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, mhAppInst, 0); 
+		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, nullptr, 0); 
 	if( !mhMainWnd )
 	{
 		MessageBox(0, L"CreateWindow Failed.", 0, 0);

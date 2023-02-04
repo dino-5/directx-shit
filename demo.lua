@@ -38,7 +38,7 @@ project "External"
         "**/examples/**"
     }
 
-project "Framework"
+project "ShitEngine"
     location "src/Framework"
     kind "StaticLib"
     language "C++"
