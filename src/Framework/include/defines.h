@@ -6,7 +6,6 @@ NAME& operator=(const NAME&)=delete;
 
 
 #define SHIT_ENGINE_SINGLETONE(NAME) SHIT_ENGINE_NON_COPYABLE(NAME)\
-NAME()=default;\
 protected:\
 static inline std::unique_ptr<NAME> singleton;\
 public:\
@@ -19,6 +18,9 @@ static NAME* Get##NAME()\
 static void Set##NAME(NAME* obj)\
 {\
 	singleton.reset(obj);\
-}
+}\
+NAME(){Set##NAME(this);}\
+
+#define SHIT_ENGINE_GET_D3D12COMPONENT(TYPE, NAME, VAR_NAME) TYPE* Get##NAME(){ return VAR_NAME.Get(); } 
 
 									

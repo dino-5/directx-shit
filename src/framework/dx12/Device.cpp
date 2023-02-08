@@ -91,14 +91,3 @@ void Device::Initialize()
     }
 }
 
-ID3D12Device* Device::GetDevice()
-{
-    return m_device.Get();
-}
-
-IDXGIFactory4* Device::GetFactory()
-{
-    return m_factory.Get();
-}
-
-

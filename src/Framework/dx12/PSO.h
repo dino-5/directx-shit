@@ -135,7 +135,7 @@ public:
 
 
 private:
-	ComPtr<ID3D12PipelineState> m_pso;
+	ComPtr<ID3D12PipelineState> m_pso=nullptr;
 };
 
 #endif

@@ -1,24 +1,24 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 #include<d3d12.h>
-#include "../include/common.h"
+#include "Framework/include/common.h"
+#include "Framework/include/defines.h"
+#include "Framework/include/d3dx12.h"
 #include <windows.h>
 #include <dxgi1_6.h>
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
-#include "../include/d3dx12.h"
 
 class Texture;
 class DescriptorHeap;
 
+
 class Device
 {
 public:
-
 	void Initialize();
-	Device() = delete;
-	ID3D12Device* GetDevice();
-	IDXGIFactory4* GetFactory();
+	SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12Device, Device, m_device);
+	SHIT_ENGINE_GET_D3D12COMPONENT(IDXGIFactory4, Factory, m_factory);
 
 private:
 		

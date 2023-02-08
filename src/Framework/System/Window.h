@@ -10,6 +10,7 @@ class Window
 {
 public:
 	Window(int width, int height, std::string name);
+	void Initialize(int width, int height, std::string name);
 	Window() = default;
 
 	static WNDCLASS CreateWindowClass(std::string);
@@ -30,6 +31,7 @@ class WindowApp : public Window
 public:
 	LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	WindowApp(int width, int height, std::string name);
+	void Initialize(int width, int height, std::string name);
 
 	SHIT_ENGINE_SINGLETONE(WindowApp);
 

@@ -100,8 +100,16 @@ WNDCLASS Window::CreateWindowClass(std::string name)
 	return wc;
 }
 
-Window::Window(int w, int h, std::string name) : width(w), height(h), windowName(name)
+Window::Window(int w, int h, std::string name) 
 {
+	Initialize(w, h, name);
+}
+
+void Window::Initialize(int w, int h, std::string name)
+{
+	width = w;
+	height = h;
+	windowName = name;
 	auto wc = CreateWindowClass(name);
 	RECT R = { 0, 0, width, height};
     AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
@@ -120,10 +128,13 @@ Window::Window(int w, int h, std::string name) : width(w), height(h), windowName
 	UpdateWindow(m_windowHandler);
 }
 
+void WindowApp::Initialize(int width, int height, std::string name)
+{
+	Window::Initialize(width, height, name);
+}
 
 WindowApp::WindowApp(int width, int height, std::string name) :
 	Window(width, height, name)
 {
-	WindowApp* app = GetWindowApp();
-	app = this;
+	SetWindowApp(this);
 }
