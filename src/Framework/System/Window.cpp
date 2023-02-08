@@ -77,14 +77,14 @@ LRESULT WindowApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-WNDCLASS Window::CreateWindowClass(HINSTANCE inst, std::string name)
+WNDCLASS Window::CreateWindowClass(std::string name)
 {
 	WNDCLASS wc;
 	wc.style         = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc   = MainWndProc; 
 	wc.cbClsExtra    = 0;
 	wc.cbWndExtra    = 0;
-	wc.hInstance     = inst;
+	wc.hInstance     = nullptr;
 	wc.hIcon         = LoadIcon(0, IDI_APPLICATION);
 	wc.hCursor       = LoadCursor(0, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -100,16 +100,16 @@ WNDCLASS Window::CreateWindowClass(HINSTANCE inst, std::string name)
 	return wc;
 }
 
-Window::Window(HINSTANCE inst, int w, int h, std::string name) : width(w), height(h), windowName(name)
+Window::Window(int w, int h, std::string name) : width(w), height(h), windowName(name)
 {
-	auto wc = CreateWindowClass(inst, name);
+	auto wc = CreateWindowClass(name);
 	RECT R = { 0, 0, width, height};
     AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
 	w = R.right - R.left;
 	h = R.bottom - R.top;
 
 	m_windowHandler = CreateWindow(wc.lpszClassName, wc.lpszClassName,
-		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, w, h, 0, 0, inst, 0); 
+		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, w, h, 0, 0, nullptr, 0); 
 	if( m_windowHandler)
 	{
 		std::string message = "CreateWindow Failed.";
@@ -121,8 +121,8 @@ Window::Window(HINSTANCE inst, int w, int h, std::string name) : width(w), heigh
 }
 
 
-WindowApp::WindowApp(HINSTANCE inst, int width, int height, std::string name) :
-	Window(inst, width, height, name)
+WindowApp::WindowApp(int width, int height, std::string name) :
+	Window(width, height, name)
 {
 	WindowApp* app = GetWindowApp();
 	app = this;

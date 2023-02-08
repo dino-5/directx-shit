@@ -15,10 +15,10 @@ class Device
 {
 public:
 
-	static void Initialize();
+	void Initialize();
 	Device() = delete;
-	static ID3D12Device* GetDevice();
-	static IDXGIFactory4* GetFactory();
+	ID3D12Device* GetDevice();
+	IDXGIFactory4* GetFactory();
 
 private:
 		
@@ -28,10 +28,8 @@ private:
 		bool requestHighPerformanceAdapter=true);
 
 private:
-	static inline bool isDeviceCreated = false;
-	static inline ComPtr<IDXGIFactory4> m_factory = nullptr;
-	static inline ComPtr<ID3D12Device> m_device   = nullptr;
-
+	ComPtr<IDXGIFactory4> m_factory = nullptr;
+	ComPtr<ID3D12Device> m_device   = nullptr;
 };
 
 #endif

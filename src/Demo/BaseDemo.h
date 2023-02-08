@@ -13,8 +13,9 @@
 class BaseDemo : public WindowApp
 {
 public:
-    BaseDemo()=default;
-
+	BaseDemo(int width, int height, std::string name);
+	SHIT_ENGINE_SINGLETONE(BaseDemo);
+    
 private:
 
 

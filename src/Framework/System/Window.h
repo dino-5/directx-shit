@@ -9,10 +9,10 @@
 class Window
 {
 public:
-	Window(HINSTANCE inst, int width, int height, std::string name);
+	Window(int width, int height, std::string name);
 	Window() = default;
 
-	static WNDCLASS CreateWindowClass(HINSTANCE, std::string);
+	static WNDCLASS CreateWindowClass(std::string);
 
 	void SetWindowHandler(HWND handler) { m_windowHandler = handler; }
 	void SetWidth(int w) { width = w; }
@@ -29,7 +29,7 @@ class WindowApp : public Window
 {
 public:
 	LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	WindowApp(HINSTANCE inst, int width, int height, std::string name);
+	WindowApp(int width, int height, std::string name);
 
 	SHIT_ENGINE_SINGLETONE(WindowApp);
 

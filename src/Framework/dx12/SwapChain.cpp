@@ -33,7 +33,6 @@ SwapChain::SwapChain(int width, int height, DXGI_FORMAT format,HWND window, ComP
 
 void SwapChain::OnResize()
 {
-
 	for (int i = 0; i < NumFrames; ++i)
 		m_swapChainBuffer[i].Reset();
 	
