@@ -41,20 +41,6 @@ bool D3DApp::InitDirect3D()
 		IID_PPV_ARGS(&mFence)));
 }
 
-void D3DApp::CreateCommandObjects()
-{
-	ThrowIfFailed(device->CreateCommandAllocator(
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		IID_PPV_ARGS(mDirectCmdListAlloc.GetAddressOf())));
-
-	ThrowIfFailed(device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		mDirectCmdListAlloc.Get(), // Associated command allocator
-		nullptr,                   // Initial PipelineStateObject
-		IID_PPV_ARGS(mCommandList.GetAddressOf())));
-	mCommandList->Close();
-}
 
 
 void D3DApp::FlushCommandQueue()

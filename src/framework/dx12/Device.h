@@ -20,6 +20,8 @@ public:
 	SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12Device, Device, m_device);
 	SHIT_ENGINE_GET_D3D12COMPONENT(IDXGIFactory4, Factory, m_factory);
 
+	void CreateCommandList(ID3D12GraphicsCommandList*);
+
 private:
 		
 	void GetHardwareAdapter(

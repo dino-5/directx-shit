@@ -10,6 +10,7 @@ SwapChain::SwapChain(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, 
 
 void SwapChain::Init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
 {
+	m_currentSettings = settings;
     m_swapChain.Reset();
 
     DXGI_SWAP_CHAIN_DESC sd;
@@ -41,18 +42,17 @@ void SwapChain::OnResize()
 		m_swapChainBuffer[i].Reset();
 	
 	
-	// Resize the swap chain.
- //   ThrowIfFailed(mSwapChain->ResizeBuffers(
-	//	NumFrames, 
-	//	mClientWidth, mClientHeight, 
-	//	mBackBufferFormat, 
-	//	DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+    ThrowIfFailed(m_swapChain->ResizeBuffers(
+		NumFrames, 
+		m_currentSettings.width, m_currentSettings.height, 
+		m_currentSettings.format, 
+		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
-	////mCurrBackBuffer = 0;
- //
-	//for (UINT i = 0; i < NumFrames; i++)
-	//{
-	//	ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].GetAddress() )));
-	//	m_rtvHeap.CreateRTV(m_swapChainBuffer[i]);
-	//}
+	m_currentBuffer= 0;
+ 
+	for (UINT i = 0; i < NumFrames; i++)
+	{
+		ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].GetAddress() )));
+		//m_rtvHeap.CreateRTV(m_swapChainBuffer[i]);
+	}
 }

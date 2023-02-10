@@ -23,7 +23,9 @@ public:
 	void OnResize();
 
 private:
+	uint m_currentBuffer=0;
 	ComPtr<IDXGISwapChain> m_swapChain;
 	Resource m_swapChainBuffer[NumFrames];
+	SwapChainSettings m_currentSettings;
 };
 

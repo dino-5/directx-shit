@@ -30,5 +30,5 @@ private:
 	DescriptorHeap m_dsvHeap;
 
 	PSO* m_currentPSO;
-	ID3D12GraphicsCommandList* m_currentCList;
+	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 };

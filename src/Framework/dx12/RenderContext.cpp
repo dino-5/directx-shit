@@ -2,7 +2,9 @@
 
 void RenderContext::Initialize()
 {
+	assert(m_device.GetDevice() != nullptr);
 	m_graphicsQueue = CommandQueue(m_device.GetDevice(), {});
+	m_device.CreateCommandList(m_commandList.Get());
 
 	m_rtvHeap.Init(NumFrames, DescriptorHeapType::RTV);
 	m_dsvHeap.Init(1, DescriptorHeapType::DSV);

@@ -91,3 +91,13 @@ void Device::Initialize()
     }
 }
 
+void Device::CreateCommandList(ID3D12GraphicsCommandList* list)
+{
+	ThrowIfFailed(m_device->CreateCommandList(
+		0,
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+        nullptr,
+		nullptr,                   // Initial PipelineStateObject
+		IID_PPV_ARGS(&list)) );
+	list->Close();
+}

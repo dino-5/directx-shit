@@ -35,10 +35,15 @@ public:
 
 	SHIT_ENGINE_SINGLETONE(WindowApp);
 
-	void SetMouseHandler(MouseHandler* handler) { mouse = handler; }
-	void SetKeyboardHandler(KeyboardHandler* handler) { keyboard = handler; }
-
 protected:
-	MouseHandler* mouse;
-	KeyboardHandler* keyboard;
+	virtual void OnResize() {}
+	virtual void Update() {}
+	virtual void Draw() {}
+	virtual void Destroy() {}
+
+	virtual void OnMouseDown(WPARAM btnState, int x, int y){ }
+	virtual void OnMouseUp(WPARAM btnState, int x, int y)  { }
+	virtual void OnMouseMove(WPARAM btnState, int x, int y){ }
+	virtual void OnKeyDown(Key key) { }
+	virtual void Destroy() = 0;
 };
