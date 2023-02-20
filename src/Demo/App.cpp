@@ -1,5 +1,5 @@
 #include "Framework/dx12/Device.h"
-#include "include/App.h"
+#include "/App.h"
 #include "Framework/dx12/PSO.h"
 #include "external/imgui/imgui.h"
 #include "external/imgui/backends/imgui_impl_dx12.h"
@@ -11,7 +11,7 @@
 
 
 using namespace DirectX;
-
+/*
 
 App::App()
 : D3DApp() , mainPassImGui(m_mainPassCB)
@@ -57,7 +57,7 @@ void App::BuildDescriptorHeaps()
     UINT objCount = m_renderItems.size();
     UINT numberOfPassDescriptors = 1;
     UINT numDescriptors = 20;// (objCount + numberOfPassDescriptors + numberOfTextures)* NumFrames;
-    m_cbvHeap.Init(numDescriptors, DescriptorHeapType::CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+    m_cbvHeap.Init(numDescriptors, DescriptorHeapType::CBV_SRV_UAV);
     DescriptorHeapManager::SetSRVHeap(m_cbvHeap);
 }
 
@@ -584,3 +584,4 @@ void App::OnKeyDown(Key key)
 {
     m_camera.OnKeyDown(key);
 }
+*/

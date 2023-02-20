@@ -11,9 +11,6 @@ using namespace DirectX;
 
 void D3DApp::OnResize()
 {
-    ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
-	
-
 	m_dsvBuffer.Transition(mCommandList, ResourceState::DEPTH_WRITE);
 	
     ThrowIfFailed(mCommandList->Close());
@@ -35,27 +32,4 @@ void D3DApp::OnResize()
 }
  
 
-bool D3DApp::InitDirect3D()
-{
-	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
-		IID_PPV_ARGS(&mFence)));
-}
-
-
-
-void D3DApp::FlushCommandQueue()
-{
-    mCurrentFence++;
-    ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
-
-    if(mFence->GetCompletedValue() < mCurrentFence)
-	{
-		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
-
-        ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
-
-		WaitForSingleObject(eventHandle, INFINITE);
-        CloseHandle(eventHandle);
-	}
-}
 

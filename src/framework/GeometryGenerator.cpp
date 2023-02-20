@@ -1,6 +1,8 @@
-#include "include/GeometryGenerator.h"
+#include "Framework/util/GeometryGenerator.h"
 using namespace DirectX;
 
+namespace engine::util
+{
 Geometry::MeshData Geometry::CreateCylinder
 (
     float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount)
@@ -244,4 +246,4 @@ void Geometry::BuildCylinderBottomCap(float bottomRadius, float topRadius, float
         meshData.Indices32.push_back(baseIndex+i);
     }
 }
-
+};

@@ -1,23 +1,22 @@
-//***************************************************************************************
-// Camera.h by Frank Luna (C) 2011 All Rights Reserved.
-//***************************************************************************************
 
-#include "include/Camera.h"
-#include "include/ImGuiSettings.h"
+#include "Framework/include/Camera.h"
+#include "Framework/util/ImGuiSettings.h"
 #include <chrono>
 #include <ctime>
 #include <sys/utime.h>
 
 using namespace DirectX;
+using namespace engine;
+
 
 float to_radians(float angle)
 {
-	return angle * MathHelper::Pi / 180;
+	return angle * util::MathHelper::Pi / 180;
 }
 
 Camera::Camera()
 {
-	SetLens(0.25f*MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
+	SetLens(0.25f * util::MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
 }
 
 Camera::~Camera()
@@ -227,11 +226,11 @@ XMMATRIX Camera::GetView()
 
 void Camera::OnImGui()
 {
-	ImGuiSettings::Begin("Camera Position");
+	util::ImGuiSettings::Begin("Camera Position");
 	{
-		ImGuiSettings::SliderFloat3("pos", mPosition, -50, 50);
+		util::ImGuiSettings::SliderFloat3("pos", mPosition, -50, 50);
 	}
-	ImGuiSettings::End();
+	util::ImGuiSettings::End();
 }
 
 XMMATRIX Camera::GetProj()const

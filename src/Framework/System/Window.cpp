@@ -1,8 +1,8 @@
 #include "Window.h"
-#include "framework/include/ImGuiSettings.h"
+#include "Framework/util/ImGuiSettings.h"
 #include "external/imgui/imgui.h"
 #include "external/imgui/backends/imgui_impl_dx12.h"
-#include "framework/dx12/Device.h"
+#include "Framework/graphics/dx12/Device.h"
 #include <string>
 #include <windowsx.h>
 
@@ -11,114 +11,81 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 LRESULT CALLBACK
 MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    return WindowApp::GetWindowApp()->MsgProc(hwnd, msg, wParam, lParam);
+    return WindowApp::App->MsgProc(hwnd, msg, wParam, lParam);
 }
 
 
 LRESULT WindowApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
-        return true;
+        return 0;
 	switch( msg )
 	{
-	case WM_SIZE:
-		if( Device::GetDevice())
-		{
-			if( wParam == SIZE_MINIMIZED )
-			{
-			}
-			else if( wParam == SIZE_MAXIMIZED )
-			{
-				//OnResize();
-			}
-			else if( wParam == SIZE_RESTORED )
-			{
-				//OnResize();
-			}
-		}
-		return 0;
-
-	case WM_EXITSIZEMOVE:
-		//OnResize();
-		return 0;
- 
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-
-	case WM_GETMINMAXINFO:
-		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
-		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200; 
-		return 0;
-
 	case WM_LBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 	case WM_RBUTTONDOWN:
-		mouse->OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		return 0;
 	case WM_LBUTTONUP:
 	case WM_MBUTTONUP:
 	case WM_RBUTTONUP:
-		mouse->OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		return 0;
 	case WM_MOUSEMOVE:
-		mouse->OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		return 0;
-    case WM_KEYUP:
-        if(wParam == VK_ESCAPE)
-        {
-            PostQuitMessage(0);
-        }
+
 	case WM_KEYDOWN:
-		keyboard->OnKeyDown(static_cast<Key>(wParam));
-        return 0;
+		if(wParam == VK_ESCAPE)
+			PostQuitMessage(0);
+		return 0;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	default:
+		return DefWindowProc(hwnd, msg, wParam, lParam);
 	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 
-WNDCLASS Window::CreateWindowClass(std::string name)
+WNDCLASSEX Window::CreateWindowClass(std::string name)
 {
-	WNDCLASS wc;
-	wc.style         = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc   = MainWndProc; 
-	wc.cbClsExtra    = 0;
-	wc.cbWndExtra    = 0;
-	wc.hInstance     = nullptr;
-	wc.hIcon         = LoadIcon(0, IDI_APPLICATION);
-	wc.hCursor       = LoadCursor(0, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
-	wc.lpszMenuName  = 0;
-	wc.lpszClassName = std::wstring(name.begin(), name.end()).c_str();
-
-	if( !RegisterClass(&wc) )
+	HINSTANCE inst = GetModuleHandle(nullptr);
+	WNDCLASSEX wcex;
+	wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = MainWndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = inst;
+	wcex.hIcon = LoadIcon(inst, IDI_APPLICATION);
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = nullptr;
+	wcex.lpszClassName = std::wstring(name.begin(), name.end()).c_str();
+	wcex.hIconSm = LoadIcon(inst, IDI_APPLICATION);
+	if (!RegisterClassEx(&wcex))
 	{
-		std::string message = "RegisterClass Failed";
-		std::wstring str = std::wstring(message.begin(), message.end()).c_str();
-		MessageBox(0, str.c_str(), 0, 0);
+		MessageBox(0, L"RegisterClass Failed.", 0, 0);
 	}
-	return wc;
+	return wcex;
 }
 
-Window::Window(int w, int h, std::string name) 
-{
-	Initialize(w, h, name);
-}
+Window::Window(int w, int h, std::string name) :
+	width(w), height(h), windowName(name)
+{}
 
-void Window::Initialize(int w, int h, std::string name)
+bool Window::Initialize()
 {
-	width = w;
-	height = h;
-	windowName = name;
-	auto wc = CreateWindowClass(name);
+	auto wc = CreateWindowClass(windowName);
 	RECT R = { 0, 0, width, height};
     AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
-	w = R.right - R.left;
-	h = R.bottom - R.top;
-
+	int w = R.right - R.left;
+	int h = R.bottom - R.top;
+	HINSTANCE inst = GetModuleHandle(nullptr);
 	m_windowHandler = CreateWindow(wc.lpszClassName, wc.lpszClassName,
-		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, w, h, 0, 0, nullptr, 0); 
-	if( m_windowHandler)
+		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, w, h, nullptr, nullptr, inst, nullptr);
+	if(!m_windowHandler)
 	{
 		std::string message = "CreateWindow Failed.";
 		std::wstring str = std::wstring(message.begin(), message.end()).c_str();
@@ -126,15 +93,36 @@ void Window::Initialize(int w, int h, std::string name)
 	}
 	ShowWindow(m_windowHandler, SW_SHOW);
 	UpdateWindow(m_windowHandler);
-}
-
-void WindowApp::Initialize(int width, int height, std::string name)
-{
-	Window::Initialize(width, height, name);
+	return true;
 }
 
 WindowApp::WindowApp(int width, int height, std::string name) :
 	Window(width, height, name)
 {
-	SetWindowApp(this);
+	App = this;
+}
+
+bool WindowApp::Initialize()
+{
+	Window::Initialize();
+	return true;
+}
+
+void WindowApp::Run()
+{
+	MSG msg = { };
+	while (msg.message !=WM_QUIT)
+	{
+		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		else
+		{
+			Update();
+			Draw();
+		}
+	}
+	Destroy();
 }

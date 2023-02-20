@@ -1,8 +1,5 @@
-//***************************************************************************************
-// BlurFilter.cpp by Frank Luna (C) 2011 All Rights Reserved.
-//***************************************************************************************
 
-#include "include/BlurFilter.h"
+#include "BlurFilter.h"
  
 BlurFilter::BlurFilter(UINT width, UINT height,
                        DXGI_FORMAT format)
@@ -137,8 +134,8 @@ std::vector<float> BlurFilter::CalcGaussWeights(float sigma)
 
 void BlurFilter::BuildResources()
 {
-	m_blurMap0 = Resource(mFormat, mWidth, mHeight, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D, ResourceFlags::UNOURDERED, ResourceState::COMMON,
-		CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), ResourceDescriptorFlags::UnorderedAccess | ResourceDescriptorFlags::ShaderResource);
-	m_blurMap1 = Resource(mFormat, mWidth, mHeight, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D, ResourceFlags::UNOURDERED, ResourceState::COMMON,
-		CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), ResourceDescriptorFlags::UnorderedAccess | ResourceDescriptorFlags::ShaderResource);
+	//m_blurMap0 = Resource(mFormat, mWidth, mHeight, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D, ResourceFlags::UNOURDERED, ResourceState::COMMON,
+	//	CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), ResourceDescriptorFlags::UnorderedAccess | ResourceDescriptorFlags::ShaderResource);
+	//m_blurMap1 = Resource(mFormat, mWidth, mHeight, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D, ResourceFlags::UNOURDERED, ResourceState::COMMON,
+	//	CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), ResourceDescriptorFlags::UnorderedAccess | ResourceDescriptorFlags::ShaderResource);
 }

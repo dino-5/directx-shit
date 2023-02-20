@@ -1,8 +1,9 @@
-#include "include/Texture.h"
-#include "../external/stb/stb_image.h"
-#include "include/Util.h"
-#include "include/common.h"
-#include "dx12/DescriptorHeap.h"
+#include "Framework/graphics/Texture.h"
+#include "Framework/../external/stb/stb_image.h"
+#include "Framework/util/Util.h"
+#include "Framework/include/common.h"
+#include "Framework/graphics/dx12/DescriptorHeap.h"
+#include "Framework/graphics/dx12/Device.h"
 
 void BindTexture(ID3D12GraphicsCommandList* cmdList, TextureHandle handle, uint bindSlot)
 {
@@ -26,13 +27,13 @@ Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCo
 void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList, std::string s)
 {
 	std::uint8_t* data = stbi_load(path, &width, &height, &nrChannels, 4); 
-    m_texture.Init(DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    m_texture.Init(Device::device->GetDevice(), DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
         ResourceFlags::NONE, ResourceState::COPY_DEST, CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         ResourceDescriptorFlags::ShaderResource);
 
     const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture, 0, 1);
 
-    textureUploadHeap.Init(CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), ResourceState::GENERIC_READ_STATE,
+    textureUploadHeap.Init(Device::device->GetDevice(), CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), ResourceState::GENERIC_READ_STATE,
         CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD));
 
     D3D12_SUBRESOURCE_DATA textureData = {};

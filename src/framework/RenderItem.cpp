@@ -1,7 +1,7 @@
-#include "include/RenderItem.h"
-#include "include/ImGuiSettings.h"
-#include "dx12/Device.h"
-#include "include/Model.h"
+#include "Framework/graphics/RenderItem.h"
+#include "Framework/util/ImGuiSettings.h"
+#include "Framework/graphics/dx12/Device.h"
+#include "Framework/graphics/Model.h"
 
 void ObjectConstants::SetTranslation(float x, float y, float z)
 {
@@ -42,25 +42,25 @@ void ObjectConstants::OnImGuiRender()
 
 	float min_scale = 1;
 	float max_scale = 5;
-	if (ImGuiSettings::SliderFloat3("pos", Translation, min_translation, max_translation))
+	if (util::ImGuiSettings::SliderFloat3("pos", Translation, min_translation, max_translation))
 	{
 		Update();
 	}
 	
-	if (ImGuiSettings::SliderFloat("scale", &Scale, min_scale, max_scale))
+	if (util::ImGuiSettings::SliderFloat("scale", &Scale, min_scale, max_scale))
 	{
 		Update();
 	}
 
 }
 
-RenderItem::RenderItem(std::vector <Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList,
+RenderItem::RenderItem(std::vector <util::Geometry::MeshData>& meshes, ComPtr<ID3D12GraphicsCommandList> cmdList,
 	std::string name, RenderItemState state): 
 	     m_name(name),
 		m_objCbIndex(g_objectCBIndex++),
 		m_state(state)
 {
-	Geo = Mesh(meshes, cmdList, name);
+	Geo = Mesh(Device::device->GetDevice(), meshes, cmdList, name);
 
 	if (m_state == RenderItemState::REFLECTED)
 	{
@@ -94,16 +94,16 @@ void RenderItem::SetPrimitiveTopology(ID3D12GraphicsCommandList* cmList)
 
 void RenderItem::Update()
 {
-	numFramesDirty = NumFrames;
+	numFramesDirty = engine::config::NumFrames;
 	m_transformation.Update();
 }
 
 void RenderItem::OnImGuiRender()
 {
-	ImGuiSettings::Begin(m_name.c_str());
+	util::ImGuiSettings::Begin(m_name.c_str());
 	{
 		m_transformation.OnImGuiRender();
 	}
-	ImGuiSettings::End();
+	util::ImGuiSettings::End();
 }
 

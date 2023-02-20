@@ -1,6 +1,6 @@
-#include "include/Mesh.h"
-#include "dx12/Device.h"
-#include "dx12/DescriptorHeap.h"
+#include "Framework/graphics/Mesh.h"
+#include "Framework/graphics/dx12/Device.h"
+#include "Framework/graphics/dx12/DescriptorHeap.h"
 
 void Submesh::Draw(ID3D12GraphicsCommandList* cmList)
 {
@@ -10,7 +10,7 @@ void Submesh::Draw(ID3D12GraphicsCommandList* cmList)
 	}
 }
 
-std::vector<std::pair< Material, std::vector<Submesh> >> Submesh::GetSubmeshes(std::vector<Geometry::MeshData> mesh)
+std::vector<std::pair< Material, std::vector<Submesh> >> Submesh::GetSubmeshes(std::vector<util::Geometry::MeshData> mesh)
 {
 	std::vector<Submesh> submeshes(mesh.size());
 	UINT vertexOffset = 0;
@@ -28,7 +28,7 @@ std::vector<std::pair< Material, std::vector<Submesh> >> Submesh::GetSubmeshes(s
 }
 
 std::vector<std::pair< Material, std::vector<Submesh> >>
-Submesh::GetSubmeshes(std::vector<std::pair< Material, std::vector<Geometry::MeshData> >>& mesh)
+Submesh::GetSubmeshes(std::vector<std::pair< Material, std::vector<util::Geometry::MeshData> >>& mesh)
 {
 	std::vector<std::pair< Material, std::vector<Submesh> >> submeshes;
 	UINT vertexOffset = 0;
@@ -62,11 +62,11 @@ Mesh::Mesh(
 	Init(device, cmList, vertexData, vertexDataSize, structSize, indexData, indexDataSize, format);
 }
 
-Mesh::Mesh(std::vector<std::pair< Material, std::vector<Geometry::MeshData>>>& mesh,
+Mesh::Mesh(ID3D12Device* device, std::vector<std::pair< Material, std::vector<util::Geometry::MeshData>>>& mesh,
 	ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name)
 {
     DrawArgs = Submesh::GetSubmeshes(mesh);
-    std::vector<Geometry::Vertex> vertices;
+    std::vector<util::Geometry::Vertex> vertices;
     std::vector<std::uint16_t> indices;
     for (auto& i : mesh)
     {
@@ -77,16 +77,16 @@ Mesh::Mesh(std::vector<std::pair< Material, std::vector<Geometry::MeshData>>>& m
 		}
     }
 
-    Init(Device::GetDevice(), cmdList,
-        vertices.data(), GetVectorSize(vertices), sizeof(Geometry::Vertex),
+    Init(device, cmdList,
+        vertices.data(), GetVectorSize(vertices), sizeof(util::Geometry::Vertex),
         indices.data(), GetVectorSize(indices));
 }
 
-Mesh::Mesh(std::vector <Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name) :
+Mesh::Mesh(ID3D12Device* device, std::vector <util::Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name) :
 	Name(name)
 {
     DrawArgs = Submesh::GetSubmeshes(mesh);
-    std::vector<Geometry::Vertex> vertices;
+    std::vector<util::Geometry::Vertex> vertices;
     std::vector<std::uint16_t> indices;
     for (auto& i : mesh)
     {
@@ -94,8 +94,8 @@ Mesh::Mesh(std::vector <Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandL
 		indices.insert(indices.end(), i.GetIndices16().begin(), i.GetIndices16().end());
     }
 
-    Init(Device::GetDevice(), cmdList,
-        vertices.data(), GetVectorSize(vertices), sizeof(Geometry::Vertex),
+    Init(device, cmdList,
+        vertices.data(), GetVectorSize(vertices), sizeof(util::Geometry::Vertex),
         indices.data(), GetVectorSize(indices));
 }
 
@@ -124,7 +124,7 @@ void Mesh::CreateCPUBuffer(
 {
 	ThrowIfFailed(D3DCreateBlob(dataSize, &cpuMemory));
 	CopyMemory(cpuMemory->GetBufferPointer(), data, dataSize);
-	gpuMemory = d3dUtil::CreateDefaultBuffer(device, cmList.Get(), data, dataSize, uploadBuffer);
+	gpuMemory = engine::util::d3dUtil::CreateDefaultBuffer(device, cmList.Get(), data, dataSize, uploadBuffer);
 
 }
 

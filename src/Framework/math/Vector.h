@@ -1,10 +1,12 @@
 #pragma once
-#include "Framework/include/ImGuiSettings.h"
+#include "Framework/util/ImGuiSettings.h"
+#include "Framework/include/types.h"
 #include "Framework/include/common.h"
 #include <initializer_list>
 #include <math.h>
 
 using std::initializer_list;
+using namespace engine;
 
 template<int N>
 class Vector
@@ -92,9 +94,9 @@ public:
 	bool OnImGui(const char* name, float min=-10.f, float max=10.f)
 	{
 		if constexpr(N != 2)
-			return ImGuiSettings::SliderFloat3(name, m_data, min, max);
+			return util::ImGuiSettings::SliderFloat3(name, m_data, min, max);
 		else
-			return ImGuiSettings::SliderFloat2(name, m_data, min, max);
+			return util::ImGuiSettings::SliderFloat2(name, m_data, min, max);
 	}
 	float& operator[](int i) { return m_data[i]; }
 	float* data() { return m_data; }

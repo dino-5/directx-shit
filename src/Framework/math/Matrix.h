@@ -1,7 +1,7 @@
 #pragma once
 #include "Framework/math/Vector.h"
 #include "Framework/include/common.h"
-#include "Framework/include/ImGuiSettings.h"
+#include "Framework/util/ImGuiSettings.h"
 #include "Framework/math/Functions.h"	
 
 namespace Math

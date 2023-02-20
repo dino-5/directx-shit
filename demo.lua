@@ -81,12 +81,15 @@ project "Demo"
     
     links
     {
-        "Framework",
+        "ShitEngine",
         "External"
     }
 
     targetdir "build/%{cfg.buildcfg}"
     filter "files:**.hlsl"
+       buildaction "None"
+
+    filter "files:**/App.**"
        buildaction "None"
 
 

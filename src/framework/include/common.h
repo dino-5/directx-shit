@@ -2,31 +2,21 @@
 #include<d3d12.h>
 #include<DirectXMath.h>
 #include"d3dx12.h"
-#include<wrl/client.h>
+#include "Framework/util/Util.h"
 #include <string>
 #include <vector>
 
-template<typename T>
-using ComPtr = Microsoft::WRL::ComPtr <T>;
-using uint = unsigned int;
-using uint8 = unsigned char;
 
-
-static std::wstring to_wstring(std::string str)
-{
-	return std::wstring(str.begin(), str.end());
-}
 
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x)                                              \
 {                                                                     \
     HRESULT hr__ = (x);                                               \
-    std::wstring wfn = to_wstring(__FILE__);                       \
-    if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
+    std::wstring wfn = engine::util::to_wstring(__FILE__);                       \
+    if(FAILED(hr__)) { throw engine::util::DxException(hr__, L#x, wfn, __LINE__); } \
 }
 #endif
 
-static const int NumFrames=3;
 
 using namespace DirectX;
 
