@@ -23,6 +23,8 @@ public:
 	IDXGISwapChain* GetSwapChain() { return m_swapChain.Get(); }
 	void OnResize();
 
+	IDXGISwapChain* operator->() { return m_swapChain.Get(); }
+
 	void Reset() {
 		m_swapChain.Reset(); 
 		for (int i = 0; i < engine::config::NumFrames; i++)

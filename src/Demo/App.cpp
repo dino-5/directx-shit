@@ -1,16 +1,3 @@
-#include "Framework/dx12/Device.h"
-#include "/App.h"
-#include "Framework/dx12/PSO.h"
-#include "external/imgui/imgui.h"
-#include "external/imgui/backends/imgui_impl_dx12.h"
-#include "Framework/dx12/RootSignature.h"
-#include "Framework/dx12/PipelineStates.h"
-#include "Framework/dx12/PSO.h"
-#include "external/stb/stb_image.h"
-#include "Framework/math/Matrix.h"
-
-
-using namespace DirectX;
 /*
 
 App::App()

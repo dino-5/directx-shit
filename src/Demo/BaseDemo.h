@@ -39,6 +39,7 @@ private:
 
 private:
 	DemoSettings m_currentSettings;
+	uint m_currentFrameIndex = 0;
 	engine::graphics::RenderContext m_renderContext;
 	ComPtr<ID3D12CommandAllocator> m_allocator = nullptr;
 };

@@ -25,6 +25,7 @@ bool BaseDemo::Initialize()
 	m_renderContext.Initialize(m_allocator);
 	m_renderContext.ResetSwapChain(GetCurrentWindowSettings());
 
+
 	return true;
 }
 

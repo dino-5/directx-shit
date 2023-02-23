@@ -130,13 +130,4 @@ public:
 	RenderItemState m_state;
 };
 
-class RenderContext
-{
-public:
-	RenderContext() = default;
-
-private:
-	PSO* m_pso;
-	std::vector<RenderItem*> m_renderItems;
-};
 

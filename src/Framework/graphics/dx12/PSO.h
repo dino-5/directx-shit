@@ -11,134 +11,143 @@
 #include "PipelineStates.h"
 #include "RootSignature.h"
 
-enum class ShaderType
+namespace engine::graphics
 {
-	VERTEX,
-	PIXEL,
-	COMPUTE
-};
-std::string GetShaderTypeString(ShaderType type);
 
-struct ShaderInfo
-{
-	std::string shaderName;
-	std::string path;
-	std::string entryPoint;
-	ShaderType  type;
-};
-
-
-class Shader
-{
-public:
-	Shader() = default;
-	Shader(ShaderInfo);
-	static void CreateShader(ShaderInfo info);
-	static ID3DBlob* GetShader(std::string name)
+	enum class ShaderType
 	{
-		if (FindShader(name))
-			return m_shaders[name].Get();
-		return nullptr;
-	}
-	static void Clear()
+		VERTEX,
+		PIXEL,
+		COMPUTE
+	};
+	std::string GetShaderTypeString(ShaderType type);
+
+	struct ShaderInfo
 	{
-		m_shaders.clear();
-	}
+		std::string shaderName;
+		std::string path;
+		std::string entryPoint;
+		ShaderType  type;
+	};
 
-private:
-	static bool FindShader(std::string name)
+	class Shader
 	{
-		return m_shaders.find(name) != m_shaders.end();
-	}
+	public:
+		Shader() = default;
+		Shader(ShaderInfo);
 
-public:
-	static inline std::unordered_map < std::string, ComPtr<ID3DBlob>> m_shaders;
-	std::string m_name;
-	
-	ComPtr<ID3DBlob> m_shader;
-	
-};
+		static inline std::vector< TableEntry< ComPtr<ID3DBlob>>> allShaders;
+		static void CreateShader(ShaderInfo info);
+		static ID3DBlob* GetShader(std::string name)
+		{
+			return util::FindElement(allShaders, name)->Get();
+		}
+		static void Clear()
+		{
+			allShaders.clear();
+		}
 
-struct ShaderInputGroup
-{
-	std::string vertexShader;
-	std::string pixelShader;
-	InputLayout* layout;
-	RootSignature* rootSignature;
+	public:
+		std::string m_name;
+		ComPtr<ID3DBlob> m_shader=nullptr;
+	};
 
-	void SetVS(std::string name) { vertexShader = name;  }
-	void SetPS(std::string name) { pixelShader= name;  }
-	void SetLayout(InputLayout& l) { layout = &l;  }
-	void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
-};
-
-
-class PSO
-{
-public:
-	PSO()=default;
-	PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
-	operator ID3D12PipelineState* ()
+	struct ShaderInputGroup
 	{
-		return m_pso.Get();
-	}
+		std::string vertexShader;
+		std::string pixelShader;
+		InputLayout* layout;
+		RootSignature* rootSignature;
 
-	void Reset() { m_pso.Reset(); }
-	~PSO() { Reset(); }
+		void SetVS(std::string name) { vertexShader = name;  }
+		void SetPS(std::string name) { pixelShader= name;  }
+		void SetLayout(InputLayout& l) { layout = &l;  }
+		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
+	};
 
-	static D3D12_SHADER_BYTECODE GetShader(std::string name);
-
-public:
-	ComPtr<ID3D12PipelineState> m_pso;
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};
-
-	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	DXGI_FORMAT dsvBufferFormat  = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	uint msaaQuality = 0;
-	bool msaaState = false;
-	
-};
-
-class RenderState
-{
-public:
-	RenderState()=default;
-	PSO Compile();
-	void SetBlendState       (BlendState blend=BlendState());
-	void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
-	void SetRasterizerState  (RasterizerState raster = RasterizerState());
-	void SetShaderInputGroup (ShaderInputGroup&);
-
-public:
-	BlendState        m_blend;
-	DepthStencilState m_ds;
-	RasterizerState   m_rast;
-	ShaderInputGroup  m_shader;
-};
-
-struct ComputeShaderInputGroup
-{
-	std::string computeShader;
-	RootSignature* rootSignature;
-
-	void SetCS(std::string name) { computeShader= name;  }
-	void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
-};
-
-
-class ComputePSO
-{
-public:
-	ComputePSO() = default;
-	ComputePSO(ComputeShaderInputGroup shaderGroup);
-	operator ID3D12PipelineState* ()
+	class PSO;
+	class RenderState
 	{
-		return m_pso.Get();
-	}
+	public:
+		RenderState()=default;
+		PSO* Compile(std::string name);
+		void SetBlendState       (BlendState blend=BlendState());
+		void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
+		void SetRasterizerState  (RasterizerState raster = RasterizerState());
+		void SetShaderInputGroup (ShaderInputGroup&);
+
+	public:
+		BlendState        m_blend;
+		DepthStencilState m_ds;
+		RasterizerState   m_rast;
+		ShaderInputGroup  m_shader;
+	};
+
+	class PSO
+	{
+	public:
+		PSO()=default;
+		operator ID3D12PipelineState* ()
+		{
+			return m_pso.Get();
+		}
+
+		// Warning: pointer can have dangling memory after adding new element
+		static PSO* CreatePSO(std::string name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+		static PSO* GetPSO(std::string name)
+		{
+			return util::FindElement(allPSO, name);
+			return nullptr;
+		}
+		static D3D12_SHADER_BYTECODE GetShader(std::string name);
+		static inline std::vector<TableEntry<PSO>> allPSO;
+
+		void Reset() { m_pso.Reset(); }
 
 
-private:
-	ComPtr<ID3D12PipelineState> m_pso=nullptr;
+	private:
+		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+
+	public:
+		ComPtr<ID3D12PipelineState> m_pso;
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};
+
+		DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		DXGI_FORMAT dsvBufferFormat  = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		
+	};
+
+
+	struct ComputeShaderInputGroup
+	{
+		std::string computeShader;
+		RootSignature* rootSignature;
+
+		void SetCS(std::string name) { computeShader= name;  }
+		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
+	};
+
+
+	class ComputePSO
+	{
+		public:
+			ComputePSO() = default;
+			ComputePSO(ComputeShaderInputGroup shaderGroup);
+			operator ID3D12PipelineState* ()
+			{
+				return m_pso.Get();
+			}
+		private:
+			ComPtr<ID3D12PipelineState> m_pso=nullptr;
+	};
+
+	class ShaderObject
+	{
+	public:
+		ShaderObject() = default;
+	private:
+		Shader& m_shader;
+	};
+
 };
-
 #endif

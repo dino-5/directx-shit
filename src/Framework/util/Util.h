@@ -22,6 +22,7 @@
 #include "Framework/include/d3dx12.h"
 #include "MathHelper.h"
 #include <minwinbase.h>
+#include "Framework/include/types.h"
 
 
 namespace engine::util
@@ -115,10 +116,16 @@ namespace engine::util
         int LineNumber = -1;
     };
 
-    // Defines a subrange of geometry in a MeshGeometry.  This is for when multiple
-    // geometries are stored in one vertex and index buffer.  It provides the offsets
-    // and data needed to draw a subset of geometry stores in the vertex and index 
-    // buffers so that we can implement the technique described by Figure 6.3.
+
+    template<typename T>
+    inline T* FindElement(std::vector<TableEntry<T>> vector, std::string name)
+    {
+        auto findResult = std::find_if(vector.begin(), vector.end(),
+            [name](TableEntry<T> el) { return el.first == name; });
+        if (findResult != vector.end())
+            return &(findResult)->second;
+        return nullptr;
+    }
 
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }

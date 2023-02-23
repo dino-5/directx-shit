@@ -85,7 +85,7 @@ project "Demo"
         "External"
     }
 
-    targetdir "build/%{cfg.buildcfg}"
+    targetdir "bin/"
     filter "files:**.hlsl"
        buildaction "None"
 

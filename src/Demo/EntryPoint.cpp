@@ -7,8 +7,8 @@ int main()
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
-    uint width = 1600;
-    uint height = 1200;
+    uint width = 1200;
+    uint height = 800;
     std::string name = "DX12 Demo";
 
     try

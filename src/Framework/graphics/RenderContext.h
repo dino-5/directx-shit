@@ -26,7 +26,6 @@ namespace engine::graphics
 		SHIT_ENGINE_NON_COPYABLE(RenderContext);
 		void Initialize(ComPtr<ID3D12CommandAllocator>&);
 		void ResetSwapChain(SwapChainSettings set);
-		void CreateDescriptorHeap(DescriptorHeapType type, uint numberOfDescriptors);
 
 		void ResetCommandAllocator(ID3D12CommandAllocator*);
 		void FlushCommandQueue();
