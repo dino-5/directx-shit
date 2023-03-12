@@ -4,7 +4,7 @@
 #include "Framework/util/ImGuiSettings.h"
 #include "Framework/math/Functions.h"	
 
-namespace Math
+namespace engine::math
 {
 template<int N>
 class Matrix

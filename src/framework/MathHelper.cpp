@@ -2,12 +2,13 @@
 // MathHelper.cpp by Frank Luna (C) 2011 All Rights Reserved.
 //***************************************************************************************
 
-#include "include/MathHelper.h"
+#include "Framework/util/MathHelper.h"
 #include <float.h>
 #include <cmath>
 
 using namespace DirectX;
-
+namespace engine::util
+{
 const float MathHelper::Infinity = FLT_MAX;
 const float MathHelper::Pi       = 3.1415926535f;
 
@@ -79,4 +80,5 @@ XMVECTOR MathHelper::RandHemisphereUnitVec3(XMVECTOR n)
 
 		return XMVector3Normalize(v);
 	}
+}
 }

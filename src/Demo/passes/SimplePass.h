@@ -1,17 +1,24 @@
 #pragma once
-#include "Framework/graphics/dx12/PSO.h"
-#include "Framework/graphics/dx12/RootSignature.h"
-#include "Framework/graphics/RenderContext.h"
+#include "Framework/math/Vector.h"
+#include "Demo/passes/Pass.h"
 
 using namespace engine;
 
-class SimplePass
+struct Vertex
+{
+    math::Vector3 position;
+};
+
+class SimplePass : public Pass
 {
 public:
-	SimplePass(engine::graphics::RenderContext& renderContext);
+	SimplePass() = default;
+	SimplePass(ID3D12Device* device, int aspectRatio);
+	void Initialize(ID3D12Device* device, int aspectRatio);
+	void Draw(ID3D12GraphicsCommandList*)override;
 private:
-	graphics::PSO* m_pso;
-	graphics::RootSignature* m_rootSignature;
-	
+	ComPtr<ID3D12Resource> m_vertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+
 };
 

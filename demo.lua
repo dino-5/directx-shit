@@ -18,7 +18,7 @@ project "External"
     location "src/external"
     kind "StaticLib"
     language "C++"
-    cppdialect "C++20"
+    cppdialect "C++latest"
 
     targetdir "build/%{cfg.buildcfg}"
     files {
@@ -42,7 +42,7 @@ project "ShitEngine"
     location "src/Framework"
     kind "StaticLib"
     language "C++"
-    cppdialect "C++20"
+    cppdialect "C++latest"
     targetdir "build/%{cfg.buildcfg}"
     files{
         "src/Framework/**.cpp",
@@ -63,7 +63,7 @@ project "Demo"
     location "src/Demo"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++20"
+    cppdialect "C++latest"
 
     files{
         "src/Demo/**.cpp",
@@ -85,7 +85,7 @@ project "Demo"
         "External"
     }
 
-    targetdir "bin/"
+    targetdir "%{prj.location}/"
     filter "files:**.hlsl"
        buildaction "None"
 

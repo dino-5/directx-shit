@@ -6,6 +6,7 @@
 #include "Framework/System/Window.h"
 #include "external/imgui/imgui.h"
 #include "external/imgui/backends/imgui_impl_dx12.h"
+#include "Demo/passes/SimplePass.h"
 
 // ?
 struct DemoSettings
@@ -38,9 +39,9 @@ private:
 	SwapChainSettings GetCurrentWindowSettings();
 
 private:
+	SimplePass m_pass;
 	DemoSettings m_currentSettings;
 	uint m_currentFrameIndex = 0;
 	engine::graphics::RenderContext m_renderContext;
-	ComPtr<ID3D12CommandAllocator> m_allocator = nullptr;
 };
 

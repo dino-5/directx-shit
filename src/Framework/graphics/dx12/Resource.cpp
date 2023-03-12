@@ -92,7 +92,7 @@ void Resource::Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceSt
         IID_PPV_ARGS(&m_resource)));
 }
 
-void Resource::Transition(ComPtr<ID3D12GraphicsCommandList> cmdList, ResourceState state)
+void Resource::Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state)
 {
     if (state == m_currentState)
         return;

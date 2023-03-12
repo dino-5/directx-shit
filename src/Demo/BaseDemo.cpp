@@ -1,4 +1,5 @@
 #include "BaseDemo.h"
+#include "Framework/util/Logger.h"
 
 using namespace std;
 using namespace DirectX;
@@ -13,25 +14,22 @@ SwapChainSettings BaseDemo::GetCurrentWindowSettings()
 	return { GetWidth(), GetHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, GetWindowHandle()};
 }
 
-//LRESULT BaseDemo::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-//{
-//	return 0;
-//	//return DefWindowProc(hwnd, msg, wParam, lParam);
-//}
 
 bool BaseDemo::Initialize()
 {
+	LogScope("BaseDemo");
 	WindowApp::Initialize();
-	m_renderContext.Initialize(m_allocator);
+	m_renderContext.Initialize();
 	m_renderContext.ResetSwapChain(GetCurrentWindowSettings());
-
-
+	m_pass.Initialize(m_renderContext.GetDevice(), m_renderContext.GetAspectRatio());
 	return true;
 }
 
 void BaseDemo::Draw()
 {
-
+	m_renderContext.StartFrame();
+	m_pass.Draw(m_renderContext.GetList());
+	m_renderContext.EndFrame();
 }
 
 void BaseDemo::Update()

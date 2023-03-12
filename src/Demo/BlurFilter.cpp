@@ -32,7 +32,7 @@ void BlurFilter::OnResize(UINT newWidth, UINT newHeight)
 	}
 }
  
-void BlurFilter::Execute(ComPtr<ID3D12GraphicsCommandList> cmdList, 
+void BlurFilter::Execute(ID3D12GraphicsCommandList* cmdList, 
 	                     ID3D12RootSignature* rootSig,
 	                     ID3D12PipelineState* horzBlurPSO,
 	                     ID3D12PipelineState* vertBlurPSO,

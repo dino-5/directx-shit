@@ -19,11 +19,17 @@ namespace engine::graphics
 			dev.CreateCommandList(m_list, m_alloc[0]);
 		}
 
-		ID3D12CommandList* operator->() { return m_list.Get(); }
+		ID3D12GraphicsCommandList* GetList() { return m_list; }
+		ID3D12GraphicsCommandList* operator->() { return m_list; }
+		void Reset(uint i)
+		{
+			m_alloc[i]->Reset();
+			m_list->Reset(m_alloc[i], nullptr);
+		}
 
 	private:
-		ComPtr<ID3D12GraphicsCommandList> m_list = nullptr;
-		ComPtr<ID3D12CommandAllocator> m_alloc[config::NumFrames];
+		ID3D12GraphicsCommandList* m_list = nullptr;
+		ID3D12CommandAllocator* m_alloc[config::NumFrames];
 
 	};
 }

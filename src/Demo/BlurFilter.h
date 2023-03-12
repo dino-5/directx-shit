@@ -25,7 +25,7 @@ public:
 	void OnResize(UINT newWidth, UINT newHeight);
 
 	void Execute(
-		ComPtr<ID3D12GraphicsCommandList> cmdList, 
+		ID3D12GraphicsCommandList* cmdList, 
 		ID3D12RootSignature* rootSig,
 		ID3D12PipelineState* horzBlurPSO,
 		ID3D12PipelineState* vertBlurPSO,

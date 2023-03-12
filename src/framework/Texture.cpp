@@ -43,7 +43,7 @@ void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12Graphics
     textureData.SlicePitch = textureData.RowPitch * height;
 
     UpdateSubresources(commandList.Get(), m_texture, textureUploadHeap, 0, 0, 1, &textureData);
-    m_texture.Transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
+    m_texture.Transition(commandList.Get(), ResourceState::PIXEL_SHADER_RESOURCE);
     index = m_texture.srv.HeapIndex;
     m_name = s;
 }

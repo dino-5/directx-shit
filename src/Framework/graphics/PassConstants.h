@@ -15,8 +15,8 @@ enum class LightType
 
 struct  PointLight
 {
-    Vector4 Pos   = { 0.0f, 3.0f,-2.0f, 1.0f }; 
-    Vector4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    math::Vector4 Pos   = { 0.0f, 3.0f,-2.0f, 1.0f }; 
+    math::Vector4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
     float saturation_a = 0;
     float saturation_b = 0;
     float saturation_c = 0;
@@ -31,9 +31,9 @@ struct  PointLight
 
 struct  SpotLight
 {
-    Vector4 Pos   = { 0.0f, 3.0f,-2.0f, 1.0f }; 
-    Vector4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
-    Vector4 Dir= { 0.0f, 3.0f,-2.0f, 1.0f }; 
+    math::Vector4 Pos   = { 0.0f, 3.0f,-2.0f, 1.0f }; 
+    math::Vector4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    math::Vector4 Dir= { 0.0f, 3.0f,-2.0f, 1.0f }; 
     float angle = 0;
     void OnImGui()
     {
@@ -49,7 +49,7 @@ class PassConstants
 public:
     DirectX::XMFLOAT4X4 View = util::MathHelper::Identity4x4();
     //DirectX::XMFLOAT4X4 Proj = MathHelper::Identity4x4();
-    Math::Matrix4 Proj;
+    math::Matrix4 Proj;
     DirectX::XMFLOAT4X4 ViewProj = util::MathHelper::Identity4x4();
 
     float EyePosW[4]     = {0.0f, 0.0f, 0.0f, 1.0f};

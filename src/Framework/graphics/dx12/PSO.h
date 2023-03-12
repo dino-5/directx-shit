@@ -30,26 +30,16 @@ namespace engine::graphics
 		ShaderType  type;
 	};
 
-	class Shader
+	namespace ShaderManager
 	{
-	public:
-		Shader() = default;
-		Shader(ShaderInfo);
+		extern std::vector< TableEntry< ID3DBlob*>> allShaders;
+		void CreateShader(ShaderInfo info);
+		ID3DBlob* GetShader(std::string name);
+		void Clear();
 
-		static inline std::vector< TableEntry< ComPtr<ID3DBlob>>> allShaders;
-		static void CreateShader(ShaderInfo info);
-		static ID3DBlob* GetShader(std::string name)
-		{
-			return util::FindElement(allShaders, name)->Get();
-		}
-		static void Clear()
-		{
-			allShaders.clear();
-		}
-
-	public:
-		std::string m_name;
-		ComPtr<ID3DBlob> m_shader=nullptr;
+		extern std::vector< TableEntry< InputLayout>> inputLayouts;
+		void CreateInputLayout(std::string name, std::vector<InputLayoutElement> layout);
+		InputLayout* GetInputLayout(std::string name);
 	};
 
 	struct ShaderInputGroup
@@ -97,7 +87,6 @@ namespace engine::graphics
 		static PSO* GetPSO(std::string name)
 		{
 			return util::FindElement(allPSO, name);
-			return nullptr;
 		}
 		static D3D12_SHADER_BYTECODE GetShader(std::string name);
 		static inline std::vector<TableEntry<PSO>> allPSO;
@@ -141,13 +130,7 @@ namespace engine::graphics
 			ComPtr<ID3D12PipelineState> m_pso=nullptr;
 	};
 
-	class ShaderObject
-	{
-	public:
-		ShaderObject() = default;
-	private:
-		Shader& m_shader;
-	};
-
+	void PopulateShaders();
+	void PopulatePSO(ID3D12Device* dev);
 };
 #endif

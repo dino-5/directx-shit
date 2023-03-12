@@ -89,14 +89,18 @@ namespace engine::graphics
 		void Init(RootArguments& arguments);
 		operator ID3D12RootSignature* ()
 		{
-			return m_rootSignature.Get();
+			return m_rootSignature;
 		}
 
 		static inline std::vector<TableEntry<RootSignature>> allRootSignatures;
 		static void AddEntry(std::string name, RootSignature);
+		static RootSignature* GetRootSignature(std::string name)
+		{
+			return util::FindElement(allRootSignatures, name);
+		}
 
 	public:
-		ComPtr<ID3D12RootSignature> m_rootSignature;
+		ID3D12RootSignature* m_rootSignature;
 	};
 
 	void PopulateRootSignatures(ID3D12Device* device);

@@ -22,8 +22,8 @@ public:
 	SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12Device, Device, m_device);
 	SHIT_ENGINE_GET_D3D12COMPONENT(IDXGIFactory4, Factory, m_factory);
 
-	void CreateCommandList(ComPtr<ID3D12GraphicsCommandList>&, ComPtr<ID3D12CommandAllocator>&);
-	void CreateCommandAllocator(ComPtr<ID3D12CommandAllocator>&);
+	void CreateCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator);
+	void CreateCommandAllocator(ID3D12CommandAllocator* &);
 	void CreateFence(ComPtr<ID3D12Fence>&);
 
 	void Reset() { m_factory.Reset(); m_device.Reset(); }

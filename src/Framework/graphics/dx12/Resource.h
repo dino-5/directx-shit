@@ -17,6 +17,7 @@ enum class ResourceState
 	COPY_SOURCE            = D3D12_RESOURCE_STATE_COPY_SOURCE,
 	PIXEL_SHADER_RESOURCE  = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 	GENERIC_READ_STATE     = D3D12_RESOURCE_STATE_GENERIC_READ,
+	PRESENT                = D3D12_RESOURCE_STATE_PRESENT,
 };
 
 enum class ResourceDescriptorFlags : std::uint32_t
@@ -57,7 +58,7 @@ public:
 		ResourceState createState = ResourceState::COMMON,
 		CD3DX12_HEAP_PROPERTIES heap_type= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_CLEAR_VALUE* val=nullptr);
 
-	void Transition(ComPtr<ID3D12GraphicsCommandList> cmdList, ResourceState state);
+	void Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
 	operator ID3D12Resource* ()
 	{
@@ -89,7 +90,7 @@ public:
 
 private:
 	ComPtr<ID3D12Resource> m_resource;
-	ResourceState m_currentState;
+	ResourceState m_currentState=ResourceState::COMMON;
 };
 
 

@@ -68,7 +68,6 @@ void Device::Initialize()
 {
     UINT dxgiFactoryFlags = 0;
 
-#if defined(_DEBUG)
     {
         ComPtr<ID3D12Debug> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
@@ -79,7 +78,6 @@ void Device::Initialize()
             dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
         }
     }
-#endif
 
     ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
     {
@@ -92,20 +90,20 @@ void Device::Initialize()
     device = this;
 }
 
-void Device::CreateCommandAllocator(ComPtr<ID3D12CommandAllocator> &alloc)
+void Device::CreateCommandAllocator(ID3D12CommandAllocator* &alloc)
 {
     ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)));
 }
 
-void Device::CreateCommandList(ComPtr<ID3D12GraphicsCommandList> &list, ComPtr<ID3D12CommandAllocator>& allocator)
+void Device::CreateCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator)
 {
 	ThrowIfFailed(m_device->CreateCommandList(
 		0,
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
-        allocator.Get(),
+        allocator,
 		nullptr,                   // Initial PipelineStateObject
 		IID_PPV_ARGS(&list)) );
-	list->Close();
+    ThrowIfFailed(list->Close());
 }
 
 void Device::CreateFence(ComPtr<ID3D12Fence> &fence)

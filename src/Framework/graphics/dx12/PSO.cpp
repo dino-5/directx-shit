@@ -2,18 +2,21 @@
 #include "RootSignature.h"
 #include "Device.h"
 #include "Framework/util/Util.h"
+#include "Framework/util/Logger.h"
+#include <format>
 
 namespace engine::graphics
 {
 
     D3D12_SHADER_BYTECODE PSO::GetShader(std::string name)
     {
-        auto shader = Shader::GetShader(name);
-        return
+        auto shader = ShaderManager::GetShader(name);
+        D3D12_SHADER_BYTECODE ret
         {
             reinterpret_cast<BYTE*>(shader->GetBufferPointer()),
             shader->GetBufferSize()
         };
+        return ret;
     }
 
     PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
@@ -71,31 +74,58 @@ namespace engine::graphics
         switch (type)
         {
         case ShaderType::VERTEX:
-            return "vs_5_1";
+            return "vs_5_0";
         case ShaderType::PIXEL:
-            return "ps_5_1";
+            return "ps_5_0";
         case ShaderType::COMPUTE:
-            return "cs_5_1";
+            return "cs_5_0";
         default:
             return "wrong shit";
         }
     }
 
-    void Shader::CreateShader(ShaderInfo info)
+    namespace ShaderManager
     {
-        if (GetShader(info.shaderName)==nullptr) 
+
+		std::vector< TableEntry< ID3DBlob*>> allShaders;
+		std::vector< TableEntry< InputLayout>> inputLayouts;
+		void CreateShader(ShaderInfo info)
+		{
+            UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+
+            ID3DBlob* blob;
+            ThrowIfFailed(D3DCompileFromFile(
+                engine::util::to_wstring(info.path).c_str(), nullptr, nullptr, info.entryPoint.c_str(),
+                GetShaderTypeString(info.type).c_str(), compileFlags, 0, &blob, nullptr)
+            );
+            allShaders.push_back({ info.shaderName, blob});
+		}
+
+		ID3DBlob* GetShader(std::string name)
+		{
+            return *util::FindElement(allShaders, name);
+		}
+
+		void Clear()
+		{
+			allShaders.clear();
+		}
+
+        void CreateInputLayout(std::string name,std::vector<InputLayoutElement> layout)
         {
-            auto shaderByteCode = engine::util::d3dUtil::CompileShader(
-                util::to_wstring(info.shaderName), nullptr, info.entryPoint, GetShaderTypeString(info.type));
-            allShaders.push_back({ info.shaderName, shaderByteCode});
+
+			if (GetInputLayout(name)==nullptr) 
+			{
+				inputLayouts.push_back({ name, InputLayout(layout)});
+			}
+        }
+
+        InputLayout* GetInputLayout(std::string name)
+        {
+			return util::FindElement(inputLayouts, name);
         }
     }
 
-    Shader::Shader(ShaderInfo info) :m_name(info.shaderName)
-    {
-        CreateShader(info);
-        m_shader = GetShader(info.shaderName);
-    }
 
     ComputePSO::ComputePSO(ComputeShaderInputGroup shaderGroup)
     {
@@ -104,5 +134,47 @@ namespace engine::graphics
         desc.pRootSignature = *shaderGroup.rootSignature;
 
         ThrowIfFailed(Device::device->GetDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
+    }
+
+    void PopulateShaders()
+    {
+        LogScope("Shaders");
+        ShaderManager::allShaders.reserve(10);
+        ShaderManager::inputLayouts.reserve(5);
+        {
+            ShaderInfo info;
+            info.entryPoint = "VS_Basic";
+            info.path = "Shaders/basic_shader.hlsl";
+            info.shaderName = "VS_Basic";
+            info.type = ShaderType::VERTEX;
+            ShaderManager::CreateShader(info);
+
+            std::vector<InputLayoutElement> layout = {
+                {"POSITION", Format::float3}
+            };
+            ShaderManager::CreateInputLayout("defaultLayout", layout);
+        }
+
+        {
+			ShaderInfo info;
+			info.entryPoint = "PS_Basic";
+			info.path = "Shaders/basic_shader.hlsl";
+			info.shaderName = "PS_Basic";
+			info.type = ShaderType::PIXEL;
+			ShaderManager::CreateShader(info);
+        }
+        engine::util::logInfo("successfuly loaded shaders");
+    }
+
+    void PopulatePSO(ID3D12Device* dev)
+    {
+        LogScope("PSO");
+        //PSO::allPSO.reserve(10);
+        ShaderInputGroup shaderIG{ "VS_Basic", "PS_Basic", ShaderManager::GetInputLayout("defaultLayout"),
+            RootSignature::GetRootSignature("empty") };
+        RenderState state;
+        state.SetShaderInputGroup(shaderIG);
+        state.Compile("default");
+        engine::util::logInfo("successfuly created pso");
     }
 };

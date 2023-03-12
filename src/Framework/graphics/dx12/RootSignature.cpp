@@ -1,6 +1,8 @@
 #include "RootSignature.h"
 #include "Device.h"
 #include "Framework/util/Util.h"
+#include "Framework/util/Logger.h"
+#include <format>
 
 namespace engine::graphics
 {
@@ -133,15 +135,14 @@ namespace engine::graphics
 
 	void PopulateRootSignatures(ID3D12Device* device)
 	{
+		LogScope("RootSignature");
 		RootSignature::allRootSignatures.reserve(10);
 		// empty
 		{
 			RootSignature::AddEntry("empty", RootSignature(device));
 		}
+        engine::util::logInfo("successfuly created root signatures");
 
-		{
-
-		}
 	}
 
 

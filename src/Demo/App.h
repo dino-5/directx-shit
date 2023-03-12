@@ -1,22 +1,5 @@
 #pragma once
 
-#include "d3dApp.h"
-#include "BlurFilter.h"
-#include "framework/include/MathHelper.h"
-#include "framework/include/UploadBuffer.h"
-#include "framework/include/common.h"
-#include <unordered_map>
-#include "framework/include/FrameResource.h"
-#include "framework/include/RenderItem.h"
-#include "framework/include/PassConstants.h"
-#include "framework/include/GeometryGenerator.h"
-#include "framework/include/ImGuiSettings.h" 
-#include "framework/include/Mesh.h"
-#include "framework/include/Texture.h"
-#include "framework/dx12/DescriptorHeap.h"
-#include "framework/include/Camera.h"
-#include "framework/include/Model.h"
-
 /*
 using namespace DirectX;
 using namespace DirectX::PackedVector;
