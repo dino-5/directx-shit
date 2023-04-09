@@ -27,9 +27,16 @@ Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCo
 void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList, std::string s)
 {
 	std::uint8_t* data = stbi_load(path, &width, &height, &nrChannels, 4); 
-    m_texture.Init(Device::device->GetDevice(), DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-        ResourceFlags::NONE, ResourceState::COPY_DEST, CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-        ResourceDescriptorFlags::ShaderResource);
+    ResourceDescription desc;
+    desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.width = width;
+    desc.height = height;
+    desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.flags = ResourceFlags::NONE;
+    desc.createState = ResourceState::COPY_DEST;
+    desc.descriptor = ResourceDescriptorFlags::ShaderResource;
+
+    m_texture.Init(Device::device->GetDevice(), desc);
 
     const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture, 0, 1);
 

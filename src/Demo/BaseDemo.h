@@ -27,7 +27,6 @@ protected:
 	void Update()override;
 	void Draw()override;
 	void Destroy()override;
-	//LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) ;
 
 	void OnMouseDown(WPARAM btnState, int x, int y)override;
 	void OnMouseUp(WPARAM btnState, int x, int y)override;

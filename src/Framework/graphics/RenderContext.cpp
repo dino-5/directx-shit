@@ -62,9 +62,16 @@ namespace engine::graphics
 		optClear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		optClear.DepthStencil.Depth = 1.0f;
 		optClear.DepthStencil.Stencil = 0;
-		auto heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-		m_dsvBuffer.Init(Device::device->GetDevice(), DXGI_FORMAT_R24G8_TYPELESS, set.width, set.height, 1, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-			ResourceFlags::DEPTH_STENCIL, ResourceState::DEPTH_WRITE, heapProp, ResourceDescriptorFlags::DepthStencil, &optClear);
+
+		ResourceDescription desc;
+		desc.createState = ResourceState::DEPTH_WRITE;
+		desc.descriptor = ResourceDescriptorFlags::DepthStencil;
+		desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		desc.flags = ResourceFlags::DEPTH_STENCIL;
+		desc.format = DXGI_FORMAT_R24G8_TYPELESS;
+		desc.width = set.width;
+		desc.height = set.height;
+		m_dsvBuffer.Init(Device::device->GetDevice(), desc, &optClear);
 	}
 
 	void RenderContext::FlushCommandQueue()

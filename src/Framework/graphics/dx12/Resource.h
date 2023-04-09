@@ -36,27 +36,28 @@ struct ResourceDescription
 	DXGI_FORMAT format;
 	uint width;
 	uint height;
+	uint depthOrArraySize=1;
+	D3D12_RESOURCE_DIMENSION dimension;
+	ResourceFlags flags;
+	ResourceState createState = ResourceState::COMMON;
+	CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	ResourceDescriptorFlags descriptor;
 };
 
 class Resource
 {
 public:
 	Resource() = default;
-	Resource(ID3D12Device* device, DXGI_FORMAT format, uint width, uint height,uint depthOrArraySize, uint dimension, ResourceFlags flag, 
-		ResourceState createState = ResourceState::COMMON, 
-		CD3DX12_HEAP_PROPERTIES heap_type= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		ResourceDescriptorFlags descriptor=ResourceDescriptorFlags::ShaderResource,
-		D3D12_CLEAR_VALUE* val=nullptr );
+
+	Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val=nullptr );
+	void Init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val=nullptr);
+
 	Resource(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
 		ResourceState createState = ResourceState::COMMON,
-		CD3DX12_HEAP_PROPERTIES heap_type= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_CLEAR_VALUE* val=nullptr);
-	void Init(ID3D12Device* device,DXGI_FORMAT format, uint width, uint height, uint depthOrArraySize, uint dimension, ResourceFlags flag, 
-		ResourceState createState = ResourceState::COMMON, 
-		CD3DX12_HEAP_PROPERTIES heap_type= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		ResourceDescriptorFlags descriptor=ResourceDescriptorFlags::ShaderResource, D3D12_CLEAR_VALUE* val=nullptr);
+		CD3DX12_HEAP_PROPERTIES heap_type= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
 	void Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
 		ResourceState createState = ResourceState::COMMON,
-		CD3DX12_HEAP_PROPERTIES heap_type= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_CLEAR_VALUE* val=nullptr);
+		CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
 
 	void Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 

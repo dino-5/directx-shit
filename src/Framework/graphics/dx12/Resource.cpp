@@ -9,40 +9,38 @@ D3D12_RESOURCE_STATES CastType(ResourceState state)
     return static_cast<D3D12_RESOURCE_STATES>(state);
 }
 
-Resource::Resource(ID3D12Device* device, DXGI_FORMAT format, uint width, uint height, uint depthOrArraySize, uint dimension, ResourceFlags flag, ResourceState createState,
-    CD3DX12_HEAP_PROPERTIES heap_type, ResourceDescriptorFlags descriptor,D3D12_CLEAR_VALUE* val)
+Resource::Resource(ID3D12Device* device, ResourceDescription desc,D3D12_CLEAR_VALUE* val)
 {
-    Init(device, format, width, height, depthOrArraySize, dimension, flag, createState, heap_type, descriptor, val);
+    Init(device, desc, val);
 }
 
-Resource::Resource(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState, CD3DX12_HEAP_PROPERTIES heap_type, D3D12_CLEAR_VALUE* val) 
+Resource::Resource(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState, CD3DX12_HEAP_PROPERTIES heap_type)
 {
-    Init(device, desc, createState, heap_type, val);
+    Init(device, desc, createState, heap_type);
 }
 
-void Resource::Init(ID3D12Device* device, DXGI_FORMAT format, uint width, uint height, uint depthOrArraySize, uint dimension, ResourceFlags flag, ResourceState createState ,
-    CD3DX12_HEAP_PROPERTIES heap_type, ResourceDescriptorFlags descriptor, D3D12_CLEAR_VALUE* val )
+void Resource::Init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val )
 {
-    m_currentState = createState;
+    m_currentState = desc.createState;
     D3D12_RESOURCE_DESC resourceDesc= {};
     resourceDesc.MipLevels = 1;
-    resourceDesc.Format = format;
-    resourceDesc.Width = width;
-    resourceDesc.Height = height;
-    resourceDesc.Flags = CastType(flag);
-    resourceDesc.DepthOrArraySize = depthOrArraySize;
+    resourceDesc.Format = desc.format;
+    resourceDesc.Width = desc.width;
+    resourceDesc.Height = desc.height;
+    resourceDesc.Flags = CastType(desc.flags);
+    resourceDesc.DepthOrArraySize = desc.depthOrArraySize;
     resourceDesc.SampleDesc.Count = 1;
     resourceDesc.SampleDesc.Quality = 0;
-    resourceDesc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(dimension);
+    resourceDesc.Dimension = desc.dimension;
 
     ThrowIfFailed(device->CreateCommittedResource(
-        &heap_type,
+        &desc.heap_type,
         D3D12_HEAP_FLAG_NONE,
         &resourceDesc,
-        CastType(createState),
+        CastType(desc.createState),
         val,
         IID_PPV_ARGS(&m_resource)));
-    CreateViews(device, descriptor);
+    CreateViews(device, desc.descriptor);
 }
 
 void Resource::CreateViews(ID3D12Device* device, ResourceDescriptorFlags descriptors)
@@ -80,7 +78,7 @@ void Resource::CreateViews(ID3D12Device* device, ResourceDescriptorFlags descrip
     }
 }
 
-void Resource::Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState , CD3DX12_HEAP_PROPERTIES heap_type, D3D12_CLEAR_VALUE* val )
+void Resource::Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState , CD3DX12_HEAP_PROPERTIES heap_type)
 {
     m_currentState = createState;
     ThrowIfFailed(device->CreateCommittedResource(
@@ -88,7 +86,7 @@ void Resource::Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceSt
         D3D12_HEAP_FLAG_NONE,
         &desc,
         CastType(createState),
-        val,
+        nullptr,
         IID_PPV_ARGS(&m_resource)));
 }
 

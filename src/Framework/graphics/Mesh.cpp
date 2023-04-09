@@ -107,14 +107,17 @@ void Mesh::Init(
 	CreateCPUBuffer(device, cmList,
 					VertexBufferCPU, vertexData, vertexDataSize,
 					VertexBufferUploader, VertexBufferGPU);
-	CreateCPUBuffer(device, cmList,
-					IndexBufferCPU, indexData, indexDataSize,
-					IndexBufferUploader, IndexBufferGPU);
+	if (indexData != nullptr)
+	{
 
+		CreateCPUBuffer(device, cmList,
+						IndexBufferCPU, indexData, indexDataSize,
+						IndexBufferUploader, IndexBufferGPU);
+		IndexBufferByteSize = indexDataSize;
+	}
 	VertexByteStride = structSize;
 	VertexBufferByteSize = vertexDataSize;
 	//IndexFormat = format;
-	IndexBufferByteSize = indexDataSize;
 }
 
 void Mesh::CreateCPUBuffer(

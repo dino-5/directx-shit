@@ -1,6 +1,7 @@
 #pragma once
 #include "Framework/math/Vector.h"
 #include "Demo/passes/Pass.h"
+#include "Framework/graphics/dx12/Buffers.h"
 
 using namespace engine;
 
@@ -17,8 +18,7 @@ public:
 	void Initialize(ID3D12Device* device, int aspectRatio);
 	void Draw(ID3D12GraphicsCommandList*)override;
 private:
-	ComPtr<ID3D12Resource> m_vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+	graphics::VertexBuffer m_vertexBuffer;
 
 };
 
