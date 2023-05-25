@@ -4,10 +4,22 @@ struct PS_Input
 	float3 color : COLOR;
 };
 
+cbuffer General : register(b0)
+{
+    float4x4 ViewProjection;
+};
+
+cbuffer Object : register(b1)
+{
+    float4x4 World;
+};
+
+
 PS_Input VS_Basic(float3 position: POSITION)
 {
 	PS_Input ret;
-    ret.pos = float4(position, 1.0f);
+    float4 pos = float4(position, 1.0f);
+    ret.pos = pos;
     ret.color = normalize(position.xyz);
     return ret;
 }

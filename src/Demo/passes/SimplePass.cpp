@@ -12,7 +12,7 @@ void SimplePass::Initialize(ID3D12Device* device, int aspectRatio)
 {
 
     Pass::SetPSO("default");
-    Pass::SetRootSignature("empty");
+    Pass::SetRootSignature("twoConst");
     
     Vertex triangleVertices[] =
     {

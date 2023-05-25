@@ -171,7 +171,7 @@ namespace engine::graphics
         LogScope("PSO");
         //PSO::allPSO.reserve(10);
         ShaderInputGroup shaderIG{ "VS_Basic", "PS_Basic", ShaderManager::GetInputLayout("defaultLayout"),
-            RootSignature::GetRootSignature("empty") };
+            RootSignature::GetRootSignature("twoConst") };
         RenderState state;
         state.SetShaderInputGroup(shaderIG);
         state.Compile("default");

@@ -46,9 +46,20 @@ struct ResourceDescription
 
 class Resource
 {
+private:
+	using ResourceVector = std::vector<Resource>;
+	static inline std::vector<TableEntry<ResourceVector>> allResources;
 public:
+	static void PopulateResources(ID3D12Device* device);
+	Resource& GetResource(std::string name, uint numberOfRes, uint numberOfFrame)
+	{
+		ResourceVector* res = engine::util::FindElement(allResources, name);
+		return (*res)[numberOfFrame * numberOfFrame];
+	}
+
 	Resource() = default;
 
+	void InitAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer);
 	Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val=nullptr );
 	void Init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val=nullptr);
 
@@ -60,27 +71,24 @@ public:
 		CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
 
 	void Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
+	
+	void Reset()
+	{
+		if (m_resource)
+			m_resource->Release();
+	}
 
 	operator ID3D12Resource* ()
 	{
-		return m_resource.Get();
-	}
-
-	ID3D12Resource** GetAddress()
-	{
-		return m_resource.GetAddressOf();
+		return m_resource;
 	}
 
 	ID3D12Resource* operator->()
 	{
-		return m_resource.Get();
+		return m_resource;
 	}
 
-	void Reset()
-	{
-		m_resource.Reset();
-	}
-
+	ID3D12Resource** GetAddress() { return &m_resource; }
 
 	void CreateViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
 
@@ -90,7 +98,7 @@ public:
 	DescriptorUAV uav;
 
 private:
-	ComPtr<ID3D12Resource> m_resource;
+	ID3D12Resource* m_resource;
 	ResourceState m_currentState=ResourceState::COMMON;
 };
 

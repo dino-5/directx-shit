@@ -2,6 +2,7 @@
 #include "Resource.h"
 #include "Device.h"
 #include "Framework/util/Util.h"
+#include "Framework/System/config.h"
 
 
 D3D12_RESOURCE_STATES CastType(ResourceState state)
@@ -90,12 +91,44 @@ void Resource::Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceSt
         IID_PPV_ARGS(&m_resource)));
 }
 
+void Resource::InitAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer)
+{
+    CD3DX12_RESOURCE_DESC resourceDesc= CD3DX12_RESOURCE_DESC::Buffer(sizeOfBuffer);
+    CD3DX12_HEAP_PROPERTIES heap_type=CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+    device->CreateCommittedResource(&heap_type,
+        D3D12_HEAP_FLAG_NONE,
+        &resourceDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_resource));
+
+}
+
 void Resource::Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state)
 {
     if (state == m_currentState)
         return;
-    auto transitionDesc = CD3DX12_RESOURCE_BARRIER::Transition(m_resource.Get(),
+    auto transitionDesc = CD3DX12_RESOURCE_BARRIER::Transition(m_resource,
         CastType(m_currentState), CastType(state));
     cmdList->ResourceBarrier(1, &transitionDesc);
     m_currentState = state;
+}
+
+void Resource::PopulateResources(ID3D12Device* device)
+{
+    allResources.reserve(3);
+    // for two constants
+    {
+		uint size = 4 * 4 * sizeof(float);
+		ResourceVector vec;
+		vec.reserve(6);
+        for (int i = 0; i < engine::config::NumFrames; i++)
+        {
+			ResourceDescription desc;
+            for(uint i=0; i<engine::config::NumFrames; i++)
+			vec[i].Init(device, CD3DX12_RESOURCE_DESC::Buffer(engine::util::d3dUtil::CalcConstantBufferByteSize(size)),
+				ResourceState::GENERIC_READ_STATE, CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD));
+        }
+        allResources.push_back({ "twoConst", vec });
+    }
 }

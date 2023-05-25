@@ -44,6 +44,6 @@ public:
 private:
 	uint m_currentBuffer=0;
 	ComPtr<IDXGISwapChain> m_swapChain;
-	Resource m_swapChainBuffer[engine::config::NumFrames];
+	Resource m_swapChainBuffer[engine::config::NumFrames] = {};
 };
 
