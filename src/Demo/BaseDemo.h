@@ -11,7 +11,7 @@
 // ?
 struct DemoSettings
 {
-	SwapChainSettings m_settings; 
+	engine::graphics::SwapChainSettings m_settings; 
 };
 
 
@@ -35,7 +35,7 @@ protected:
 	void OnKeyUp(Key key)override;
 
 private:
-	SwapChainSettings GetCurrentWindowSettings();
+	engine::graphics::SwapChainSettings GetCurrentWindowSettings();
 
 private:
 	SimplePass m_pass;

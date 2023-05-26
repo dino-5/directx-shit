@@ -10,6 +10,7 @@ namespace engine::graphics
 		PopulateRootSignatures(dev);
 		PopulateShaders();
 		PopulatePSO(dev);
+		PopulateDescriptorHeaps();
 	}
 
 	void RenderContext::Initialize()

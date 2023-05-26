@@ -13,8 +13,6 @@
 
 namespace engine::graphics
 {
-
-
 	struct RenderSettings
 	{
 		int width;

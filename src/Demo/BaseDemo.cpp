@@ -9,7 +9,7 @@ BaseDemo::BaseDemo(int width, int height, std::string name):
 	WindowApp(width, height, name)
 {}
 
-SwapChainSettings BaseDemo::GetCurrentWindowSettings()
+engine::graphics::SwapChainSettings BaseDemo::GetCurrentWindowSettings()
 {
 	return { GetWidth(), GetHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, GetWindowHandle()};
 }

@@ -1,7 +1,7 @@
-#include "include/Model.h"
-#include "include/Mesh.h"
-#include "include/Texture.h"
-#include "dx12/Device.h"
+#include "Framework/graphics/Model.h"
+#include "Framework/graphics/Mesh.h"
+#include "Framework/graphics/Texture.h"
+#include "Framework/graphics/dx12/Device.h"
 
 
 
