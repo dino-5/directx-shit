@@ -13,12 +13,13 @@ struct Vertex
 class SimplePass : public Pass
 {
 public:
-	SimplePass() = default;
+	SimplePass() :m_constantBuffer(sizeof(float)) {}
 	SimplePass(ID3D12Device* device, int aspectRatio);
 	void Initialize(ID3D12Device* device, int aspectRatio);
-	void Draw(ID3D12GraphicsCommandList*)override;
+	void Draw(ID3D12GraphicsCommandList*, uint)override;
 private:
+	float m_data = 0.8;
 	graphics::VertexBuffer m_vertexBuffer;
-
+	graphics::ConstantBuffer m_constantBuffer;
 };
 

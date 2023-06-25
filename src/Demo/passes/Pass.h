@@ -16,7 +16,7 @@ public:
 
 	void SetPipeline(ID3D12GraphicsCommandList* cmdList);
 	virtual ~Pass() = default;
-	virtual void Draw(ID3D12GraphicsCommandList*)=0;
+	virtual void Draw(ID3D12GraphicsCommandList*, unsigned int)=0;
 
 protected:
 	engine::graphics::RootSignature* m_rootSignature;

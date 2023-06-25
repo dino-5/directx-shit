@@ -92,6 +92,7 @@ namespace engine::graphics
 			IID_PPV_ARGS(&m_resource)));
 	}
 
+
 	void Resource::InitAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer)
 	{
 		CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeOfBuffer);
@@ -102,8 +103,6 @@ namespace engine::graphics
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_resource));
-
-		// todo add creation of view descriptor
 
 	}
 
@@ -117,22 +116,32 @@ namespace engine::graphics
 		m_currentState = state;
 	}
 
+	void Resource::CreateResource(ID3D12Device* device)
+	{
+		ResourceVector vec;
+		vec.resize(engine::config::NumFrames);
+		for (int i = 0; i < engine::config::NumFrames; i++)
+		{
+			ResourceDescription desc;
+			for (uint i = 0; i < engine::config::NumFrames; i++)
+				vec[i].InitAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
+		}
+	}
+
 	void Resource::PopulateResources(ID3D12Device* device)
 	{
 		allResources.reserve(3);
-		// for two constants
+		// for one constants
 		{
-			uint size = 4 * 4 * sizeof(float);
 			ResourceVector vec;
-			vec.reserve(6);
+			vec.resize(engine::config::NumFrames);
 			for (int i = 0; i < engine::config::NumFrames; i++)
 			{
 				ResourceDescription desc;
 				for (uint i = 0; i < engine::config::NumFrames; i++)
-					vec[i].Init(device, CD3DX12_RESOURCE_DESC::Buffer(engine::util::d3dUtil::CalcConstantBufferByteSize(size)),
-						ResourceState::GENERIC_READ_STATE, CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD));
+					vec[i].InitAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
 			}
-			allResources.push_back({ "twoConst", vec });
+			allResources.push_back({ "oneConst", vec });
 		}
 	}
 };

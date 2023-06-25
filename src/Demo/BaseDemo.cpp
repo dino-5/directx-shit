@@ -22,19 +22,20 @@ bool BaseDemo::Initialize()
 	m_renderContext.Initialize();
 	m_renderContext.ResetSwapChain(GetCurrentWindowSettings());
 	m_pass.Initialize(m_renderContext.GetDevice(), m_renderContext.GetAspectRatio());
+	m_renderContext.FlushCommandQueue();
 	return true;
 }
 
 void BaseDemo::Draw()
 {
 	m_renderContext.StartFrame();
-	m_pass.Draw(m_renderContext.GetList());
+	m_pass.Draw(m_renderContext.GetList(), m_currentFrameIndex);
 	m_renderContext.EndFrame();
 }
 
 void BaseDemo::Update()
 {
-
+	m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
 }
 void BaseDemo::Destroy()
 {

@@ -36,7 +36,6 @@ namespace engine::graphics
 			{
 				ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 			}
-			FlushCommandQueue();
 
 		}
 	}

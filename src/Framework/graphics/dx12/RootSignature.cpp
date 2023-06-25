@@ -141,12 +141,11 @@ namespace engine::graphics
 		{
 			RootSignature::AddEntry("empty", RootSignature(device));
 		}
-		// two constant buffers
+		// one constant buffers
 		{
 			RootArguments arguments;
 			arguments.push_back(RootArgument::CreateCBV(0, 0, ShaderVisibility::VERTEX));
-			arguments.push_back(RootArgument::CreateCBV(1, 0, ShaderVisibility::VERTEX));
-			RootSignature::AddEntry("twoConst", RootSignature(device, arguments));
+			RootSignature::AddEntry("oneConst", RootSignature(device, arguments));
 		}
         engine::util::logInfo("successfuly created root signatures");
 

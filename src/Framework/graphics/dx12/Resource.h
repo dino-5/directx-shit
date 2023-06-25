@@ -52,11 +52,12 @@ namespace engine::graphics
 		using ResourceVector = std::vector<Resource>;
 		static inline std::vector<TableEntry<ResourceVector>> allResources;
 	public:
+		static void CreateResource(ID3D12Device* device);
 		static void PopulateResources(ID3D12Device* device);
-		Resource& GetResource(std::string name, uint numberOfRes, uint numberOfFrame)
+		static Resource& GetResource(std::string name, uint numberOfFrame)
 		{
 			ResourceVector* res = engine::util::FindElement(allResources, name);
-			return (*res)[numberOfFrame * numberOfFrame];
+			return (*res)[numberOfFrame];
 		}
 
 		Resource() = default;
@@ -91,6 +92,7 @@ namespace engine::graphics
 		}
 
 		ID3D12Resource** GetAddress() { return &m_resource; }
+		ID3D12Resource* GetResource() { return m_resource; }
 
 		void CreateViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
 

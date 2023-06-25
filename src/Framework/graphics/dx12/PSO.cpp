@@ -169,9 +169,9 @@ namespace engine::graphics
     void PopulatePSO(ID3D12Device* dev)
     {
         LogScope("PSO");
-        //PSO::allPSO.reserve(10);
+        PSO::allPSO.reserve(0);
         ShaderInputGroup shaderIG{ "VS_Basic", "PS_Basic", ShaderManager::GetInputLayout("defaultLayout"),
-            RootSignature::GetRootSignature("twoConst") };
+            RootSignature::GetRootSignature("oneConst") };
         RenderState state;
         state.SetShaderInputGroup(shaderIG);
         state.Compile("default");
