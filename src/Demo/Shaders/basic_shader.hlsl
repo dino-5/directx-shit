@@ -21,5 +21,6 @@ PS_Input VS_Basic(float3 position: POSITION)
 
 float4 PS_Basic(PS_Input input): SV_Target
 {
+    //return float4(1.f, 0.0f, 0.f, 1.0f);
     return float4(input.color, 0.0f, input.color, 1.0f);
 }

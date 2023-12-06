@@ -83,7 +83,7 @@ bool Window::Initialize()
 	int w = R.right - R.left;
 	int h = R.bottom - R.top;
 	HINSTANCE inst = GetModuleHandle(nullptr);
-	m_windowHandler = CreateWindow(wc.lpszClassName, wc.lpszClassName,
+	m_windowHandler = CreateWindow(wc.lpszClassName, L"DX12 Demo",
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, w, h, nullptr, nullptr, inst, nullptr);
 	if(!m_windowHandler)
 	{

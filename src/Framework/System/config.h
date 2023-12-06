@@ -3,6 +3,6 @@
 
 namespace engine::config
 {
-	const uint NumFrames = 3;
+	const uint NumFrames = 2;
 
 };

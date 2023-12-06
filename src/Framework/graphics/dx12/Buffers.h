@@ -54,6 +54,7 @@ namespace engine::graphics
 			uint size = sizeOfStruct*numberOfElements;
 			for (uint i = 0; i < engine::config::NumFrames; i++)
 			{
+				m_buffer[i] = nullptr;
 				m_resouces[i].InitAsConstantBuffer(device, size);
 				ThrowIfFailed(m_resouces[i]->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer[i])));
 				Update(data, i);
@@ -67,12 +68,12 @@ namespace engine::graphics
 
 		void Update(const void* data, uint frameNumber, uint numberOfElement = 0)
 		{
-			memcpy(&m_buffer[frameNumber][numberOfElement * sizeOfStruct], &data, sizeOfStruct);
+			memcpy(&m_buffer[frameNumber][numberOfElement * sizeOfStruct], data, sizeof(float));
 		}
 	private:
 		// we have resource per frame, and in one frame on one resource we can have any posible number of same objects data 
 		// holding in one constant buffer
-		char* m_buffer[engine::config::NumFrames] ;
+		char* m_buffer[engine::config::NumFrames];
 		uint sizeOfStruct;
 		Resource m_resouces[engine::config::NumFrames];
 	};
