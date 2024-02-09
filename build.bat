@@ -1,2 +1,2 @@
-call premake5.exe --file=demo.lua vs2022
+.\sharpmake\Sharpmake.Application.exe /sources('sharpmake/sharpmakeScripts/main.sharpmake.cs')
 PAUSE

@@ -1,0 +1,15 @@
+[SearchableFiles.include]
+*.cpp
+*.h
+*.hpp
+*.c
+*.mshader
+*.hlsl
+*.cxx
+*.cc
+
+[SearchableFiles.ignore]
+**/third_party/glm/
+**/third_party/imgui/
+**/third_party/glfw/
+
