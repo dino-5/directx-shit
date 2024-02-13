@@ -3,15 +3,15 @@
 #include "EngineGfx/dx12/RootSignature.h"
 #include "EngineGfx/RenderContext.h"
 
-SimplePass::SimplePass(ID3D12Device* device, int aspectRatio):m_constantBuffer(sizeof(float))
+SimplePass::SimplePass(ID3D12Device* device, i32 aspectRatio):m_constantBuffer(sizeof(float))
 {
     Initialize(device, aspectRatio);
 }
 
-void SimplePass::Initialize(ID3D12Device* device, int aspectRatio)
+void SimplePass::Initialize(ID3D12Device* device, i32 aspectRatio)
 {
     Pass::SetPSO("default");
-    Pass::SetRootSignature("oneConst");
+    Pass::SetRootSignature(graphics::ROOT_SIG_ONE_CONST);
     
     Vertex triangleVertices[] =
     {
@@ -23,7 +23,7 @@ void SimplePass::Initialize(ID3D12Device* device, int aspectRatio)
     m_constantBuffer.Init(device, 1, &m_data);
 }
 
-void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, uint frameNumber)
+void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 {
     Pass::SetPipeline(commandList);
 

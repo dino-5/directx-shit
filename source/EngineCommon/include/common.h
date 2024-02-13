@@ -1,12 +1,19 @@
 #pragma once
 #include<d3d12.h>
 #include<DirectXMath.h>
-#include"EngineGfx/dx12/d3dx12.h"
-#include "EngineCommon/util/Util.h"
+
 #include <string>
 #include <vector>
+#include <type_traits>
 
+#include "EngineGfx/dx12/d3dx12.h"
+#include "EngineCommon/util/Util.h"
+#include "types.h"
 
+#include <filesystem>
+namespace fs = std::filesystem;
+extern fs::path homeDir;
+extern fs::path demoDir;
 
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x)                                              \
@@ -17,11 +24,7 @@
 }
 #endif
 
-
 using namespace DirectX;
-
-
-
 
 enum class Key {
 	W = 87,

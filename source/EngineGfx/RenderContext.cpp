@@ -17,16 +17,16 @@ namespace engine::graphics
 	{
 		LogScope("RenderContext");
 		m_device.Initialize();
-		engine::util::logInfo("device initialized");
+		engine::util::PrintInfo("device initialized");
 		m_graphicsQueue.Init(m_device.GetDevice(), {});
-		engine::util::logInfo("queue initialized");
+		engine::util::PrintInfo("queue initialized");
 		m_graphicsCommandList.Initialize(m_device);
-		engine::util::logInfo("list initialized");
+		engine::util::PrintInfo("list initialized");
 		m_device.CreateFence(m_fence);
 
 		DescriptorHeapManager::CreateRTVHeap(engine::config::NumFrames);
 		DescriptorHeapManager::CreateDSVHeap(1);
-		engine::util::logInfo("heaps created");
+		engine::util::PrintInfo("heaps created");
 		LoadPipeline(m_device.GetDevice());
 		{
 			m_currentFence=1;

@@ -163,7 +163,7 @@ namespace engine::graphics
 			info.type = ShaderType::PIXEL;
 			ShaderManager::CreateShader(info);
         }
-        engine::util::logInfo("successfuly loaded shaders");
+        engine::util::PrintInfo("successfuly loaded shaders");
     }
 
     void PopulatePSO(ID3D12Device* dev)
@@ -171,10 +171,10 @@ namespace engine::graphics
         LogScope("PSO");
         PSO::allPSO.reserve(0);
         ShaderInputGroup shaderIG{ "VS_Basic", "PS_Basic", ShaderManager::GetInputLayout("defaultLayout"),
-            RootSignature::GetRootSignature("oneConst") };
+            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_ONE_CONST) };
         RenderState state;
         state.SetShaderInputGroup(shaderIG);
         state.Compile("default");
-        engine::util::logInfo("successfuly created pso");
+        engine::util::PrintInfo("successfuly created pso");
     }
 };

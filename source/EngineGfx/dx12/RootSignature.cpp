@@ -7,7 +7,6 @@
 namespace engine::graphics
 {
 
-
 	DescriptorRange::DescriptorRange(DescriptorRangeType type, uint numberOfDescriptors, uint baseShaderRegister,
 		uint registerSpace, uint offset)
 	{
@@ -128,26 +127,31 @@ namespace engine::graphics
 			IID_PPV_ARGS(&m_rootSignature)));
 	}
 
-	void RootSignature::AddEntry(std::string name, RootSignature obj)
+	void RootSignature::AddEntry(RootSignatureType type, RootSignature obj)
 	{
-		allRootSignatures.push_back({ name, obj });
+		static bool fl = false;
+		if (!fl)
+		{
+			allRootSignatures.resize(ROOT_SIG_COUNT);
+			fl = true;
+		}
+		allRootSignatures[type] = obj;
 	}
 
 	void PopulateRootSignatures(ID3D12Device* device)
 	{
 		LogScope("RootSignature");
-		RootSignature::allRootSignatures.reserve(10);
 		// empty
 		{
-			RootSignature::AddEntry("empty", RootSignature(device));
+			RootSignature::AddEntry(ROOT_SIG_EMPTY, RootSignature(device));
 		}
 		// one constant buffers
 		{
 			RootArguments arguments;
 			arguments.push_back(RootArgument::CreateCBV(0, 0, ShaderVisibility::VERTEX));
-			RootSignature::AddEntry("oneConst", RootSignature(device, arguments));
+			RootSignature::AddEntry(ROOT_SIG_ONE_CONST, RootSignature(device, arguments));
 		}
-        engine::util::logInfo("successfuly created root signatures");
+        engine::util::PrintInfo("successfuly created root signatures");
 
 	}
 

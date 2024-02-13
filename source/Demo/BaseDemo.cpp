@@ -1,5 +1,6 @@
 #include "BaseDemo.h"
 #include "EngineCommon/util/Logger.h"
+#include "EngineCommon/util/CommandLine.h"
 
 using namespace std;
 using namespace DirectX;
@@ -17,6 +18,7 @@ engine::graphics::SwapChainSettings BaseDemo::GetCurrentWindowSettings()
 
 bool BaseDemo::Initialize()
 {
+	cmdLine = &CommandLine::GetCommandLine();
 	LogScope("BaseDemo");
 	WindowApp::Initialize();
 	m_renderContext.Initialize();
@@ -41,6 +43,7 @@ void BaseDemo::Destroy()
 {
 	m_renderContext.Reset();
 }
+
 void BaseDemo::OnResize()
 {
 

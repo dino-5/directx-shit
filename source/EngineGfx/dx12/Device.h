@@ -1,18 +1,17 @@
 #ifndef DEVICE_H
 #define DEVICE_H
-#include<d3d12.h>
-#include "EngineCommon/include/common.h"
-#include "EngineCommon/include/defines.h"
-#include "EngineGfx/dx12/d3dx12.h"
-#include "EngineCommon/include/types.h"
+#include <d3d12.h>
 #include <windows.h>
 #include <dxgi1_6.h>
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
+#include "EngineCommon/include/common.h"
+#include "EngineCommon/include/defines.h"
+#include "EngineCommon/include/types.h"
+#include "EngineGfx/dx12/d3dx12.h"
 
 class Texture;
 class DescriptorHeap;
-
 
 class Device
 {
@@ -31,7 +30,6 @@ public:
 private:
 		
 	void GetHardwareAdapter(
-		IDXGIFactory1* pFactory,
 		IDXGIAdapter1** ppAdapter,
 		bool requestHighPerformanceAdapter=true);
 

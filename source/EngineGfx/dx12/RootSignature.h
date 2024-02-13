@@ -1,15 +1,22 @@
 #ifndef ROOT_SIGNATURE_H
 #define ROOT_SIGNATURE_H
 
-#include "EngineGfx/dx12/d3dx12.h"
 #include <d3d12.h>
 #include <variant>
+#include <array>
 #include "EngineCommon/include/common.h"
 #include "EngineCommon/include/types.h"
+#include "EngineGfx/dx12/d3dx12.h"
 
 namespace engine::graphics
 {
-	using namespace engine;
+	enum RootSignatureType {
+		ROOT_SIG_EMPTY,
+		ROOT_SIG_ONE_CONST,
+		ROOT_SIG_COUNT
+	};
+	constexpr const u32 rootSignatureCount = castEnum(ROOT_SIG_COUNT);
+
 	enum class DescriptorRangeType
 	{
 		SRV = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
@@ -84,19 +91,19 @@ namespace engine::graphics
 	class RootSignature
 	{
 	public:
+		RootSignature()=default;
 		RootSignature(ID3D12Device* device);
 		RootSignature(ID3D12Device* device, RootArguments& arguments);
-		void Init(RootArguments& arguments);
 		operator ID3D12RootSignature* ()
 		{
 			return m_rootSignature;
 		}
 
-		static inline std::vector<TableEntry<RootSignature>> allRootSignatures;
-		static void AddEntry(std::string name, RootSignature);
-		static RootSignature* GetRootSignature(std::string name)
+		static inline std::vector<RootSignature> allRootSignatures;
+		static void AddEntry(RootSignatureType, RootSignature);
+		static RootSignature* GetRootSignature(RootSignatureType type)
 		{
-			return util::FindElement(allRootSignatures, name);
+			return &allRootSignatures[type];
 		}
 
 	public:

@@ -1,18 +1,20 @@
 #pragma once
 #include <string>
 #include <d3d12.h>
+#include "EngineCommon/include/types.h"
 namespace engine::graphics
 {
 	class PSO;
 	class RootSignature;
 	class RenderContext;
+	enum RootSignatureType;
 };
 class Pass
 {
 public:
 	Pass() = default;
 	void SetPSO(std::string name);
-	void SetRootSignature(std::string name);
+	void SetRootSignature(engine::graphics::RootSignatureType type);
 
 	void SetPipeline(ID3D12GraphicsCommandList* cmdList);
 	virtual ~Pass() = default;

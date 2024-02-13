@@ -1,10 +1,12 @@
+#include <functional>
 #include "Device.h"
 #include "third_party/stb/stb_image.h"
 #include "EngineCommon/util/Util.h"
+#include "EngineCommon/util/Logger.h"
+#include "EngineCommon/util/CommandLine.h"
 
 
 void Device::GetHardwareAdapter(
-    IDXGIFactory1* pFactory,
     IDXGIAdapter1** ppAdapter,
     bool requestHighPerformanceAdapter)
 {
@@ -13,51 +15,72 @@ void Device::GetHardwareAdapter(
     ComPtr<IDXGIAdapter1> adapter;
 
     ComPtr<IDXGIFactory6> factory6;
-    if (SUCCEEDED(pFactory->QueryInterface(IID_PPV_ARGS(&factory6))))
+    if (SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory6))))
     {
-        for (
-            UINT adapterIndex = 0;
-            SUCCEEDED(factory6->EnumAdapterByGpuPreference(
-                adapterIndex,
-                requestHighPerformanceAdapter == true ? DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED,
-                IID_PPV_ARGS(&adapter)));
-            ++adapterIndex)
+        DXGI_GPU_PREFERENCE preference = requestHighPerformanceAdapter == true ?
+             DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED;
+        CommandLine& cmdLine = CommandLine::GetCommandLine();
+        bool listDevices = cmdLine.getValue(CommandLineOption::LIST_ADAPTER) == -1 ? false : true;
+        i32 deviceIndex = cmdLine.getValue(CommandLineOption::ADAPTER);
+        std::function<bool(u32)> selector;
+
+        if (deviceIndex != -1)
         {
-            DXGI_ADAPTER_DESC1 desc;
-            adapter->GetDesc1(&desc);
-
-            if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+            auto adapterSelector = [deviceIndex, &adapter](u32 i) -> bool
             {
-                // Don't select the Basic Render Driver adapter.
-                // If you want a software adapter, pass in "/warp" on the command line.
-                continue;
-            }
-
-            // Check to see whether the adapter supports Direct3D 12, but don't create the
-            // actual device yet.
-            if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
-            {
-                break;
-            }
+               if (i == static_cast<u32>(deviceIndex))
+               {
+                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+                   {
+                        engine::util::PrintError("can't create D3D12 device");
+                        return false;
+                   }
+                   return true;
+               }
+               return false;
+            };
+            selector = adapterSelector;
         }
-    }
+        else
+        {
+            auto adapterSelector = [&adapter](u32 i) -> bool
+            {
+                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+                   {
+                        return false;
+                   }
+                   return true;
+            };
+            selector = adapterSelector;
+        }
 
-    if (adapter.Get() == nullptr)
-    {
-        for (UINT adapterIndex = 0; SUCCEEDED(pFactory->EnumAdapters1(adapterIndex, &adapter)); ++adapterIndex)
+        bool deviceSelected = false;
+        for (u32 i=0;SUCCEEDED(factory6->EnumAdapterByGpuPreference(
+                i, preference, IID_PPV_ARGS(&adapter)));++i)
         {
             DXGI_ADAPTER_DESC1 desc;
             adapter->GetDesc1(&desc);
-
             if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
             {
                 continue;
             }
 
-            if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+            if (listDevices)
             {
+               engine::util::PrintInfo("[{}] : {}", i, engine::util::to_string(desc.Description));
+               if (!deviceSelected)
+               {
+                    if(deviceSelected = selector(i))
+                        engine::util::PrintInfo(
+                        "Selected GPU -> {}", engine::util::to_string(desc.Description));
+               }
+            }
+            else if (deviceSelected = selector(i))
+            {
+                engine::util::PrintInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
                 break;
             }
+
         }
     }
 
@@ -67,6 +90,7 @@ void Device::GetHardwareAdapter(
 void Device::Initialize()
 {
     UINT dxgiFactoryFlags = 0;
+    LogScope("Device::Initialize");
 
     {
         ComPtr<ID3D12Debug> debugController;
@@ -81,8 +105,10 @@ void Device::Initialize()
 
     ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
     {
+        IDXGIAdapter1* adapter;
+        GetHardwareAdapter(&adapter);
         ThrowIfFailed(D3D12CreateDevice(
-            nullptr,
+            adapter,
             D3D_FEATURE_LEVEL_12_0,
             IID_PPV_ARGS(&m_device)
         ));

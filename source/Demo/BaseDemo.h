@@ -8,6 +8,8 @@
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 #include "Demo/passes/SimplePass.h"
 
+class CommandLine;
+
 // ?
 struct DemoSettings
 {
@@ -38,9 +40,10 @@ private:
 	engine::graphics::SwapChainSettings GetCurrentWindowSettings();
 
 private:
+	CommandLine* cmdLine;
 	SimplePass m_pass;
 	DemoSettings m_currentSettings;
-	uint m_currentFrameIndex = 0;
+	u32 m_currentFrameIndex = 0;
 	engine::graphics::RenderContext m_renderContext;
 };
 

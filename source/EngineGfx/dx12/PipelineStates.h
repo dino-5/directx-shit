@@ -201,11 +201,11 @@ struct StencilOpDesc
 struct StencilState
 {
 	bool isEnabled             = true;
-	uint8 readMask             = 0xff;
-	uint8 writeMask            = 0xff;
+	u8 readMask             = 0xff;
+	u8 writeMask            = 0xff;
 	StencilOpDesc frontFace = StencilOpDesc();
 	StencilOpDesc backFace  = StencilOpDesc();
-	StencilState(bool Enabled = true, uint8 read = 0xff, uint8 write = 0xff,
+	StencilState(bool Enabled = true, u8 read = 0xff, u8 write = 0xff,
 		StencilOpDesc front = StencilOpDesc(), StencilOpDesc back = StencilOpDesc()) : isEnabled(Enabled), readMask(read), writeMask(write),
 		frontFace(front), backFace(back) {}
 };

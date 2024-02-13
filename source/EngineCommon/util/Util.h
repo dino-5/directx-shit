@@ -33,6 +33,17 @@ namespace engine::util
         return std::wstring(str.begin(), str.end());
     }
 
+    inline std::string to_string(std::wstring wstr)
+    {
+        return std::string(wstr.begin(), wstr.end());
+    }
+
+    inline std::string to_string(const wchar_t* wchar)
+    {
+        std::wstring wstr(wchar);
+        return std::string(wstr.begin(), wstr.end());
+    }
+
     inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
     {
         if (obj)

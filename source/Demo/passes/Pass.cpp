@@ -10,9 +10,9 @@ void Pass::SetPSO(std::string name)
 	m_pso = graphics::PSO::GetPSO(name);
 }
 
-void Pass::SetRootSignature(std::string name)
+void Pass::SetRootSignature(graphics::RootSignatureType type)
 {
-	m_rootSignature = graphics::RootSignature::GetRootSignature(name);
+	m_rootSignature = graphics::RootSignature::GetRootSignature(type);
 }
 
 void Pass::SetPipeline(ID3D12GraphicsCommandList* cmdList)

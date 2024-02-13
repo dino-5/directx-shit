@@ -89,9 +89,9 @@ namespace engine::graphics
 
 	private:
 		ComPtr<ID3D12DescriptorHeap> m_heap;
-		unsigned int heapSize;
-		unsigned int descriptorSize;
-		unsigned int currentDescriptorIndex=0;
+		u32 heapSize;
+		u32 descriptorSize;
+		u32 currentDescriptorIndex=0;
 	};
 
 	void PopulateDescriptorHeaps();
