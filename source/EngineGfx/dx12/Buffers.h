@@ -67,7 +67,7 @@ namespace engine::graphics
 
 		void Update(const void* data, uint frameNumber, uint numberOfElement = 0)
 		{
-			memcpy(&m_buffer[frameNumber][numberOfElement * sizeOfStruct], data, sizeof(float));
+			memcpy(&m_buffer[frameNumber][numberOfElement * sizeOfStruct], data, sizeOfStruct);
 		}
 	private:
 		// we have resource per frame, and in one frame on one resource we can have any posible number of same objects data 

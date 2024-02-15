@@ -7,7 +7,7 @@
 namespace engine::math
 {
 template<int N>
-class Matrix
+struct Matrix
 {
 public:
 	Matrix()
@@ -79,28 +79,16 @@ public:
 		return matrix;
 	}
 
-	static Matrix PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ)
-	{
-		float tanf = tan(ToRadians(fov/2));
-		float d = 1 / tanf;
-		float RangeZ = nearZ - farZ;
-
-		Matrix matrix{d/aspectRatio, 0, 0, 0,
-						0, d, 0, 0,
-						0, 0, (farZ+nearZ)/RangeZ, 2*farZ*nearZ/RangeZ,
-						0, 0, -1, 0};
-		//matrix.TransposeSelf();
-		return matrix;
-	}
-
 	Vector<N>& operator[](int i)
 	{
 		return m_data[i];
 	}
-private:
+public:
 	Vector<N> m_data[N];
 };
 
 using Matrix4 = Matrix<4>;
+
+Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ);
 
 }

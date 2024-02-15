@@ -6,6 +6,7 @@ struct PS_Input
 
 cbuffer General : register(b0)
 {
+    float4x4 perspective;
     float color;
 };
 
@@ -13,7 +14,7 @@ cbuffer General : register(b0)
 PS_Input VS_Basic(float3 position: POSITION)
 {
 	PS_Input ret;
-    float4 pos = float4(position, 1.0f);
+    float4 pos = mul(float4(position, 1.0f),perspective );
     ret.pos = pos;
     ret.color = color;
     return ret;

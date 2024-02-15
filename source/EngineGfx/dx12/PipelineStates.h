@@ -180,6 +180,7 @@ struct DepthState
 	ComparisonFunc depthFunc = ComparisonFunc::LESS;
 	DepthState(bool Enabled, DepthWriteMask Mask, ComparisonFunc Func): isEnabled(Enabled), writeMask(Mask), depthFunc(Func)
 	{}
+	DepthState()=default;
 };
 
 struct StencilOpDesc

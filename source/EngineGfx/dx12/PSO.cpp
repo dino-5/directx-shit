@@ -173,6 +173,10 @@ namespace engine::graphics
         ShaderInputGroup shaderIG{ "VS_Basic", "PS_Basic", ShaderManager::GetInputLayout("defaultLayout"),
             RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_ONE_CONST) };
         RenderState state;
+        DepthState depthState;
+        depthState.depthFunc = ComparisonFunc::LE; 
+        DepthStencilState depthStencilState(depthState, StencilState());
+        state.SetDepthStencilState(depthStencilState);
         state.SetShaderInputGroup(shaderIG);
         state.Compile("default");
         engine::util::PrintInfo("successfuly created pso");
