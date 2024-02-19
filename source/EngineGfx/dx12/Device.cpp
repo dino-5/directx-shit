@@ -26,11 +26,12 @@ void Device::GetHardwareAdapter(
 
         if (deviceIndex != -1)
         {
-            auto adapterSelector = [deviceIndex, &adapter](u32 i) -> bool
+            auto adapterSelector = [deviceIndex, &adapter, this](u32 i) -> bool
             {
                if (i == static_cast<u32>(deviceIndex))
                {
-                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2,
+                                 _uuidof(ID3D12Device), &m_device)))
                    {
                         engine::util::PrintError("can't create D3D12 device");
                         return false;
@@ -43,9 +44,10 @@ void Device::GetHardwareAdapter(
         }
         else
         {
-            auto adapterSelector = [&adapter](u32 i) -> bool
+            auto adapterSelector = [&adapter, this](u32 i) -> bool
             {
-                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2,
+                             _uuidof(ID3D12Device), &m_device)))
                    {
                         return false;
                    }
@@ -107,11 +109,6 @@ void Device::Initialize()
     {
         IDXGIAdapter1* adapter;
         GetHardwareAdapter(&adapter);
-        ThrowIfFailed(D3D12CreateDevice(
-            adapter,
-            D3D_FEATURE_LEVEL_12_0,
-            IID_PPV_ARGS(&m_device)
-        ));
     }
     device = this;
 }

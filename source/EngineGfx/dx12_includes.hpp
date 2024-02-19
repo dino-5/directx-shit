@@ -1,5 +1,8 @@
 #pragma once
 
+extern "C" { _declspec(dllexport) extern const unsigned int D3D12SDKVersion = 611; }
+extern "C" { _declspec(dllexport) extern const char* D3D12SDKPath = ".\\"; }
+
 #include <d3d12.h>
 #pragma comment(lib, "d3d12.lib")
 

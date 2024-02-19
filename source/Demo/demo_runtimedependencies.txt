@@ -1,0 +1,6 @@
+﻿
+Debug|x64
+  ..\..\sharpmake\bin\d3d12core.dll
+
+Release|x64
+  ..\..\sharpmake\bin\d3d12core.dll

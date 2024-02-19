@@ -16,43 +16,43 @@ namespace engine::graphics
 		m_range.RangeType = static_cast<D3D12_DESCRIPTOR_RANGE_TYPE>(type);
 		m_range.OffsetInDescriptorsFromTableStart = offset;
 	}
-	RootArgument RootArgument::CreateTable(uint numberOfDescriptorRanges, DescriptorRange& range,
+	RootParameter RootParameter::CreateTable(uint numberOfDescriptorRanges, DescriptorRange& range,
 		ShaderVisibility vis)
 	{
-		RootArgument val;
-		val.m_argument.ParameterType = CastType(RootArgumentType::TABLE);
+		RootParameter val;
+		val.m_argument.ParameterType = CastType(RootParameterType::TABLE);
 		val.m_argument.ShaderVisibility = CastType(vis);
 		val.m_argument.DescriptorTable.NumDescriptorRanges = 1;
 		val.m_argument.DescriptorTable.pDescriptorRanges = &range.m_range;
 		return val;
 	}
 
-	RootArgument RootArgument::CreateConstants(UINT num32BitValues,
+	RootParameter RootParameter::CreateConstants(UINT num32BitValues,
 		UINT shaderRegister,
 		UINT registerSpace,
 		ShaderVisibility visibility)
 	{
-		RootArgument val;
+		RootParameter val;
 		val.m_argument.Constants.Num32BitValues = num32BitValues;
 		val.m_argument.Constants.ShaderRegister= shaderRegister;
 		val.m_argument.Constants.RegisterSpace = registerSpace;
 		val.m_argument.ShaderVisibility = CastType(visibility);
-		val.m_argument.ParameterType = CastType(RootArgumentType::CONSTANT);
+		val.m_argument.ParameterType = CastType(RootParameterType::CONSTANT);
 		return val;
 	}
 
-	RootArgument RootArgument::CreateCBV(uint shaderRegister, uint registerSpace ,
-		ShaderVisibility vis)
+	RootParameter RootParameter::CreateDescriptor(uint shaderRegister, uint registerSpace,
+			RootParameterType type,	ShaderVisibility vis)
 	{
-		RootArgument val;
-		val.m_argument.ParameterType = CastType(RootArgumentType::CBV);
+		RootParameter val;
+		val.m_argument.ParameterType = CastType(type);
 		val.m_argument.Descriptor.RegisterSpace = registerSpace;
 		val.m_argument.Descriptor.ShaderRegister = shaderRegister;
 		val.m_argument.ShaderVisibility = CastType(vis);
 		return val;
 	}
 
-	std::vector<D3D12_ROOT_PARAMETER> GetArguments(RootArguments& vec)
+	std::vector<D3D12_ROOT_PARAMETER> GetParameters(RootParameters& vec)
 	{
 		std::vector<D3D12_ROOT_PARAMETER> result(vec.size());
 		for (int i = 0; i < vec.size(); i++)
@@ -79,12 +79,13 @@ namespace engine::graphics
 		return sampler;
 	}
 
-	RootSignature::RootSignature(ID3D12Device* device, RootArguments& arguments)
+	RootSignature::RootSignature(ID3D12Device* device, RootParameters& parameters, 
+				RootSignatureFlags flags)
 	{
 		auto sampler = GetSampler();
-		auto rootArguments = GetArguments(arguments);
+		auto rootArguments = GetParameters(parameters);
 		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(rootArguments.size(), rootArguments.data(), 1, &sampler,
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+			static_cast<D3D12_ROOT_SIGNATURE_FLAGS>(flags));
 
 		ComPtr<ID3DBlob> serializedRootSig = nullptr;
 		ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -147,9 +148,10 @@ namespace engine::graphics
 		}
 		// one constant buffers
 		{
-			RootArguments arguments;
-			arguments.push_back(RootArgument::CreateCBV(0, 0, ShaderVisibility::VERTEX));
-			RootSignature::AddEntry(ROOT_SIG_ONE_CONST, RootSignature(device, arguments));
+			RootParameters parameters;
+			parameters.push_back(RootParameter::CreateDescriptor(0, 0, RootParameterType::CBV,
+					ShaderVisibility::VERTEX));
+			RootSignature::AddEntry(ROOT_SIG_ONE_CONST, RootSignature(device, parameters));
 		}
         engine::util::PrintInfo("successfuly created root signatures");
 

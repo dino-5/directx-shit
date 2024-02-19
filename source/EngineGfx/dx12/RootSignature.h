@@ -7,12 +7,16 @@
 #include "EngineCommon/include/common.h"
 #include "EngineCommon/include/types.h"
 #include "EngineGfx/dx12/d3dx12.h"
+#include "third_party/magic_enum/include/magic_enum.hpp"
+
+using namespace magic_enum::bitwise_operators;
 
 namespace engine::graphics
 {
 	enum RootSignatureType {
 		ROOT_SIG_EMPTY,
 		ROOT_SIG_ONE_CONST,
+		ROOT_SIG_BINDLESS,
 		ROOT_SIG_COUNT
 	};
 	constexpr const u32 rootSignatureCount = castEnum(ROOT_SIG_COUNT);
@@ -29,7 +33,7 @@ namespace engine::graphics
 	{
 	public:
 		DescriptorRange() = default;
-		DescriptorRange(DescriptorRangeType type, uint numberOfDescriptors, uint baseShaderRegister,
+		DescriptorRange(DescriptorRangeType type, uint numberOfDescriptors, uint baseShaderRegister = 0,
 			uint registerSpace = 0, uint offset = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
 		operator D3D12_DESCRIPTOR_RANGE()const { return m_range; }
@@ -38,7 +42,7 @@ namespace engine::graphics
 		D3D12_DESCRIPTOR_RANGE m_range;
 	};
 
-	enum class RootArgumentType
+	enum class RootParameterType
 	{
 		TABLE = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
 		CONSTANT = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
@@ -55,22 +59,22 @@ namespace engine::graphics
 		PIXEL = D3D12_SHADER_VISIBILITY_PIXEL,
 	};
 
-	class RootArgument
+	class RootParameter
 	{
 	public:
-		RootArgument() = default;
-		static RootArgument CreateTable(uint numberOfDescriptorRanges, DescriptorRange& range,
+		RootParameter() = default;
+		static RootParameter CreateTable(uint numberOfDescriptorRanges, DescriptorRange& range,
 			ShaderVisibility vis = ShaderVisibility::PIXEL);
-		static RootArgument CreateCBV(uint shaderRegiste, uint registerSpace = 0,
+		static RootParameter CreateDescriptor(uint shaderRegiste, uint registerSpace = 0, RootParameterType type = RootParameterType::CBV,
 			ShaderVisibility vis = ShaderVisibility::ALL);
-		static RootArgument CreateConstants(UINT num32BitValues,
+		static RootParameter CreateConstants(UINT num32BitValues,
 			UINT shaderRegister,
 			UINT registerSpace = 0,
 			ShaderVisibility visibility = ShaderVisibility::ALL);
 		operator D3D12_ROOT_PARAMETER() const { return m_argument; }
 
 	private:
-		static D3D12_ROOT_PARAMETER_TYPE CastType(RootArgumentType type)
+		static D3D12_ROOT_PARAMETER_TYPE CastType(RootParameterType type)
 		{
 			return static_cast<D3D12_ROOT_PARAMETER_TYPE>(type);
 		}
@@ -85,15 +89,21 @@ namespace engine::graphics
 		D3D12_ROOT_PARAMETER m_argument{};
 	};
 
-	using RootArguments = std::vector<RootArgument>;
-	std::vector<D3D12_ROOT_PARAMETER> GetArguments(RootArguments& vec);
+	using RootParameters = std::vector<RootParameter>;
+	std::vector<D3D12_ROOT_PARAMETER> GetParameters(RootParameters& vec);
+
+	enum class RootSignatureFlags{
+        ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
+        SBV_SRV_HEAP_DIRECT_INDEX = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED,
+        SAMPLER_HEAP_DIRECTLY_INDEXED = D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED,
+	};
 
 	class RootSignature
 	{
 	public:
 		RootSignature()=default;
 		RootSignature(ID3D12Device* device);
-		RootSignature(ID3D12Device* device, RootArguments& arguments);
+		RootSignature(ID3D12Device* device, RootParameters& arguments, RootSignatureFlags flags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 		operator ID3D12RootSignature* ()
 		{
 			return m_rootSignature;
