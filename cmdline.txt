@@ -1,2 +1,2 @@
--adapter 0
+-adapter 1
 -list_adapter 1

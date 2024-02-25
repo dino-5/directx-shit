@@ -111,6 +111,7 @@ void Device::Initialize()
         GetHardwareAdapter(&adapter);
     }
     device = this;
+    engine::util::PrintInfo("device initialized");
 }
 
 void Device::CreateCommandAllocator(ID3D12CommandAllocator* &alloc)

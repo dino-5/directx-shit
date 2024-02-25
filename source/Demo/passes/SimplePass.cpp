@@ -10,7 +10,7 @@ SimplePass::SimplePass(ID3D12Device* device, i32 aspectRatio):m_constantBuffer(s
 
 void SimplePass::Initialize(ID3D12Device* device, i32 aspectRatio)
 {
-    Pass::SetPSO("default");
+    Pass::SetPSO(L"default");
     Pass::SetRootSignature(graphics::ROOT_SIG_ONE_CONST);
     
     Vertex triangleVertices[] =

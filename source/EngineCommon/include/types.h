@@ -21,7 +21,7 @@ using i64 = int64_t;
 using f32 = float;
 
 template<typename T>
-using TableEntry = std::pair<std::string, T>;
+using TableEntry = std::pair<std::wstring, T>;
 
 template<typename Enum>
 constexpr u32 castEnum(Enum value)

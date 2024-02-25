@@ -141,7 +141,7 @@ namespace engine::graphics
 				for (uint i = 0; i < engine::config::NumFrames; i++)
 					vec[i].InitAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
 			}
-			allResources.push_back({ "oneConst", vec });
+			allResources.push_back({ L"oneConst", vec });
 		}
 	}
 };

@@ -13,7 +13,7 @@ class Pass
 {
 public:
 	Pass() = default;
-	void SetPSO(std::string name);
+	void SetPSO(std::wstring name);
 	void SetRootSignature(engine::graphics::RootSignatureType type);
 
 	void SetPipeline(ID3D12GraphicsCommandList* cmdList);

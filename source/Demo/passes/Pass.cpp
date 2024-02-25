@@ -5,7 +5,7 @@
 
 using namespace engine;
 
-void Pass::SetPSO(std::string name)
+void Pass::SetPSO(std::wstring name)
 {
 	m_pso = graphics::PSO::GetPSO(name);
 }

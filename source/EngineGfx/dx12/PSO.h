@@ -11,6 +11,15 @@
 #include "PipelineStates.h"
 #include "RootSignature.h"
 
+struct IDxcCompiler3;
+using DxCompiler = IDxcCompiler3;
+struct IDxcUtils;
+using DxUtils= IDxcUtils;
+struct IDxcBlob;
+using DxBlob = IDxcBlob;
+struct IDxcIncludeHandler;
+using DxIncludeHandler = IDxcIncludeHandler;
+
 namespace engine::graphics
 {
 
@@ -20,37 +29,41 @@ namespace engine::graphics
 		PIXEL,
 		COMPUTE
 	};
-	std::string GetShaderTypeString(ShaderType type);
+	std::wstring GetShaderTypeString(ShaderType type);
 
 	struct ShaderInfo
 	{
-		std::string shaderName;
-		std::string path;
-		std::string entryPoint;
+		std::wstring shaderName;
+		std::wstring path;
+		std::wstring entryPoint;
 		ShaderType  type;
 	};
 
 	namespace ShaderManager
 	{
-		extern std::vector< TableEntry< ID3DBlob*>> allShaders;
+		extern std::vector< TableEntry< DxBlob*>> allShaders;
+		extern DxCompiler* s_compiler;
+		extern DxUtils* s_utils;
+		extern DxIncludeHandler* s_includer;
+        void InitializeCompiler();
 		void CreateShader(ShaderInfo info);
-		ID3DBlob* GetShader(std::string name);
+		DxBlob* GetShader(std::wstring name);
 		void Clear();
 
 		extern std::vector< TableEntry< InputLayout>> inputLayouts;
-		void CreateInputLayout(std::string name, std::vector<InputLayoutElement> layout);
-		InputLayout* GetInputLayout(std::string name);
+		void CreateInputLayout(std::wstring name, std::vector<InputLayoutElement> layout);
+		InputLayout* GetInputLayout(std::wstring name);
 	};
 
 	struct ShaderInputGroup
 	{
-		std::string vertexShader;
-		std::string pixelShader;
+		std::wstring vertexShader;
+		std::wstring pixelShader;
 		InputLayout* layout;
 		RootSignature* rootSignature;
 
-		void SetVS(std::string name) { vertexShader = name;  }
-		void SetPS(std::string name) { pixelShader= name;  }
+		void SetVS(std::wstring name) { vertexShader = name;  }
+		void SetPS(std::wstring name) { pixelShader= name;  }
 		void SetLayout(InputLayout& l) { layout = &l;  }
 		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
 	};
@@ -60,7 +73,7 @@ namespace engine::graphics
 	{
 	public:
 		RenderState()=default;
-		PSO* Compile(std::string name);
+		PSO* Compile(std::wstring name);
 		void SetBlendState       (BlendState blend=BlendState());
 		void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
 		void SetRasterizerState  (RasterizerState raster = RasterizerState());
@@ -83,12 +96,12 @@ namespace engine::graphics
 		}
 
 		// Warning: pointer can have dangling memory after adding new element
-		static PSO* CreatePSO(std::string name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
-		static PSO* GetPSO(std::string name)
+		static PSO* CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+		static PSO* GetPSO(std::wstring name)
 		{
 			return util::FindElement(allPSO, name);
 		}
-		static D3D12_SHADER_BYTECODE GetShader(std::string name);
+		static D3D12_SHADER_BYTECODE GetShader(std::wstring name);
 		static inline std::vector<TableEntry<PSO>> allPSO;
 
 		void Reset() { m_pso.Reset(); }
@@ -109,10 +122,10 @@ namespace engine::graphics
 
 	struct ComputeShaderInputGroup
 	{
-		std::string computeShader;
+		std::wstring computeShader;
 		RootSignature* rootSignature;
 
-		void SetCS(std::string name) { computeShader= name;  }
+		void SetCS(std::wstring name) { computeShader= name;  }
 		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
 	};
 

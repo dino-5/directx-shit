@@ -54,7 +54,7 @@ namespace engine::graphics
 	public:
 		static void CreateResource(ID3D12Device* device);
 		static void PopulateResources(ID3D12Device* device);
-		static Resource& GetResource(std::string name, uint numberOfFrame)
+		static Resource& GetResource(std::wstring name, uint numberOfFrame)
 		{
 			ResourceVector* res = engine::util::FindElement(allResources, name);
 			return (*res)[numberOfFrame];

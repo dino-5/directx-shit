@@ -122,8 +122,7 @@ class EngineGfxProject : BaseSimpleLibraryProject
         conf.AddPublicDependency<ThirdPartyProject>(target);
         conf.AddPublicDependency<EngineCommonProject>(target);
         conf.ReferencesByNuGetPackage.Add("Microsoft.Direct3D.D3D12", "1.611.2");
-        //conf.CustomPropsFiles.Add(
-         //   @"[project.SourceRootPath]/../../generated/packages/Microsoft.Direct3D.D3D12.1.611.2/build/native/Microsoft.Direct3D.D3D12.props");
+        conf.ReferencesByNuGetPackage.Add("Microsoft.Direct3D.DXC", "1.7.2308.12");
     }
 }
 
@@ -150,6 +149,8 @@ public class DemoProject : Project
         conf.ProjectPath = @"[project.SourceRootPath]";
         conf.Options.Add(Sharpmake.Options.Vc.Compiler.CppLanguageStandard.CPP20);
         conf.ReferencesByNuGetPackage.Add("Microsoft.Direct3D.D3D12", "1.611.2");
+        conf.ReferencesByNuGetPackage.Add("Microsoft.Direct3D.DXC", "1.7.2308.12");
+        conf.LibraryFiles.Add("dxcompiler");
     }
 
     [Configure]

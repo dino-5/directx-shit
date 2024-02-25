@@ -3,12 +3,19 @@
 #include "Device.h"
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/util/Logger.h"
+#include <dxcapi.h>
+#include "d3d12shader.h"
 #include <format>
+#include <cstring>
+#include <string>
+#include <locale>
+#include <codecvt>
+#undef memcpy
 
 namespace engine::graphics
 {
 
-    D3D12_SHADER_BYTECODE PSO::GetShader(std::string name)
+    D3D12_SHADER_BYTECODE PSO::GetShader(std::wstring name)
     {
         auto shader = ShaderManager::GetShader(name);
         D3D12_SHADER_BYTECODE ret
@@ -38,12 +45,13 @@ namespace engine::graphics
         ThrowIfFailed(device->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
     }
 
-    PSO* PSO::CreatePSO(std::string name, ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
+    PSO* PSO::CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
     {
         if (GetPSO(name) == nullptr)
             allPSO.push_back({ name, PSO(device, shader, blendState, dsState, rasterState) });
         return &(allPSO.back().second);
     }
+
     void RenderState::SetBlendState(BlendState blendState)
     {
         m_blend = blendState;
@@ -64,44 +72,89 @@ namespace engine::graphics
         m_shader = shader;
     }
 
-    PSO* RenderState::Compile(std::string name)
+    PSO* RenderState::Compile(std::wstring name)
     {
         return PSO::CreatePSO(name, Device::device->GetDevice(), m_shader, m_blend, m_ds, m_rast);
     }
 
-    std::string GetShaderTypeString(ShaderType type)
+    std::wstring GetShaderTypeString(ShaderType type)
     {
         switch (type)
         {
         case ShaderType::VERTEX:
-            return "vs_5_0";
+            return L"vs_6_6";
         case ShaderType::PIXEL:
-            return "ps_5_0";
+            return L"ps_6_6";
         case ShaderType::COMPUTE:
-            return "cs_5_0";
+            return L"cs_6_6";
         default:
-            return "wrong shit";
+            return L"wrong shit";
         }
     }
 
     namespace ShaderManager
     {
 
-		std::vector< TableEntry< ID3DBlob*>> allShaders;
+		std::vector< TableEntry< DxBlob*>> allShaders;
 		std::vector< TableEntry< InputLayout>> inputLayouts;
+		DxCompiler* s_compiler = nullptr;
+		DxUtils* s_utils = nullptr;
+		DxIncludeHandler* s_includer = nullptr;
+        void InitializeCompiler()
+        {
+            ThrowIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&s_compiler)));
+            ThrowIfFailed(::DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&s_utils)));
+            s_utils->CreateDefaultIncludeHandler(&s_includer);
+        }
 		void CreateShader(ShaderInfo info)
 		{
             UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 
-            ID3DBlob* blob;
-            ThrowIfFailed(D3DCompileFromFile(
-                engine::util::to_wstring(info.path).c_str(), nullptr, nullptr, info.entryPoint.c_str(),
-                GetShaderTypeString(info.type).c_str(), compileFlags, 0, &blob, nullptr)
+            IDxcBlobEncoding* sourceBlob;
+            s_utils->LoadFile(info.path.c_str(), nullptr, &sourceBlob);
+            DxcBuffer sourceBuffer;
+            sourceBuffer.Ptr = sourceBlob->GetBufferPointer();
+            sourceBuffer.Size = sourceBlob->GetBufferSize();
+            BOOL fl;
+            sourceBlob->GetEncoding(&fl, &sourceBuffer.Encoding);
+            std::wstring type = GetShaderTypeString(info.type);
+            constexpr const u32 numberOfArgs = 5;
+            std::vector<const wchar_t*> args= 
+            {
+                info.shaderName.c_str(),
+                L"-E", info.entryPoint.c_str(),
+                L"-T", type.c_str(),
+                //L"-Fd", pdbPath  
+            };
+            IDxcResult* result;
+            HRESULT hr = s_compiler->Compile(
+                &sourceBuffer,
+                args.data(),
+                numberOfArgs,
+                s_includer,
+                IID_PPV_ARGS(&result)
             );
-            allShaders.push_back({ info.shaderName, blob});
+            if(SUCCEEDED(hr) && result)
+                result->GetStatus(&hr);
+            if (FAILED(hr))
+            {
+                IDxcBlobEncoding* errorBuffer;
+                result->GetErrorBuffer(&errorBuffer);
+                char* str = new char[errorBuffer->GetBufferSize()];
+                std::memcpy(str, errorBuffer->GetBufferPointer(), errorBuffer->GetBufferSize());
+                engine::util::PrintError("{}",std::string(str));
+                delete[] str;
+            }
+            else
+            {
+                DxBlob* blob;
+                result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&blob), nullptr);
+                allShaders.push_back({ info.shaderName, blob});
+            }
+
 		}
 
-		ID3DBlob* GetShader(std::string name)
+		DxBlob* GetShader(std::wstring name)
 		{
             return *util::FindElement(allShaders, name);
 		}
@@ -111,7 +164,7 @@ namespace engine::graphics
 			allShaders.clear();
 		}
 
-        void CreateInputLayout(std::string name,std::vector<InputLayoutElement> layout)
+        void CreateInputLayout(std::wstring name,std::vector<InputLayoutElement> layout)
         {
 
 			if (GetInputLayout(name)==nullptr) 
@@ -120,7 +173,7 @@ namespace engine::graphics
 			}
         }
 
-        InputLayout* GetInputLayout(std::string name)
+        InputLayout* GetInputLayout(std::wstring name)
         {
 			return util::FindElement(inputLayouts, name);
         }
@@ -139,27 +192,28 @@ namespace engine::graphics
     void PopulateShaders()
     {
         LogScope("Shaders");
+        ShaderManager::InitializeCompiler();
         ShaderManager::allShaders.reserve(10);
         ShaderManager::inputLayouts.reserve(5);
         {
             ShaderInfo info;
-            info.entryPoint = "VS_Basic";
-            info.path = "Shaders/basic_shader.hlsl";
-            info.shaderName = "VS_Basic";
+            info.entryPoint = L"VS_Basic";
+            info.path = L"Shaders/basic_shader.hlsl";
+            info.shaderName = L"VS_Basic";
             info.type = ShaderType::VERTEX;
             ShaderManager::CreateShader(info);
 
             std::vector<InputLayoutElement> layout = {
                 {"POSITION", Format::float3}
             };
-            ShaderManager::CreateInputLayout("defaultLayout", layout);
+            ShaderManager::CreateInputLayout(L"defaultLayout", layout);
         }
 
         {
 			ShaderInfo info;
-			info.entryPoint = "PS_Basic";
-			info.path = "Shaders/basic_shader.hlsl";
-			info.shaderName = "PS_Basic";
+			info.entryPoint = L"PS_Basic";
+			info.path = L"Shaders/basic_shader.hlsl";
+			info.shaderName = L"PS_Basic";
 			info.type = ShaderType::PIXEL;
 			ShaderManager::CreateShader(info);
         }
@@ -170,7 +224,7 @@ namespace engine::graphics
     {
         LogScope("PSO");
         PSO::allPSO.reserve(0);
-        ShaderInputGroup shaderIG{ "VS_Basic", "PS_Basic", ShaderManager::GetInputLayout("defaultLayout"),
+        ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic", ShaderManager::GetInputLayout(L"defaultLayout"),
             RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_ONE_CONST) };
         RenderState state;
         DepthState depthState;
@@ -178,7 +232,7 @@ namespace engine::graphics
         DepthStencilState depthStencilState(depthState, StencilState());
         state.SetDepthStencilState(depthStencilState);
         state.SetShaderInputGroup(shaderIG);
-        state.Compile("default");
+        state.Compile(L"default");
         engine::util::PrintInfo("successfuly created pso");
     }
 };

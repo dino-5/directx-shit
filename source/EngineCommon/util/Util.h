@@ -129,7 +129,7 @@ namespace engine::util
 
 
     template<typename T>
-    inline T* FindElement(std::vector<TableEntry<T>>& vector, std::string name)
+    inline T* FindElement(std::vector<TableEntry<T>>& vector, std::wstring name)
     {
         auto findResult = std::find_if(vector.begin(), vector.end(),
             [name](TableEntry<T> el) { return el.first == name; });
