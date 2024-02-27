@@ -71,7 +71,7 @@ namespace engine::graphics
 		desc.format = DXGI_FORMAT_R24G8_TYPELESS;
 		desc.width = set.width;
 		desc.height = set.height;
-		m_dsvBuffer.Init(Device::device->GetDevice(), desc, &optClear);
+		m_dsvBuffer.init(Device::device->GetDevice(), desc, &optClear);
 	}
 
 	void RenderContext::FlushCommandQueue()

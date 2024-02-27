@@ -9,7 +9,7 @@ namespace engine::graphics
 {
     void BindTexture(ID3D12GraphicsCommandList* cmdList, TextureHandle handle, uint bindSlot)
     {
-        auto textureHandle = DescriptorHeapManager::CurrentSRVHeap->GetGPUHandle(handle);
+        auto textureHandle = DescriptorHeapManager::CurrentSRVHeap.getGPUHandle(handle);
         cmdList->SetGraphicsRootDescriptorTable(bindSlot, textureHandle);
     }
 
@@ -38,11 +38,11 @@ namespace engine::graphics
         desc.createState = ResourceState::COPY_DEST;
         desc.descriptor = ResourceDescriptorFlags::ShaderResource;
 
-        m_texture.Init(Device::device->GetDevice(), desc);
+        m_texture.init(Device::device->GetDevice(), desc);
 
         const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture, 0, 1);
 
-        textureUploadHeap.Init(Device::device->GetDevice(), CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), ResourceState::GENERIC_READ_STATE,
+        textureUploadHeap.init(Device::device->GetDevice(), CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), ResourceState::GENERIC_READ_STATE,
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD));
 
         D3D12_SUBRESOURCE_DATA textureData = {};
@@ -52,7 +52,7 @@ namespace engine::graphics
         textureData.SlicePitch = textureData.RowPitch * height;
 
         UpdateSubresources(commandList.Get(), m_texture, textureUploadHeap, 0, 0, 1, &textureData);
-        m_texture.Transition(commandList.Get(), ResourceState::PIXEL_SHADER_RESOURCE);
+        m_texture.transition(commandList.Get(), ResourceState::PIXEL_SHADER_RESOURCE);
         index = m_texture.srv.HeapIndex;
         m_name = s;
     }

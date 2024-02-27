@@ -54,7 +54,7 @@ namespace engine::graphics
 			for (uint i = 0; i < engine::config::NumFrames; i++)
 			{
 				m_buffer[i] = nullptr;
-				m_resouces[i].InitAsConstantBuffer(device, size);
+				m_resouces[i].initAsConstantBuffer(device, size);
 				ThrowIfFailed(m_resouces[i]->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer[i])));
 				Update(data, i);
 			}
@@ -63,6 +63,10 @@ namespace engine::graphics
 		// and element selects which object data we should use from this resource
 		D3D12_GPU_VIRTUAL_ADDRESS GetAddress(uint frame, uint element=0) 		{
 			return (m_resouces[frame])->GetGPUVirtualAddress() + sizeOfStruct * element;
+		}
+		u32 getDescriptorHeapIndex(u32 frame)
+		{
+			return m_resouces[frame].srv.getDescriptorIndex();
 		}
 
 		void Update(const void* data, uint frameNumber, uint numberOfElement = 0)

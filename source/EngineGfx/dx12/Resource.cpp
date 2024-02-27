@@ -13,15 +13,15 @@ namespace engine::graphics
 
 	Resource::Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val)
 	{
-		Init(device, desc, val);
+		init(device, desc, val);
 	}
 
 	Resource::Resource(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState, CD3DX12_HEAP_PROPERTIES heap_type)
 	{
-		Init(device, desc, createState, heap_type);
+		init(device, desc, createState, heap_type);
 	}
 
-	void Resource::Init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val)
+	void Resource::init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val)
 	{
 		m_currentState = desc.createState;
 		D3D12_RESOURCE_DESC resourceDesc = {};
@@ -42,14 +42,14 @@ namespace engine::graphics
 			CastType(desc.createState),
 			val,
 			IID_PPV_ARGS(&m_resource)));
-		CreateViews(device, desc.descriptor);
+		createViews(device, desc.descriptor);
 	}
 
-	void Resource::CreateViews(ID3D12Device* device, ResourceDescriptorFlags descriptors)
+	void Resource::createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors)
 	{
 		if ((descriptors & ResourceDescriptorFlags::RenderTarget) == ResourceDescriptorFlags::RenderTarget)
 		{
-			DescriptorHeapManager::CurrentRTVHeap->CreateRTV(device, *this);
+			DescriptorHeapManager::CurrentRTVHeap.createRTV(device, *this);
 		}
 		if ((descriptors & ResourceDescriptorFlags::DepthStencil) == ResourceDescriptorFlags::DepthStencil)
 		{
@@ -58,7 +58,7 @@ namespace engine::graphics
 			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 			dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 			dsvDesc.Texture2D.MipSlice = 0;
-			DescriptorHeapManager::CurrentDSVHeap->CreateDSV(device, *this, dsvDesc);
+			DescriptorHeapManager::CurrentDSVHeap.createDSV(device, *this, dsvDesc);
 		}
 
 		if ((descriptors & ResourceDescriptorFlags::ShaderResource) == ResourceDescriptorFlags::ShaderResource)
@@ -68,7 +68,7 @@ namespace engine::graphics
 			srvDesc.Format = m_resource->GetDesc().Format;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			srvDesc.Texture2D.MipLevels = 1;
-			DescriptorHeapManager::CurrentSRVHeap->CreateSRV(device, *this, srvDesc);
+			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
 		if ((descriptors & ResourceDescriptorFlags::UnorderedAccess) == ResourceDescriptorFlags::UnorderedAccess)
 		{
@@ -76,11 +76,18 @@ namespace engine::graphics
 			uavDesc.Format = m_resource->GetDesc().Format;
 			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.Texture2D.MipSlice = 0;
-			DescriptorHeapManager::CurrentSRVHeap->CreateUAV(device, *this, uavDesc);
+			DescriptorHeapManager::CurrentSRVHeap.createUAV(device, *this, uavDesc);
+		}
+		if ((descriptors & ResourceDescriptorFlags::ConstantBuffer) == ResourceDescriptorFlags::ConstantBuffer)
+		{
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+			cbvDesc.BufferLocation = m_resource->GetGPUVirtualAddress();
+			cbvDesc.SizeInBytes = m_sizeOfBuffer;
+			DescriptorHeapManager::CurrentSRVHeap.createCBV(device, *this, cbvDesc);
 		}
 	}
 
-	void Resource::Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState, CD3DX12_HEAP_PROPERTIES heap_type)
+	void Resource::init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc, ResourceState createState, CD3DX12_HEAP_PROPERTIES heap_type)
 	{
 		m_currentState = createState;
 		ThrowIfFailed(device->CreateCommittedResource(
@@ -93,8 +100,9 @@ namespace engine::graphics
 	}
 
 
-	void Resource::InitAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer)
+	void Resource::initAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer)
 	{
+		m_sizeOfBuffer = sizeOfBuffer;
 		CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeOfBuffer);
 		CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 		device->CreateCommittedResource(&heap_type,
@@ -103,10 +111,10 @@ namespace engine::graphics
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_resource));
-
+		createViews(device, ResourceDescriptorFlags::ConstantBuffer);
 	}
 
-	void Resource::Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state)
+	void Resource::transition(ID3D12GraphicsCommandList* cmdList, ResourceState state)
 	{
 		if (state == m_currentState)
 			return;
@@ -124,7 +132,7 @@ namespace engine::graphics
 		{
 			ResourceDescription desc;
 			for (uint i = 0; i < engine::config::NumFrames; i++)
-				vec[i].InitAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
+				vec[i].initAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
 		}
 	}
 
@@ -133,15 +141,15 @@ namespace engine::graphics
 		allResources.reserve(3);
 		// for one constants
 		{
-			ResourceVector vec;
-			vec.resize(engine::config::NumFrames);
-			for (int i = 0; i < engine::config::NumFrames; i++)
-			{
-				ResourceDescription desc;
-				for (uint i = 0; i < engine::config::NumFrames; i++)
-					vec[i].InitAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
-			}
-			allResources.push_back({ L"oneConst", vec });
+			//ResourceVector vec;
+			//vec.resize(engine::config::NumFrames);
+			//for (int i = 0; i < engine::config::NumFrames; i++)
+			//{
+			//	ResourceDescription desc;
+			//	for (uint i = 0; i < engine::config::NumFrames; i++)
+			//		vec[i].InitAsConstantBuffer(device,	util::d3dUtil::CalcConstantBufferByteSize(sizeof(float)) );
+			//}
+			//allResources.push_back({ L"oneConst", vec });
 		}
 	}
 };

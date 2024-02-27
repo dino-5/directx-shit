@@ -4,19 +4,27 @@ struct PS_Input
 	float color : COLOR;
 };
 
-cbuffer General : register(b0)
+struct General 
 {
     float4x4 perspective;
     float color;
 };
 
+struct PassInfo
+{
+    uint constantBufferIndex;
+};
+
+ConstantBuffer<PassInfo> cbIndex : register(b0, space10);
+
 
 PS_Input VS_Basic(float3 position: POSITION)
 {
 	PS_Input ret;
-    float4 pos = mul(float4(position, 1.0f),perspective );
+    ConstantBuffer<General> buffer = ResourceDescriptorHeap[cbIndex.constantBufferIndex];
+    float4 pos = mul(float4(position, 1.0f),buffer.perspective );
     ret.pos = pos;
-    ret.color = color;
+    ret.color = buffer.color;
     return ret;
 }
 

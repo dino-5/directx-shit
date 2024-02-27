@@ -34,9 +34,7 @@ namespace engine::graphics
 
 		void Reset() {
 			m_swapChain.Reset();
-			m_dsvBuffer.Reset();
-			m_rtvHeap.Reset();
-			m_dsvHeap.Reset();
+			m_dsvBuffer.reset();
 		}
 
 		void StartFrame();
@@ -56,9 +54,6 @@ namespace engine::graphics
 		Resource m_dsvBuffer;
 
 		HANDLE m_fenceEvent;
-
-		DescriptorHeap m_rtvHeap;
-		DescriptorHeap m_dsvHeap;
 
 		PSO* m_currentPSO;
 		ComPtr<ID3D12Fence> m_fence;

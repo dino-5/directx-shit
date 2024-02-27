@@ -138,12 +138,15 @@ namespace engine::graphics
                 result->GetStatus(&hr);
             if (FAILED(hr))
             {
-                IDxcBlobEncoding* errorBuffer;
-                result->GetErrorBuffer(&errorBuffer);
-                char* str = new char[errorBuffer->GetBufferSize()];
-                std::memcpy(str, errorBuffer->GetBufferPointer(), errorBuffer->GetBufferSize());
-                engine::util::PrintError("{}",std::string(str));
-                delete[] str;
+                if (result)
+                {
+                    IDxcBlobEncoding* errorBuffer;
+                    result->GetErrorBuffer(&errorBuffer);
+                    char* str = new char[errorBuffer->GetBufferSize()];
+                    std::memcpy(str, errorBuffer->GetBufferPointer(), errorBuffer->GetBufferSize());
+                    engine::util::PrintError("{}",std::string(str));
+                    delete[] str;
+                }
             }
             else
             {
@@ -225,7 +228,7 @@ namespace engine::graphics
         LogScope("PSO");
         PSO::allPSO.reserve(0);
         ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic", ShaderManager::GetInputLayout(L"defaultLayout"),
-            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_ONE_CONST) };
+            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_BINDLESS) };
         RenderState state;
         DepthState depthState;
         depthState.depthFunc = ComparisonFunc::LE; 

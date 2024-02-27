@@ -42,7 +42,7 @@ namespace engine::graphics
 	void SwapChain::OnResize()
 	{
 		for (int i = 0; i < engine::config::NumFrames; ++i)
-			m_swapChainBuffer[i].Reset();
+			m_swapChainBuffer[i].reset();
 
 
 		ThrowIfFailed(m_swapChain->ResizeBuffers(
@@ -55,8 +55,8 @@ namespace engine::graphics
 
 		for (UINT i = 0; i < engine::config::NumFrames; i++)
 		{
-			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].GetAddress())));
-			m_swapChainBuffer[i].CreateViews(Device::device->GetDevice(), ResourceDescriptorFlags::RenderTarget);
+			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].getAddress())));
+			m_swapChainBuffer[i].createViews(Device::device->GetDevice(), ResourceDescriptorFlags::RenderTarget);
 		}
 	}
 };

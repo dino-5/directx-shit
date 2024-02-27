@@ -28,6 +28,7 @@ namespace engine::graphics
 		DepthStencil = 1 << 1,
 		ShaderResource = 1 << 2,
 		UnorderedAccess = 1 << 3,
+		ConstantBuffer = 1 << 4,
 	};
 	using namespace magic_enum::bitwise_operators;
 
@@ -62,20 +63,20 @@ namespace engine::graphics
 
 		Resource() = default;
 
-		void InitAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer);
+		void initAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer);
 		Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
-		void Init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
+		void init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
 
 		Resource(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
 			ResourceState createState = ResourceState::COMMON,
 			CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
-		void Init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
+		void init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
 			ResourceState createState = ResourceState::COMMON,
 			CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
 
-		void Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
+		void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
-		void Reset()
+		void reset()
 		{
 			if (m_resource)
 				m_resource->Release();
@@ -91,10 +92,10 @@ namespace engine::graphics
 			return m_resource;
 		}
 
-		ID3D12Resource** GetAddress() { return &m_resource; }
-		ID3D12Resource* GetResource() { return m_resource; }
+		ID3D12Resource** getAddress() { return &m_resource; }
+		ID3D12Resource* getResource() { return m_resource; }
 
-		void CreateViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
+		void createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
 
 		DescriptorDSV dsv;
 		DescriptorRTV rtv;
@@ -104,6 +105,7 @@ namespace engine::graphics
 	private:
 		ID3D12Resource* m_resource;
 		ResourceState m_currentState = ResourceState::COMMON;
+		u32 m_sizeOfBuffer=0;
 	};
 
 };

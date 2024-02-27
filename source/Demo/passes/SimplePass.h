@@ -18,6 +18,11 @@ struct ConstandBufferData
 	f32 color;
 };
 
+struct BindlessSP
+{
+	u32 index;
+};
+
 class SimplePass : public Pass
 {
 public:
@@ -27,6 +32,7 @@ public:
 	void Draw(ID3D12GraphicsCommandList*, u32 nt)override;
 private:
 	ConstandBufferData m_data;
+	u32 index;
 	graphics::VertexBuffer m_vertexBuffer;
 	graphics::ConstantBuffer m_constantBuffer;
 };

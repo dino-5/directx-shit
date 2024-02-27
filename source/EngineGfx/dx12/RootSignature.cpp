@@ -153,6 +153,14 @@ namespace engine::graphics
 					ShaderVisibility::VERTEX));
 			RootSignature::AddEntry(ROOT_SIG_ONE_CONST, RootSignature(device, parameters));
 		}
+
+		{
+			RootParameters parameters;
+			parameters.push_back(RootParameter::CreateConstants(1, 0, 10, ShaderVisibility::ALL));
+			RootSignature::AddEntry(ROOT_SIG_BINDLESS, RootSignature(device, parameters, 
+				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX | 
+                RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT ));
+		}
         engine::util::PrintInfo("successfuly created root signatures");
 
 	}

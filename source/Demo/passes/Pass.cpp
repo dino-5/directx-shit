@@ -17,6 +17,4 @@ void Pass::SetRootSignature(graphics::RootSignatureType type)
 
 void Pass::SetPipeline(ID3D12GraphicsCommandList* cmdList)
 {
-	cmdList->SetGraphicsRootSignature( *m_rootSignature );
-	cmdList->SetPipelineState( *m_pso );
 }
