@@ -1,6 +1,7 @@
 #pragma once
 #include "EngineGfx/dx12/DescriptorHeap.h"
-#include "EngineGfx/dx12/UploadBuffer.h"
+#include "EngineGfx/dx12/Buffers.h"
+#include "EngineGfx/dx12/Device.h"
 #include "EngineGfx/PassConstants.h"
 #include "EngineGfx/Texture.h"
 #include "EngineGfx/RenderItem.h"

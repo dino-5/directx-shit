@@ -5,8 +5,6 @@ namespace filesystem = std::filesystem;
 using path = std::filesystem::path;
 namespace engine::util
 {
-
-
 class Filepath
 {
 public:

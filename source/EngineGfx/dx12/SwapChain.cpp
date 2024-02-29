@@ -55,7 +55,7 @@ namespace engine::graphics
 
 		for (UINT i = 0; i < engine::config::NumFrames; i++)
 		{
-			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].getAddress())));
+			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].getResourceAddress())));
 			m_swapChainBuffer[i].createViews(Device::device->GetDevice(), ResourceDescriptorFlags::RenderTarget);
 		}
 	}

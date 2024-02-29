@@ -129,7 +129,7 @@ namespace engine::graphics
 	{
 		ThrowIfFailed(D3DCreateBlob(dataSize, &cpuMemory));
 		CopyMemory(cpuMemory->GetBufferPointer(), data, dataSize);
-		gpuMemory = engine::util::d3dUtil::CreateDefaultBuffer(device, cmList.Get(), data, dataSize, uploadBuffer);
+		//gpuMemory = engine::util::CreateDefaultBuffer(device, cmList.Get(), data, dataSize, uploadBuffer);
 
 	}
 

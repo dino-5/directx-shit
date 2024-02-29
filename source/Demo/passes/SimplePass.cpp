@@ -4,7 +4,7 @@
 #include "EngineGfx/dx12/DescriptorHeap.h"
 #include "EngineGfx/RenderContext.h"
 
-SimplePass::SimplePass(ID3D12Device* device, i32 aspectRatio):m_constantBuffer(sizeof(ConstandBufferData))
+SimplePass::SimplePass(ID3D12Device* device, i32 aspectRatio)
 {
     Initialize(device, aspectRatio);
 }
@@ -23,7 +23,7 @@ void SimplePass::Initialize(ID3D12Device* device, i32 aspectRatio)
     m_data.color = 0.8;
     m_data.perspective = math::PerspectiveProjection(90, 1, 0, 0);
     m_vertexBuffer.Init(device, triangleVertices, sizeof(triangleVertices));
-    m_constantBuffer.Init(device, 1, &m_data);
+    m_constantBuffer.Init(device, 1, &m_data, sizeof(m_data));
 }
 
 void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
@@ -31,7 +31,7 @@ void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
     commandList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
 	commandList->SetGraphicsRootSignature( *m_rootSignature );
 	commandList->SetPipelineState( *m_pso );
-    index = m_constantBuffer.getDescriptorHeapIndex(frameNumber);
+    index = m_constantBuffer.getDescriptorHeapIndex();
 
     commandList->SetGraphicsRootConstantBufferView(0, index);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

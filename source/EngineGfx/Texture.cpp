@@ -42,8 +42,15 @@ namespace engine::graphics
 
         const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture, 0, 1);
 
-        textureUploadHeap.init(Device::device->GetDevice(), CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize), ResourceState::GENERIC_READ_STATE,
-            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD));
+        ResourceDescription uploadDesc;
+        uploadDesc.format = DXGI_FORMAT_UNKNOWN;
+        uploadDesc.width = uploadBufferSize;
+        uploadDesc.height = 1;
+        uploadDesc.dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        uploadDesc.flags = ResourceFlags::NONE;
+        uploadDesc.createState = ResourceState::GENERIC_READ_STATE;
+        uploadDesc.descriptor = ResourceDescriptorFlags::None;
+        textureUploadHeap.init(Device::device->GetDevice(), uploadDesc);
 
         D3D12_SUBRESOURCE_DATA textureData = {};
         textureData.pData = &data[0];

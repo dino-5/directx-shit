@@ -3,6 +3,9 @@
 #include "DescriptorHeap.h"
 #include "third_party/magic_enum/include/magic_enum.hpp"
 #include "EngineCommon/include/types.h"
+#include "EngineCommon/System/config.h"
+
+#include <array>
 
 namespace engine::graphics
 {
@@ -21,9 +24,11 @@ namespace engine::graphics
 		GENERIC_READ_STATE = D3D12_RESOURCE_STATE_GENERIC_READ,
 		PRESENT = D3D12_RESOURCE_STATE_PRESENT,
 	};
+	D3D12_RESOURCE_STATES CastEnum(ResourceState state);
 
 	enum class ResourceDescriptorFlags : std::uint32_t
 	{
+		None = 0,
 		RenderTarget = 1 << 0,
 		DepthStencil = 1 << 1,
 		ShaderResource = 1 << 2,
@@ -32,48 +37,39 @@ namespace engine::graphics
 	};
 	using namespace magic_enum::bitwise_operators;
 
-	D3D12_RESOURCE_STATES CastType(ResourceState state);
 
 	struct ResourceDescription
 	{
 		DXGI_FORMAT format;
-		uint width;
-		uint height;
-		uint depthOrArraySize = 1;
+		u32 width;
+		u32 height;
+		u32 depthOrArraySize = 1;
 		D3D12_RESOURCE_DIMENSION dimension;
-		ResourceFlags flags;
+		ResourceFlags flags = ResourceFlags::NONE;
 		ResourceState createState = ResourceState::COMMON;
-		CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
 		ResourceDescriptorFlags descriptor;
 	};
 
+	//ResourceDescription desc{
+	//		.format = DXGI_FORMAT_,
+	//		.width= ,
+	//		.height = ,
+	//		.depthOrArraySize = 1,
+	//		.dimension = D3D12_RESOURCE_DIMENSION_,
+	//		.flags = ResourceFlags::None,
+	//		.createState = ResourceState::,
+	//		.heapType = D3D12_HEAP_TYPE_DEFAULT,
+	//		.descriptor = ResourceDescriptorFlags::
+    //};
+
 	class Resource
 	{
-	private:
-		using ResourceVector = std::vector<Resource>;
-		static inline std::vector<TableEntry<ResourceVector>> allResources;
 	public:
-		static void CreateResource(ID3D12Device* device);
-		static void PopulateResources(ID3D12Device* device);
-		static Resource& GetResource(std::wstring name, uint numberOfFrame)
-		{
-			ResourceVector* res = engine::util::FindElement(allResources, name);
-			return (*res)[numberOfFrame];
-		}
-
 		Resource() = default;
 
-		void initAsConstantBuffer(ID3D12Device* device, uint sizeOfBuffer);
 		Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
 		void init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
-
-		Resource(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
-			ResourceState createState = ResourceState::COMMON,
-			CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
-		void init(ID3D12Device* device, CD3DX12_RESOURCE_DESC desc,
-			ResourceState createState = ResourceState::COMMON,
-			CD3DX12_HEAP_PROPERTIES heap_type = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT));
-
 		void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
 		void reset()
@@ -92,8 +88,8 @@ namespace engine::graphics
 			return m_resource;
 		}
 
-		ID3D12Resource** getAddress() { return &m_resource; }
 		ID3D12Resource* getResource() { return m_resource; }
+		ID3D12Resource** getResourceAddress() { return &m_resource; }
 
 		void createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
 
@@ -105,7 +101,16 @@ namespace engine::graphics
 	private:
 		ID3D12Resource* m_resource;
 		ResourceState m_currentState = ResourceState::COMMON;
-		u32 m_sizeOfBuffer=0;
+		u32 m_bufferSize = 0;
+	};
+
+	template<typename T>
+	class FrameResourceHandler
+	{
+	public:
+		T& operator[](u16 index) { return m_resources[index]; }
+	private:
+		std::array<T, engine::config::NumFrames> m_resources;
 	};
 
 };

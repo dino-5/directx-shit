@@ -8,77 +8,144 @@
 
 namespace engine::graphics
 {
-	class VertexBuffer
+    using engine::util::CalcConstantBufferByteSize;
+	class VertexBuffer : public Resource
 	{
 	public:
 		VertexBuffer() = default;
 		template<typename T>
-		void Init(ID3D12Device* device, T* data, uint sizeOfBuffer)
+		void Init(ID3D12Device* device, T* data, uint bufferSize)
 		{
-			auto heapType = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-			auto bufferDesc =CD3DX12_RESOURCE_DESC::Buffer(sizeOfBuffer); 
-			ThrowIfFailed(device->CreateCommittedResource(
-				&heapType,
-				D3D12_HEAP_FLAG_NONE,
-				&bufferDesc,
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&m_vertexBuffer)));
-
+            ResourceDescription desc{
+                    .format = DXGI_FORMAT_UNKNOWN,
+                    .width = bufferSize,
+                    .height = 1,
+                    .depthOrArraySize = 1,
+                    .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+                    .flags = ResourceFlags::NONE,
+                    .createState = ResourceState::GENERIC_READ_STATE,
+                    .heapType = D3D12_HEAP_TYPE_UPLOAD,
+                    .descriptor = ResourceDescriptorFlags::None
+            };
+            Resource::init(device, desc);
 			UINT8* pVertexDataBegin;
 			CD3DX12_RANGE readRange(0, 0); 
-			ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-			memcpy(pVertexDataBegin, data, sizeOfBuffer);
-			m_vertexBuffer->Unmap(0, nullptr);
+			ThrowIfFailed(getResource()->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+			memcpy(pVertexDataBegin, data, bufferSize);
+			getResource()->Unmap(0, nullptr);
 
-			m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+			m_vertexBufferView.BufferLocation = getResource()->GetGPUVirtualAddress();
 			m_vertexBufferView.StrideInBytes = sizeof(T);
-			m_vertexBufferView.SizeInBytes = sizeOfBuffer;
+			m_vertexBufferView.SizeInBytes = bufferSize;
 		}
 		D3D12_VERTEX_BUFFER_VIEW& GetView(){ return m_vertexBufferView; }
 	private:
-		ID3D12Resource* m_vertexBuffer;
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-
 	};
 
-	class ConstantBuffer 
+	class ConstantBuffer : public Resource
 	{
 	public:
-		ConstantBuffer(uint size) : sizeOfStruct(engine::util::d3dUtil::CalcConstantBufferByteSize(size))
-		{}
-		void Init(ID3D12Device* device, uint numberOfElements, const void* data) 
+        ConstantBuffer() = default;
+		void Init(ID3D12Device* device, uint numberOfElements, const void* data, u32 size) 
 		{
+            m_structSize = CalcConstantBufferByteSize(size);
+			uint bufferSize = m_structSize*numberOfElements;
+            ResourceDescription desc{
+                    .format = DXGI_FORMAT_UNKNOWN,
+                    .width = bufferSize,
+                    .height = 1,
+                    .depthOrArraySize = 1,
+                    .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+                    .flags = ResourceFlags::NONE,
+                    .createState = ResourceState::GENERIC_READ_STATE,
+                    .heapType = D3D12_HEAP_TYPE_UPLOAD,
+                    .descriptor = ResourceDescriptorFlags::ConstantBuffer
+            };
+			Resource::init(device, desc);
 			CD3DX12_RANGE readRange(0, 0);       
-			uint size = sizeOfStruct*numberOfElements;
-			for (uint i = 0; i < engine::config::NumFrames; i++)
-			{
-				m_buffer[i] = nullptr;
-				m_resouces[i].initAsConstantBuffer(device, size);
-				ThrowIfFailed(m_resouces[i]->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer[i])));
-				Update(data, i);
-			}
-		}
-		// frame selects which resource we should use
-		// and element selects which object data we should use from this resource
-		D3D12_GPU_VIRTUAL_ADDRESS GetAddress(uint frame, uint element=0) 		{
-			return (m_resouces[frame])->GetGPUVirtualAddress() + sizeOfStruct * element;
-		}
-		u32 getDescriptorHeapIndex(u32 frame)
-		{
-			return m_resouces[frame].srv.getDescriptorIndex();
+            ThrowIfFailed(getResource()->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
+            Update(data);
 		}
 
-		void Update(const void* data, uint frameNumber, uint numberOfElement = 0)
+		D3D12_GPU_VIRTUAL_ADDRESS getAddress(u32 element=0) 		{
+			return getResource()->GetGPUVirtualAddress() + m_structSize * element;
+		}
+		u32 getDescriptorHeapIndex()
 		{
-			memcpy(&m_buffer[frameNumber][numberOfElement * sizeOfStruct], data, sizeOfStruct);
+			return srv.getDescriptorIndex();
+		}
+
+		void Update(const void* data,uint numberOfElement = 0)
+		{
+			memcpy(&m_buffer[numberOfElement * m_structSize], data, m_structSize);
 		}
 	private:
-		// we have resource per frame, and in one frame on one resource we can have any posible number of same objects data 
-		// holding in one constant buffer
-		char* m_buffer[engine::config::NumFrames];
-		uint sizeOfStruct;
-		Resource m_resouces[engine::config::NumFrames];
+		char* m_buffer=nullptr;
+		uint m_structSize;
 	};
 
+    class UploadBuffer
+    {
+    public:
+        UploadBuffer(ID3D12Device* device, uint elementCount, uint sizeOfType , bool isConstantBuffer)  
+        {
+            Init(device, elementCount, sizeOfType, isConstantBuffer);
+        }
+
+        void Init(ID3D12Device* device, uint elementCount, uint sizeOfType, bool isConstantBuffer) 
+        {
+            mIsConstantBuffer = isConstantBuffer;
+            mElementByteSize = sizeOfType;
+
+            if(isConstantBuffer)
+                mElementByteSize = engine::util::CalcConstantBufferByteSize(sizeOfType);
+
+            auto heapDesc = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+            auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mElementByteSize * elementCount); 
+            ThrowIfFailed(device->CreateCommittedResource(
+                &heapDesc,
+                D3D12_HEAP_FLAG_NONE,
+                &bufferDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr,
+                IID_PPV_ARGS(&mUploadBuffer)));
+
+            ThrowIfFailed(mUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mMappedData)));
+
+        }
+
+        UploadBuffer() = default;
+        UploadBuffer(UploadBuffer&& rhs):
+            mUploadBuffer(std::move(rhs.mUploadBuffer)),
+            mMappedData(std::move(rhs.mMappedData)),
+            mElementByteSize(std::move(rhs.mElementByteSize)),
+            mIsConstantBuffer(std::move(rhs.mIsConstantBuffer))
+        {}
+        UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
+        ~UploadBuffer()
+        {
+            if(mUploadBuffer != nullptr)
+                mUploadBuffer->Unmap(0, nullptr);
+
+            mMappedData = nullptr;
+        }
+
+        ID3D12Resource* Resource()const
+        {
+            return mUploadBuffer.Get();
+        }
+
+        void CopyData(int elementIndex, const void* data)
+        {
+            memcpy(&mMappedData[elementIndex*mElementByteSize], data, mElementByteSize);
+        }
+
+    public:
+        Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
+        BYTE* mMappedData = nullptr;
+
+        UINT mElementByteSize = 0;
+        bool mIsConstantBuffer = false;
+    };
 };

@@ -28,7 +28,7 @@ namespace engine::graphics
 	{
 		res.srv.HandleCPU = getCPUHandle(currentDescriptorIndex); 
 		res.srv.HandleGPU = getGPUHandle(currentDescriptorIndex);
-		res.srv.HeapIndex = currentDescriptorIndex;
+		res.srv.HeapIndex = currentDescriptorIndex++;
 		device->CreateConstantBufferView(&desc, res.srv.HandleCPU);
 	}
 
@@ -36,32 +36,28 @@ namespace engine::graphics
 	{
 		res.srv.HandleCPU = getCPUHandle(currentDescriptorIndex); 
 		res.srv.HandleGPU = getGPUHandle(currentDescriptorIndex);
-		res.srv.HeapIndex = currentDescriptorIndex;
+		res.srv.HeapIndex = currentDescriptorIndex++;
 		device->CreateShaderResourceView(res, &desc, res.srv.HandleCPU);
-		currentDescriptorIndex++;
 	}
 
 	void DescriptorHeap::createUAV(ID3D12Device* device, Resource& res, D3D12_UNORDERED_ACCESS_VIEW_DESC& desc)
 	{
 		res.uav.HandleCPU = getCPUHandle(currentDescriptorIndex); 
 		res.uav.HandleGPU = getGPUHandle(currentDescriptorIndex);
+		res.uav.HeapIndex = currentDescriptorIndex++;
 		device->CreateUnorderedAccessView(res, nullptr, &desc, res.uav.HandleCPU);
-		currentDescriptorIndex++;
-	}
-
+    }
 
 	void DescriptorHeap::createRTV(ID3D12Device* device, Resource& res)
 	{
-		res.rtv.HandleCPU = getCPUHandle(currentDescriptorIndex); 
+		res.rtv.HandleCPU = getCPUHandle(currentDescriptorIndex++); 
 		device->CreateRenderTargetView(res, nullptr, res.rtv.HandleCPU);
-		currentDescriptorIndex++;
 	}
 
 	void DescriptorHeap::createDSV(ID3D12Device* device, Resource& res, D3D12_DEPTH_STENCIL_VIEW_DESC desc)
 	{
-		res.dsv.HandleCPU = getCPUHandle(currentDescriptorIndex); 
+		res.dsv.HandleCPU = getCPUHandle(currentDescriptorIndex++); 
 		device->CreateDepthStencilView(res, &desc, res.dsv.HandleCPU);
-		currentDescriptorIndex++;
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeap::getCPUHandle(ViewID index)const

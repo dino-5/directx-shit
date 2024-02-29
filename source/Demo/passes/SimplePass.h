@@ -26,7 +26,7 @@ struct BindlessSP
 class SimplePass : public Pass
 {
 public:
-	SimplePass() :m_constantBuffer(sizeof(float)) {}
+	SimplePass() {}
 	SimplePass(ID3D12Device* device, i32 aspectRatio);
 	void Initialize(ID3D12Device* device, i32 aspectRatio);
 	void Draw(ID3D12GraphicsCommandList*, u32 nt)override;

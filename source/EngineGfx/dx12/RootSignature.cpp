@@ -146,14 +146,12 @@ namespace engine::graphics
 		{
 			RootSignature::AddEntry(ROOT_SIG_EMPTY, RootSignature(device));
 		}
-		// one constant buffers
 		{
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 0, RootParameterType::CBV,
 					ShaderVisibility::VERTEX));
 			RootSignature::AddEntry(ROOT_SIG_ONE_CONST, RootSignature(device, parameters));
 		}
-
 		{
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateConstants(1, 0, 10, ShaderVisibility::ALL));
