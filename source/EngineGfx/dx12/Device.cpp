@@ -23,10 +23,11 @@ void Device::GetHardwareAdapter(
         bool listDevices = cmdLine.getValue(CommandLineOption::LIST_ADAPTER) == -1 ? false : true;
         i32 deviceIndex = cmdLine.getValue(CommandLineOption::ADAPTER);
         std::function<bool(u32)> selector;
+        DXGI_ADAPTER_DESC1 desc;
 
         if (deviceIndex != -1)
         {
-            auto adapterSelector = [deviceIndex, &adapter, this](u32 i) -> bool
+            auto adapterSelector = [deviceIndex, &adapter, &desc, this](u32 i) -> bool
             {
                if (i == static_cast<u32>(deviceIndex))
                {
@@ -36,6 +37,7 @@ void Device::GetHardwareAdapter(
                         engine::util::PrintError("can't create D3D12 device");
                         return false;
                    }
+                   engine::util::PrintInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
                    return true;
                }
                return false;
@@ -44,13 +46,14 @@ void Device::GetHardwareAdapter(
         }
         else
         {
-            auto adapterSelector = [&adapter, this](u32 i) -> bool
+            auto adapterSelector = [&adapter, this, &desc](u32 i) -> bool
             {
                    if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2,
                              _uuidof(ID3D12Device), &m_device)))
                    {
                         return false;
                    }
+                   engine::util::PrintInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
                    return true;
             };
             selector = adapterSelector;
@@ -60,7 +63,6 @@ void Device::GetHardwareAdapter(
         for (u32 i=0;SUCCEEDED(factory6->EnumAdapterByGpuPreference(
                 i, preference, IID_PPV_ARGS(&adapter)));++i)
         {
-            DXGI_ADAPTER_DESC1 desc;
             adapter->GetDesc1(&desc);
             if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
             {
@@ -79,7 +81,6 @@ void Device::GetHardwareAdapter(
             }
             else if (deviceSelected = selector(i))
             {
-                engine::util::PrintInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
                 break;
             }
 

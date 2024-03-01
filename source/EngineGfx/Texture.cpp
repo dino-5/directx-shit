@@ -7,28 +7,15 @@
 
 namespace engine::graphics
 {
-    void BindTexture(ID3D12GraphicsCommandList* cmdList, TextureHandle handle, uint bindSlot)
-    {
-        auto textureHandle = DescriptorHeapManager::CurrentSRVHeap.getGPUHandle(handle);
-        cmdList->SetGraphicsRootDescriptorTable(bindSlot, textureHandle);
-    }
-
-    void BindTextures(Material& material, ID3D12GraphicsCommandList* cmdList)
-    {
-        if (material.diffuseTexture > 0)
-            BindTexture(cmdList, material.diffuseTexture, 3);
-        if (material.specularTexture > 0)
-            BindTexture(cmdList, material.specularTexture, 4);
-    }
-
-    Texture::Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList, std::string s)
+    Texture::Texture(std::string path, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
         Init(path, device, commandList, s);
     }
 
-    void Texture::Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& commandList, std::string s)
+    void Texture::Init(std::string path , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
-        std::uint8_t* data = stbi_load(path, &width, &height, &nrChannels, 4);
+		Resource textureUploadHeap;
+        std::uint8_t* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
         ResourceDescription desc;
         desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
         desc.width = width;
@@ -38,9 +25,9 @@ namespace engine::graphics
         desc.createState = ResourceState::COPY_DEST;
         desc.descriptor = ResourceDescriptorFlags::ShaderResource;
 
-        m_texture.init(Device::device->GetDevice(), desc);
+        Resource::init(Device::device->GetDevice(), desc);
 
-        const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture, 0, 1);
+        const UINT64 uploadBufferSize = GetRequiredIntermediateSize(getResource(), 0, 1);
 
         ResourceDescription uploadDesc;
         uploadDesc.format = DXGI_FORMAT_UNKNOWN;
@@ -48,6 +35,7 @@ namespace engine::graphics
         uploadDesc.height = 1;
         uploadDesc.dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         uploadDesc.flags = ResourceFlags::NONE;
+        uploadDesc.heapType = D3D12_HEAP_TYPE_UPLOAD;
         uploadDesc.createState = ResourceState::GENERIC_READ_STATE;
         uploadDesc.descriptor = ResourceDescriptorFlags::None;
         textureUploadHeap.init(Device::device->GetDevice(), uploadDesc);
@@ -58,12 +46,12 @@ namespace engine::graphics
         textureData.RowPitch = width * size;
         textureData.SlicePitch = textureData.RowPitch * height;
 
-        UpdateSubresources(commandList.Get(), m_texture, textureUploadHeap, 0, 0, 1, &textureData);
-        m_texture.transition(commandList.Get(), ResourceState::PIXEL_SHADER_RESOURCE);
-        index = m_texture.srv.HeapIndex;
+        UpdateSubresources(commandList, getResource(), textureUploadHeap, 0, 0, 1, &textureData);
+        Resource::transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
+        index = srv.HeapIndex;
         m_name = s;
     }
-    TextureHandle TextureColection::CreateTexture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmdList, std::string s)
+    TextureHandle TextureColection::CreateTexture(const char* path, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s)
     {
         if (static_textures.find(path) == static_textures.end())
             static_textures[path] = Texture(path, device, cmdList, s);

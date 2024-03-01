@@ -9,8 +9,8 @@ int main()
 
     // global variable initialization
     {
-        demoDir = fs::current_path();
-        homeDir = demoDir.parent_path().parent_path();
+        g_demoDir = fs::current_path();
+        g_homeDir = g_demoDir.parent_path().parent_path();
     }
 
     //{

@@ -5,15 +5,16 @@
 #include <string>
 #include <vector>
 #include <type_traits>
+#include <filesystem>
 
 #include "EngineGfx/dx12/d3dx12.h"
 #include "EngineCommon/util/Util.h"
 #include "types.h"
 
-#include <filesystem>
 namespace fs = std::filesystem;
-extern fs::path homeDir;
-extern fs::path demoDir;
+using path = fs::path;
+extern fs::path g_homeDir;
+extern fs::path g_demoDir;
 
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x)                                              \

@@ -41,8 +41,9 @@ namespace engine::graphics
 		void EndFrame();
 
 		int GetAspectRatio()const { return m_swapChain.GetAspectRatio(); }
-		ID3D12GraphicsCommandList* GetList() { return m_graphicsCommandList.GetList(); }
-		ID3D12Device* GetDevice() { return m_device.GetDevice(); }
+		CommandList& GetList() { return m_graphicsCommandList; }
+		Device& GetDevice() { return m_device; }
+		CommandQueue& GetQueue() { return m_graphicsQueue; }
 
 	private:
 		D3D12_VIEWPORT m_viewport;

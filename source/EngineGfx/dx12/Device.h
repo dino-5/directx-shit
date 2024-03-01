@@ -27,6 +27,8 @@ public:
 
 	void Reset() { m_factory.Reset(); m_device.Reset(); }
 
+	ID3D12Device* native() { return m_device.Get(); }
+
 private:
 		
 	void GetHardwareAdapter(

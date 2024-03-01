@@ -20,6 +20,7 @@ namespace engine::graphics
 		}
 
 		ID3D12GraphicsCommandList* GetList() { return m_list; }
+		ID3D12GraphicsCommandList** GetListAddress() { return &m_list; }
 		ID3D12GraphicsCommandList* operator->() { return m_list; }
 		void Reset(uint i)
 		{

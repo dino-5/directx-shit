@@ -1,18 +1,30 @@
 #include "Filesystem.h"
 #include "EngineCommon/util/Logger.h"
+#include "EngineCommon/util/Util.h"
 #include "third_party/fmt/include/fmt/printf.h"
 #include "third_party/fmt/include/fmt/core.h"
 
 #include <fstream>
-namespace engine::util
+fs::path g_homeDir;
+fs::path g_demoDir;
+namespace engine::system
 {
-
 Filepath::Filepath(std::string name):m_path(name)
 {
-	if (!filesystem::exists(m_path))
+	if (!fs::exists(m_path))
 	{
-		PrintError("{} is not exist", name);
+		engine::util::PrintError("{} is not exist", name);
 		throw std::runtime_error(fmt::format("{} is not exist", name));
+	}
+}
+
+Filepath::Filepath(fs::path path):m_path(path)
+{
+	if (!fs::exists(m_path))
+	{
+		std::string error = engine::util::to_string(path.native());
+		engine::util::PrintError("{} is not exist", error);
+		throw std::runtime_error(fmt::format("{} is not exist", error));
 	}
 }
 

@@ -30,7 +30,7 @@ std::vector<std::string> splitString(const std::string& str)
 CommandLine::CommandLine()
 {
     LogScope("CommandLine initialization");
-    fs::path filePath = homeDir/"cmdline.txt";
+    fs::path filePath = g_homeDir/"cmdline.txt";
     std::ifstream file(filePath);
     if(!file.is_open())
         return;

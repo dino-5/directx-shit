@@ -3,6 +3,7 @@
 #include "EngineCommon/include/types.h"
 #include "Demo/passes/Pass.h"
 #include "EngineGfx/dx12/Buffers.h"
+#include "EngineGfx/Texture.h"
 #include "EngineCommon/math/Matrix.h"
 
 using namespace engine;
@@ -20,20 +21,23 @@ struct ConstandBufferData
 
 struct BindlessSP
 {
-	u32 index;
+	u32 indexConstantBuffer;
+	u32 indexTexture;
 };
 
 class SimplePass : public Pass
 {
 public:
 	SimplePass() {}
-	SimplePass(ID3D12Device* device, i32 aspectRatio);
-	void Initialize(ID3D12Device* device, i32 aspectRatio);
+	SimplePass(graphics::RenderContext& context);
+	void Initialize(graphics::RenderContext& context);
 	void Draw(ID3D12GraphicsCommandList*, u32 nt)override;
 private:
 	ConstandBufferData m_data;
-	u32 index;
+	BindlessSP m_rootIndexData;
+	graphics::Texture m_texture;
 	graphics::VertexBuffer m_vertexBuffer;
 	graphics::ConstantBuffer m_constantBuffer;
+	graphics::ConstantBuffer m_rootStructure;
 };
 

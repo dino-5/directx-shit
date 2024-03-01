@@ -23,7 +23,7 @@ bool BaseDemo::Initialize()
 	WindowApp::Initialize();
 	m_renderContext.Initialize();
 	m_renderContext.ResetSwapChain(GetCurrentWindowSettings());
-	m_pass.Initialize(m_renderContext.GetDevice(), m_renderContext.GetAspectRatio());
+	m_pass.Initialize(m_renderContext);
 	m_renderContext.FlushCommandQueue();
 	return true;
 }
@@ -31,7 +31,7 @@ bool BaseDemo::Initialize()
 void BaseDemo::Draw()
 {
 	m_renderContext.StartFrame();
-	m_pass.Draw(m_renderContext.GetList(), m_currentFrameIndex);
+	m_pass.Draw(m_renderContext.GetList().GetList(), m_currentFrameIndex);
 	m_renderContext.EndFrame();
 }
 

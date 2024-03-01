@@ -21,20 +21,20 @@ namespace engine::graphics
 		TextureHandle specularTexture = -1;
 		float shininess = 1;
 	};
-	void BindTextures(Material& textures, ID3D12GraphicsCommandList* cmdList);
 
-
-	class Texture
+	class Texture : public Resource
 	{
 	public:
 		Texture() = default;
-		Texture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&, std::string s = "");
-		void Init(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&, std::string s = "");
+		Texture(std::string path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
+		void Init(std::string path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
 		TextureHandle GetHandle()const { return index; }
+		u32 getDescriptorHeapIndex()
+		{
+			return srv.getDescriptorIndex();
+		}
 
 	public:
-		Resource m_texture;
-		Resource textureUploadHeap;
 		int width = 0,
 			height = 0,
 			nrChannels = 0;
@@ -49,7 +49,7 @@ namespace engine::graphics
 	class TextureColection
 	{
 	public:
-		static TextureHandle CreateTexture(const char* path, ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>&, std::string s = "");
+		static TextureHandle CreateTexture(const char* path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
 
 		static inline std::unordered_map<std::string, Texture> static_textures;
 	};
