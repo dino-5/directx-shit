@@ -28,9 +28,9 @@ Filepath::Filepath(fs::path path):m_path(path)
 	}
 }
 
-std::string File::readFile()
+std::string Filepath::readFile()
 {
-	std::ifstream file(m_path.getPath());
+	std::ifstream file(m_path);
 	std::ostringstream s_str;
 	s_str << file.rdbuf();
 	return s_str.str();

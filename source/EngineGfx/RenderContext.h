@@ -24,7 +24,7 @@ namespace engine::graphics
 	public:
 		RenderContext() = default;
 		SHIT_ENGINE_NON_COPYABLE(RenderContext);
-		void Initialize();
+		void Initialize(SwapChainSettings set);
 		void ResetSwapChain(SwapChainSettings set);
 		void SetupViewport(SwapChainSettings& set);
 

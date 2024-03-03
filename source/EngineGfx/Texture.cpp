@@ -7,15 +7,15 @@
 
 namespace engine::graphics
 {
-    Texture::Texture(std::string path, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    Texture::Texture(system::Filepath path, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
         Init(path, device, commandList, s);
     }
 
-    void Texture::Init(std::string path , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    void Texture::Init(system::Filepath path , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
 		Resource textureUploadHeap;
-        std::uint8_t* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+        std::uint8_t* data = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 4);
         ResourceDescription desc;
         desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
         desc.width = width;
@@ -50,12 +50,6 @@ namespace engine::graphics
         Resource::transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
         index = srv.HeapIndex;
         m_name = s;
-    }
-    TextureHandle TextureColection::CreateTexture(const char* path, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s)
-    {
-        if (static_textures.find(path) == static_textures.end())
-            static_textures[path] = Texture(path, device, cmdList, s);
-        return static_textures[path].GetHandle();
     }
 
     bool operator==(Material mat1, Material mat2)

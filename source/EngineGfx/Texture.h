@@ -2,12 +2,14 @@
 #define TEXTURE_H
 
 #include "EngineCommon/include/common.h"
-#include "EngineGfx/dx12/d3dx12.h"
 #include "EngineCommon/include/types.h"
+#include "EngineCommon/system/Filesystem.h"
 #include "EngineGfx/dx12/Resource.h"
+#include "EngineGfx/dx12/d3dx12.h"
 #include <d3d12.h>
 #include <string>
 #include <unordered_map>
+using namespace engine;
 
 namespace engine::graphics 
 {
@@ -26,8 +28,8 @@ namespace engine::graphics
 	{
 	public:
 		Texture() = default;
-		Texture(std::string path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
-		void Init(std::string path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
+		Texture(system::Filepath path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
+		void Init(system::Filepath path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
 		TextureHandle GetHandle()const { return index; }
 		u32 getDescriptorHeapIndex()
 		{
@@ -49,7 +51,7 @@ namespace engine::graphics
 	class TextureColection
 	{
 	public:
-		static TextureHandle CreateTexture(const char* path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
+		static TextureHandle CreateTexture(system::Filepath path, ID3D12Device* device, ID3D12GraphicsCommandList*, std::string s = "");
 
 		static inline std::unordered_map<std::string, Texture> static_textures;
 	};

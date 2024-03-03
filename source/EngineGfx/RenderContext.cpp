@@ -13,7 +13,7 @@ namespace engine::graphics
 		PopulateDescriptorHeaps();
 	}
 
-	void RenderContext::Initialize()
+	void RenderContext::Initialize(SwapChainSettings set)
 	{
 		LogScope("RenderContext");
 		m_device.Initialize();
@@ -38,6 +38,7 @@ namespace engine::graphics
 			}
 
 		}
+        ResetSwapChain(set);
 	}
 
 	void RenderContext::SetupViewport(SwapChainSettings& set)

@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include "EngineCommon/util/Util.h"
 
 namespace fs = std::filesystem;
 using path = fs::path;
@@ -14,18 +15,11 @@ public:
 	Filepath(std::string name);
 	Filepath(fs::path path);
 	path getPath() { return m_path; }
+	std::string readFile();
+	std::string str() { return util::to_string(m_path); }
 private:
 	path m_path;
 };
 
-class File
-{
-public:
-    File(std::string fileName) : m_path(fileName){}
-	File(fs::path path) :m_path(path) {}
-	std::string readFile();
-private:
-	Filepath m_path;
-};
 
 };

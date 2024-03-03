@@ -22,6 +22,7 @@ class BaseDemo : public WindowApp
 public:
 	BaseDemo(int width, int height, std::string name);
 	bool Initialize()override;
+	void InitializePasses();
 	SHIT_ENGINE_SINGLETONE(BaseDemo);
 
 protected:

@@ -21,11 +21,22 @@ bool BaseDemo::Initialize()
 	cmdLine = &CommandLine::GetCommandLine();
 	LogScope("BaseDemo");
 	WindowApp::Initialize();
-	m_renderContext.Initialize();
-	m_renderContext.ResetSwapChain(GetCurrentWindowSettings());
-	m_pass.Initialize(m_renderContext);
+	m_renderContext.Initialize(GetCurrentWindowSettings());
+	InitializePasses();
 	m_renderContext.FlushCommandQueue();
 	return true;
+}
+
+void BaseDemo::InitializePasses()
+{
+	graphics::CommandList& commandList = m_renderContext.GetList();
+	commandList.Reset(0);
+
+	m_pass.Initialize(m_renderContext);
+
+    commandList->Close();
+    ID3D12CommandList* lists[] = { commandList.GetList() };
+    m_renderContext.GetQueue()->ExecuteCommandLists(1, lists);
 }
 
 void BaseDemo::Draw()
