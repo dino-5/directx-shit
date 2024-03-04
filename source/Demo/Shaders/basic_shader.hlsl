@@ -10,8 +10,10 @@ struct General
     float color;
 };
 
+
 struct PassInfo
 {
+    uint vertexBufferIndex;
     uint constantBufferIndex;
     uint textureBufferIndex;
 };
@@ -26,11 +28,12 @@ SamplerState MeshTextureSampler
 };
 
 
-PS_Input VS_Basic(float3 position: POSITION)
+PS_Input VS_Basic(uint index : SV_VertexID)
 {
 	PS_Input ret;
+    StructuredBuffer<float3> vertexBuffer = ResourceDescriptorHeap[cbIndex.vertexBufferIndex];
     ConstantBuffer<General> buffer = ResourceDescriptorHeap[cbIndex.constantBufferIndex];
-    float4 pos = mul(float4(position, 1.0f),buffer.perspective );
+    float4 pos = mul(float4(vertexBuffer[index], 1.0f),buffer.perspective );
     ret.pos = pos;
     ret.uv = pos.xy;
     return ret;

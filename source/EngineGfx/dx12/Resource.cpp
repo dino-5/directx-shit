@@ -20,6 +20,7 @@ namespace engine::graphics
 	{
 		m_bufferSize = desc.dimension== D3D12_RESOURCE_DIMENSION_BUFFER ? desc.width : 0;
 		m_currentState = desc.createState;
+		m_viewDimension = desc.viewDimension;
 		D3D12_RESOURCE_DESC resourceDesc = {};
 		resourceDesc.Format = desc.format;
 		resourceDesc.Width = desc.width;
@@ -46,6 +47,7 @@ namespace engine::graphics
 
 	void Resource::createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors)
 	{
+		D3D12_RESOURCE_DESC desc = m_resource->GetDesc();
 		if ((descriptors & ResourceDescriptorFlags::RenderTarget) == ResourceDescriptorFlags::RenderTarget)
 		{
 			DescriptorHeapManager::CurrentRTVHeap.createRTV(device, *this);
@@ -60,19 +62,32 @@ namespace engine::graphics
 			DescriptorHeapManager::CurrentDSVHeap.createDSV(device, *this, dsvDesc);
 		}
 
-		if ((descriptors & ResourceDescriptorFlags::ShaderResource) == ResourceDescriptorFlags::ShaderResource)
+		if ((descriptors & ResourceDescriptorFlags::ShaderResource) == ResourceDescriptorFlags::ShaderResource && 
+			desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Format = m_resource->GetDesc().Format;
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Format = desc.Format;
+			srvDesc.ViewDimension = m_viewDimension;
 			srvDesc.Texture2D.MipLevels = 1;
+			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
+		}
+		if ((descriptors & ResourceDescriptorFlags::ShaderResource) == ResourceDescriptorFlags::ShaderResource &&
+			desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.Format = desc.Format;
+			srvDesc.ViewDimension = m_viewDimension;
+			srvDesc.Buffer.StructureByteStride = desc.Width;
+			srvDesc.Buffer.FirstElement = 0;
+			srvDesc.Buffer.NumElements = 1;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
 		if ((descriptors & ResourceDescriptorFlags::UnorderedAccess) == ResourceDescriptorFlags::UnorderedAccess)
 		{
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-			uavDesc.Format = m_resource->GetDesc().Format;
+			uavDesc.Format = desc.Format;
 			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 			uavDesc.Texture2D.MipSlice = 0;
 			DescriptorHeapManager::CurrentSRVHeap.createUAV(device, *this, uavDesc);

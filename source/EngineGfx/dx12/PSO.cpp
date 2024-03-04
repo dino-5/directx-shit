@@ -28,7 +28,7 @@ namespace engine::graphics
 
     PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
     {
-        m_psoDesc.InputLayout = *shader.layout;
+        m_psoDesc.InputLayout = shader.layout!=nullptr ? *shader.layout : D3D12_INPUT_LAYOUT_DESC{nullptr, 0};
         m_psoDesc.pRootSignature = *shader.rootSignature;
         m_psoDesc.VS = GetShader(shader.vertexShader);
         m_psoDesc.PS = GetShader(shader.pixelShader);
@@ -227,7 +227,7 @@ namespace engine::graphics
     {
         LogScope("PSO");
         PSO::allPSO.reserve(0);
-        ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic", ShaderManager::GetInputLayout(L"defaultLayout"),
+        ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic", nullptr,
             RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_BINDLESS) };
         RenderState state;
         DepthState depthState;

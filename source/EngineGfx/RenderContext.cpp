@@ -22,7 +22,7 @@ namespace engine::graphics
 		engine::util::PrintInfo("queue initialized");
 		m_graphicsCommandList.Initialize(m_device);
 		engine::util::PrintInfo("list initialized");
-		m_device.CreateFence(m_fence);
+		m_device.CreateFence(&m_fence);
 
 		DescriptorHeapManager::CreateRTVHeap(engine::config::NumFrames);
 		DescriptorHeapManager::CreateDSVHeap(1);
@@ -78,7 +78,7 @@ namespace engine::graphics
 	void RenderContext::FlushCommandQueue()
 	{
 		auto value = m_fence->GetCompletedValue();
-		ThrowIfFailed(m_graphicsQueue->Signal(m_fence.Get(), m_currentFence));
+		ThrowIfFailed(m_graphicsQueue->Signal(m_fence, m_currentFence));
 
 		// Wait until the previous frame is finished.
 		if (m_swapChain.m_fence[m_currentFrame]!=0 && value < m_swapChain.m_fence[m_currentFrame] )

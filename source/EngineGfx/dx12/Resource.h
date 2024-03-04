@@ -49,6 +49,7 @@ namespace engine::graphics
 		ResourceState createState = ResourceState::COMMON;
 		D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
 		ResourceDescriptorFlags descriptor;
+		D3D12_SRV_DIMENSION viewDimension{};
 	};
 
 	//ResourceDescription desc{
@@ -60,8 +61,9 @@ namespace engine::graphics
 	//		.flags = ResourceFlags::None,
 	//		.createState = ResourceState::,
 	//		.heapType = D3D12_HEAP_TYPE_DEFAULT,
-	//		.descriptor = ResourceDescriptorFlags::
-    //};
+	//		.descriptor = ResourceDescriptorFlags::,
+	//		.viewDimension = D3D12_SRV_DIMENSION_
+   //};
 
 	class Resource
 	{
@@ -88,7 +90,7 @@ namespace engine::graphics
 			return m_resource;
 		}
 
-		ID3D12Resource* getResource() { return m_resource; }
+		ID3D12Resource* resource() { return m_resource; }
 		ID3D12Resource** getResourceAddress() { return &m_resource; }
 
 		void createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
@@ -101,6 +103,7 @@ namespace engine::graphics
 	private:
 		ID3D12Resource* m_resource;
 		ResourceState m_currentState = ResourceState::COMMON;
+		D3D12_SRV_DIMENSION m_viewDimension{};
 		u32 m_bufferSize = 0;
 	};
 

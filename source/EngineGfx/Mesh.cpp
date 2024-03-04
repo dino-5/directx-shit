@@ -1,4 +1,5 @@
 #include "EngineGfx/Mesh.h"
+#include "EngineGfx/RenderContext.h"
 #include "EngineGfx/dx12/Device.h"
 #include "EngineGfx/dx12/DescriptorHeap.h"
 
@@ -56,35 +57,33 @@ namespace engine::graphics
 	}
 
 
-	Mesh::Mesh(
-		ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
-		const void* vertexData, UINT vertexDataSize, UINT structSize,
-		const void* indexData, UINT indexDataSize, DXGI_FORMAT format)
-	{
-		Init(device, cmList, vertexData, vertexDataSize, structSize, indexData, indexDataSize, format);
-	}
+	//Mesh::Mesh(
+	//	RenderContext& context,
+	//	const void* vertexData, UINT vertexDataSize, UINT structSize,
+	//	const void* indexData, UINT indexDataSize, DXGI_FORMAT format)
+	//{
+	//	Init(context, vertexData, vertexDataSize, structSize, indexData, indexDataSize, format);
+	//}
 
-	Mesh::Mesh(ID3D12Device* device, std::vector<std::pair< Material, std::vector<util::Geometry::MeshData>>>& mesh,
-		ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name)
-	{
-		DrawArgs = Submesh::GetSubmeshes(mesh);
-		std::vector<util::Geometry::Vertex> vertices;
-		std::vector<std::uint16_t> indices;
-		for (auto& i : mesh)
-		{
-			for (int j = 0; j < i.second.size(); j++)
-			{
-				vertices.insert(vertices.end(), i.second[j].Vertices.begin(), i.second[j].Vertices.end());
-				indices.insert(indices.end(), i.second[j].GetIndices16().begin(), i.second[j].GetIndices16().end());
-			}
-		}
+	//Mesh::Mesh(RenderContext& context, std::vector<std::pair< Material, MeshDataVector>>& mesh, std::string name)
+	//{
+	//	DrawArgs = Submesh::GetSubmeshes(mesh);
+	//	std::vector<util::Geometry::Vertex> vertices;
+	//	std::vector<std::uint16_t> indices;
+	//	for (auto& i : mesh)
+	//	{
+	//		for (int j = 0; j < i.second.size(); j++)
+	//		{
+	//			vertices.insert(vertices.end(), i.second[j].Vertices.begin(), i.second[j].Vertices.end());
+	//			indices.insert(indices.end(), i.second[j].GetIndices16().begin(), i.second[j].GetIndices16().end());
+	//		}
+	//	}
 
-		Init(device, cmdList,
-			vertices.data(), GetVectorSize(vertices), sizeof(util::Geometry::Vertex),
-			indices.data(), GetVectorSize(indices));
-	}
+	//	Init(context, vertices.data(), GetVectorSize(vertices), sizeof(util::Geometry::Vertex),
+	//		indices.data(), GetVectorSize(indices));
+	//}
 
-	Mesh::Mesh(ID3D12Device* device, std::vector <util::Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name) :
+	/*Mesh::Mesh(RenderContext& context, MeshDataVector& mesh, std::string name) :
 		Name(name)
 	{
 		DrawArgs = Submesh::GetSubmeshes(mesh);
@@ -96,23 +95,23 @@ namespace engine::graphics
 			indices.insert(indices.end(), i.GetIndices16().begin(), i.GetIndices16().end());
 		}
 
-		Init(device, cmdList,
+		Init(context,
 			vertices.data(), GetVectorSize(vertices), sizeof(util::Geometry::Vertex),
 			indices.data(), GetVectorSize(indices));
-	}
+	}*/
 
 	void Mesh::Init(
-		ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
+		RenderContext& context,
 		const void* vertexData, UINT vertexDataSize, UINT structSize,
 		const void* indexData, UINT indexDataSize, DXGI_FORMAT format)
 	{
-		CreateCPUBuffer(device, cmList,
+		CreateCPUBuffer(context,
 						VertexBufferCPU, vertexData, vertexDataSize,
 						VertexBufferUploader, VertexBufferGPU);
 		if (indexData != nullptr)
 		{
 
-			CreateCPUBuffer(device, cmList,
+			CreateCPUBuffer(context,
 							IndexBufferCPU, indexData, indexDataSize,
 							IndexBufferUploader, IndexBufferGPU);
 			IndexBufferByteSize = indexDataSize;
@@ -123,7 +122,7 @@ namespace engine::graphics
 	}
 
 	void Mesh::CreateCPUBuffer(
-				ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
+				RenderContext& context,
 				ComPtr<ID3DBlob>& cpuMemory, const void* data, UINT dataSize, 
 				ComPtr<ID3D12Resource>& uploadBuffer, ComPtr<ID3D12Resource>& gpuMemory)
 	{

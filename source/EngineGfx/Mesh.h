@@ -7,6 +7,7 @@
 
 namespace engine::graphics
 {
+	class RenderContext;
 	struct Submesh
 	{
 		UINT IndexCount = 0;
@@ -24,22 +25,23 @@ namespace engine::graphics
 	struct Mesh
 	{
 	public:
+		using MeshDataVector = std::vector < util::Geometry::MeshData>;
 		Mesh() = default;
-		Mesh(ID3D12Device* device, std::vector < util::Geometry::MeshData>& mesh, ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
-		Mesh(ID3D12Device* device, std::vector<std::pair<Material, std::vector<util::Geometry::MeshData>> >& mesh,
-			ComPtr<ID3D12GraphicsCommandList> cmdList, std::string name);
-		Mesh(
-			ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
-			const void* vertexData, UINT vertexDataSize, UINT structSize,
-			const void* indexData, UINT indexDataSize, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT);
+		//Mesh(RenderContext& context, MeshDataVector& mesh, std::string name);
+		//Mesh(RenderContext& context, std::vector<std::pair<Material, MeshDataVector> >& mesh,
+		// std::string name);
+		//Mesh(
+		//	RenderContext& context,	
+		//	const void* vertexData, UINT vertexDataSize, UINT structSize,
+		//	const void* indexData, UINT indexDataSize, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT);
 
 		void Init(
-			ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
+			RenderContext& context,
 			const void* vertexData, UINT vertexDataSize, UINT structSize,
 			const void* indexData, UINT indexDataSize, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT);
 
 		static void CreateCPUBuffer(
-			ID3D12Device* device, ComPtr<ID3D12GraphicsCommandList>& cmList,
+			RenderContext& context,
 			ComPtr<ID3DBlob>& cpuMemory, const void* data, UINT dataSize,
 			ComPtr<ID3D12Resource>& uploadBuffer, ComPtr<ID3D12Resource>& gpuMemory);
 
@@ -54,12 +56,11 @@ namespace engine::graphics
 		std::string Name;
 
 		ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
-		ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
-
 		ComPtr<ID3D12Resource> VertexBufferGPU = nullptr;
-		ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
-
 		ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
+
+		ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
+		ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
 		ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
 
 		// Data about the buffers.

@@ -56,8 +56,8 @@ namespace engine::graphics
 
 		HANDLE m_fenceEvent;
 
-		PSO* m_currentPSO;
-		ComPtr<ID3D12Fence> m_fence;
+		PSO* m_currentPSO = nullptr;
+		ID3D12Fence* m_fence = nullptr;
 		uint m_currentFence = 0;
 		uint m_currentFrame = 0;
 	};

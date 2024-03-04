@@ -24,10 +24,11 @@ namespace engine::graphics
         desc.flags = ResourceFlags::NONE;
         desc.createState = ResourceState::COPY_DEST;
         desc.descriptor = ResourceDescriptorFlags::ShaderResource;
+        desc.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
         Resource::init(Device::device->GetDevice(), desc);
 
-        const UINT64 uploadBufferSize = GetRequiredIntermediateSize(getResource(), 0, 1);
+        const UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource(), 0, 1);
 
         ResourceDescription uploadDesc;
         uploadDesc.format = DXGI_FORMAT_UNKNOWN;
@@ -46,7 +47,7 @@ namespace engine::graphics
         textureData.RowPitch = width * size;
         textureData.SlicePitch = textureData.RowPitch * height;
 
-        UpdateSubresources(commandList, getResource(), textureUploadHeap, 0, 0, 1, &textureData);
+        UpdateSubresources(commandList, resource(), textureUploadHeap, 0, 0, 1, &textureData);
         Resource::transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
         index = srv.HeapIndex;
         m_name = s;

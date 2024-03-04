@@ -32,15 +32,15 @@ namespace engine::graphics
 			device->CreateCommandQueue(&descQ, IID_PPV_ARGS(&m_queue));
 		}
 
-		ID3D12CommandQueue* operator->() { return m_queue.Get(); }
+		ID3D12CommandQueue* operator->() { return m_queue; }
 
 		SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12CommandQueue, Queue, m_queue);
 		SHIT_ENGINE_NON_COPYABLE(CommandQueue);
 
-		void Reset() { m_queue.Reset(); }
+		void Reset() { m_queue->Release(); }
 
 	private:
-		ComPtr<ID3D12CommandQueue> m_queue = nullptr;
+		ID3D12CommandQueue* m_queue = nullptr;
 	};
 };
 

@@ -21,8 +21,9 @@ struct ConstandBufferData
 
 struct BindlessSP
 {
-	u32 indexConstantBuffer;
-	u32 indexTexture;
+	u32 vertexBufferIndex;
+	u32 constantBufferIndex;
+	u32 textureIndex;
 };
 
 class SimplePass : public Pass

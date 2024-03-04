@@ -30,14 +30,15 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_data.color = 0.8;
     m_data.perspective = math::PerspectiveProjection(90, 1, 0, 0);
 
-    m_vertexBuffer.Init(device, triangleVertices, sizeof(triangleVertices));
+    m_vertexBuffer.Init(context, triangleVertices, sizeof(triangleVertices));
     m_constantBuffer.Init(device, 1, &m_data, sizeof(m_data));
 
     system::Filepath path = g_homeDir / "textures" / "wall.jpg";
     m_texture.Init(path, device, commandList.GetList());
 
-    m_rootIndexData.indexConstantBuffer = m_constantBuffer.getDescriptorHeapIndex();
-    m_rootIndexData.indexTexture = m_texture.getDescriptorHeapIndex();
+    m_rootIndexData.vertexBufferIndex = m_vertexBuffer.GetDescriptorHeapIndex();
+    m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
+    m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
     m_rootStructure.Init(device, 1, &m_rootIndexData, sizeof(m_rootIndexData));
 }
 

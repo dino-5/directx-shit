@@ -12,9 +12,9 @@ void Device::GetHardwareAdapter(
 {
     *ppAdapter = nullptr;
 
-    ComPtr<IDXGIAdapter1> adapter;
+    IDXGIAdapter1* adapter;
 
-    ComPtr<IDXGIFactory6> factory6;
+    IDXGIFactory6* factory6;
     if (SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory6))))
     {
         DXGI_GPU_PREFERENCE preference = requestHighPerformanceAdapter == true ?
@@ -31,8 +31,8 @@ void Device::GetHardwareAdapter(
             {
                if (i == static_cast<u32>(deviceIndex))
                {
-                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2,
-                                 _uuidof(ID3D12Device), &m_device)))
+                   if (!SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0,
+                                 __uuidof(ID3D12Device), reinterpret_cast<void**>(&m_device))))
                    {
                         engine::util::PrintError("can't create D3D12 device");
                         return false;
@@ -48,8 +48,8 @@ void Device::GetHardwareAdapter(
         {
             auto adapterSelector = [&adapter, this, &desc](u32 i) -> bool
             {
-                   if (!SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_2,
-                             _uuidof(ID3D12Device), &m_device)))
+                   if (!SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0,
+                             __uuidof(ID3D12Device), reinterpret_cast<void**>(&m_device))))
                    {
                         return false;
                    }
@@ -74,9 +74,7 @@ void Device::GetHardwareAdapter(
                engine::util::PrintInfo("[{}] : {}", i, engine::util::to_string(desc.Description));
                if (!deviceSelected)
                {
-                    if(deviceSelected = selector(i))
-                        engine::util::PrintInfo(
-                        "Selected GPU -> {}", engine::util::to_string(desc.Description));
+                    deviceSelected = selector(i);
                }
             }
             else if (deviceSelected = selector(i))
@@ -87,7 +85,7 @@ void Device::GetHardwareAdapter(
         }
     }
 
-    *ppAdapter = adapter.Detach();
+    *ppAdapter = adapter;
 }
 
 void Device::Initialize()
@@ -131,8 +129,8 @@ void Device::CreateCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAl
     ThrowIfFailed(list->Close());
 }
 
-void Device::CreateFence(ComPtr<ID3D12Fence> &fence)
+void Device::CreateFence(ID3D12Fence** fence)
 {
-	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
-		IID_PPV_ARGS(&fence)));
+	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
+        __uuidof(**fence), reinterpret_cast<void**>(fence)));
 }

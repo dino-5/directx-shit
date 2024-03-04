@@ -46,6 +46,7 @@ class ThirdPartyProject : BaseSimpleLibraryProject
         conf.IncludePaths.Add(@"[project.SourceRootPath]/tiny_obj_loader");
         conf.IncludePaths.Add(@"[project.SourceRootPath]/fmt/include");
         conf.IncludePaths.Add(@"[project.SourceRootPath]/../include");
+        conf.IncludePaths.Add(@"[project.SourceRootPath]/tiny_gltf_loader");
 
         if (target.OutputType == OutputType.Dll)
         {

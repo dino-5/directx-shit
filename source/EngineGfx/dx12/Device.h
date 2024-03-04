@@ -23,11 +23,11 @@ public:
 
 	void CreateCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator);
 	void CreateCommandAllocator(ID3D12CommandAllocator* &);
-	void CreateFence(ComPtr<ID3D12Fence>&);
+	void CreateFence(ID3D12Fence**);
 
-	void Reset() { m_factory.Reset(); m_device.Reset(); }
+	void Reset() { m_factory->Release(); m_device->Release(); }
 
-	ID3D12Device* native() { return m_device.Get(); }
+	ID3D12Device* native() { return m_device; }
 
 private:
 		
@@ -36,8 +36,8 @@ private:
 		bool requestHighPerformanceAdapter=true);
 
 private:
-	ComPtr<IDXGIFactory4> m_factory = nullptr;
-	ComPtr<ID3D12Device> m_device   = nullptr;
+	IDXGIFactory4* m_factory = nullptr;
+	ID3D12Device* m_device   = nullptr;
 };
 
 #endif

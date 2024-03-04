@@ -59,8 +59,8 @@ namespace engine::graphics
 	{
 		std::wstring vertexShader;
 		std::wstring pixelShader;
-		InputLayout* layout;
-		RootSignature* rootSignature;
+		InputLayout* layout = nullptr;
+		RootSignature* rootSignature = nullptr;
 
 		void SetVS(std::wstring name) { vertexShader = name;  }
 		void SetPS(std::wstring name) { pixelShader= name;  }
