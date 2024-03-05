@@ -23,8 +23,8 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     
     Vertex triangleVertices[] =
     {
-         math::Vector3({0.0f, 0.25f * aspectRatio,    5.f}),
-         math::Vector3({0.25f, 0.95f * aspectRatio,  5.f }),
+         math::Vector3({0.0f, 0.25f * aspectRatio,    10.f}),
+         math::Vector3({0.25f, 0.95f * aspectRatio,  10.f }),
          math::Vector3({0.95f, 0.05f * aspectRatio, 10.f }),
     };
     m_data.color = 0.8;
@@ -50,6 +50,7 @@ void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 
     commandList->SetGraphicsRootConstantBufferView(0, m_rootStructure.getAddress());
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->IASetVertexBuffers(0, 1, &m_vertexBuffer.GetView());
     commandList->DrawInstanced(3, 1, 0, 0);
 }
 

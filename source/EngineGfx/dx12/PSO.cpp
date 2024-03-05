@@ -28,7 +28,7 @@ namespace engine::graphics
 
     PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
     {
-        m_psoDesc.InputLayout = D3D12_INPUT_LAYOUT_DESC{nullptr, 0};
+        m_psoDesc.InputLayout = shader.layout!=nullptr ? *shader.layout : D3D12_INPUT_LAYOUT_DESC{nullptr, 0};
         m_psoDesc.pRootSignature = *shader.rootSignature;
         m_psoDesc.VS = GetShader(shader.vertexShader);
         m_psoDesc.PS = GetShader(shader.pixelShader);
@@ -96,6 +96,7 @@ namespace engine::graphics
     {
 
 		std::vector< TableEntry< DxBlob*>> allShaders;
+		std::vector< TableEntry< InputLayout>> inputLayouts;
 		DxCompiler* s_compiler = nullptr;
 		DxUtils* s_utils = nullptr;
 		DxIncludeHandler* s_includer = nullptr;
@@ -166,6 +167,19 @@ namespace engine::graphics
 			allShaders.clear();
 		}
 
+        void CreateInputLayout(std::wstring name,std::vector<InputLayoutElement> layout)
+        {
+
+			if (GetInputLayout(name)==nullptr) 
+			{
+				inputLayouts.push_back({ name, InputLayout(layout)});
+			}
+        }
+
+        InputLayout* GetInputLayout(std::wstring name)
+        {
+			return util::FindElement(inputLayouts, name);
+        }
     }
 
 
@@ -183,6 +197,7 @@ namespace engine::graphics
         LogScope("Shaders");
         ShaderManager::InitializeCompiler();
         ShaderManager::allShaders.reserve(10);
+        ShaderManager::inputLayouts.reserve(5);
         {
             ShaderInfo info;
             info.entryPoint = L"VS_Basic";
@@ -190,6 +205,11 @@ namespace engine::graphics
             info.shaderName = L"VS_Basic";
             info.type = ShaderType::VERTEX;
             ShaderManager::CreateShader(info);
+
+            std::vector<InputLayoutElement> layout = {
+                {"POSITION", Format::float3}
+            };
+            ShaderManager::CreateInputLayout(L"defaultLayout", layout);
         }
 
         {
@@ -207,7 +227,7 @@ namespace engine::graphics
     {
         LogScope("PSO");
         PSO::allPSO.reserve(0);
-        ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic",
+        ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic", nullptr,
             RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_BINDLESS) };
         RenderState state;
         DepthState depthState;

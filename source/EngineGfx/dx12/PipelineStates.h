@@ -7,6 +7,66 @@
 #include "EngineCommon/include/types.h"
 #include "EngineCommon/include/common.h"
 
+
+class InputLayoutElement
+{
+public:
+	unsigned int GetFormatSize();
+	unsigned int GetOffset()const { return m_offset; }
+	InputLayoutElement(std::string name, Format format, unsigned int offset=0) : 
+		m_name(name),
+		m_format(format),
+		m_offset(offset)
+	{}
+	InputLayoutElement() = default;
+
+	operator D3D12_INPUT_ELEMENT_DESC() const
+	{
+		return { m_name.c_str(), 0, DXGI_FORMAT(static_cast<int>(m_format)), 0, GetOffset(),
+		D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	}
+public:
+	std::string m_name;
+	Format m_format;
+	unsigned int m_offset;
+};
+
+class InputLayout
+{
+public:
+	InputLayout() = default;
+	InputLayout(std::vector<InputLayoutElement> layout)
+	{
+		for (auto& i : layout)
+			AddLayoutElement(i);
+	}
+	void AddLayoutElement(InputLayoutElement el)
+	{
+		if (m_layout.size())
+			el.m_offset = m_layout.back().GetOffset() + m_layout.back().GetFormatSize();
+		else
+			el.m_offset = 0;
+
+		m_layout.push_back(el);
+	}
+
+	operator D3D12_INPUT_LAYOUT_DESC()
+	{
+		D3D12_INPUT_LAYOUT_DESC value;
+		array.resize(m_layout.size());
+		for (int i = 0; i < m_layout.size(); i++)
+			array[i] = m_layout[i];
+
+		value.pInputElementDescs = array.data();
+		value.NumElements = m_layout.size();
+		return value;
+	}
+
+public:
+	std::vector<InputLayoutElement> m_layout;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> array;
+};
+
 #undef TRANSPARENT
 enum class BlendOP
 {

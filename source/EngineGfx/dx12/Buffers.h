@@ -60,10 +60,10 @@ namespace engine::graphics
         bool m_IsConstantBuffer = false;
     };
 
-	class Buffer : public Resource
+	class VertexBuffer : public Resource
 	{
 	public:
-		Buffer() = default;
+		VertexBuffer() = default;
 		template<typename T>
 		void Init(RenderContext& context, T* data, uint bufferSize)
 		{
@@ -93,11 +93,17 @@ namespace engine::graphics
             UpdateSubresources(commandList, resource(), buffer.resource(), 0, 0, 1, &subresData);
             transition(commandList, ResourceState::GENERIC_READ_STATE);
 
+			m_vertexBufferView.BufferLocation = resource()->GetGPUVirtualAddress();
+			m_vertexBufferView.StrideInBytes = sizeof(T);
+			m_vertexBufferView.SizeInBytes = bufferSize;
 		}
+		D3D12_VERTEX_BUFFER_VIEW& GetView(){ return m_vertexBufferView; }
 		u32 GetDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}
+	private:
+		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 	};
 
 	class ConstantBuffer : public Resource
