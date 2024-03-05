@@ -3,6 +3,8 @@
 #include "EngineGfx/Texture.h"
 #include "EngineGfx/dx12/Device.h"
 
+#include "third_party/tiny_gltf_loader/tiny_gltf.h"
+
 
 namespace engine::graphics
 {

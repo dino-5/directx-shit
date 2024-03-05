@@ -50,21 +50,16 @@ namespace engine::graphics
 		DxBlob* GetShader(std::wstring name);
 		void Clear();
 
-		extern std::vector< TableEntry< InputLayout>> inputLayouts;
-		void CreateInputLayout(std::wstring name, std::vector<InputLayoutElement> layout);
-		InputLayout* GetInputLayout(std::wstring name);
 	};
 
 	struct ShaderInputGroup
 	{
 		std::wstring vertexShader;
 		std::wstring pixelShader;
-		InputLayout* layout = nullptr;
 		RootSignature* rootSignature = nullptr;
 
 		void SetVS(std::wstring name) { vertexShader = name;  }
 		void SetPS(std::wstring name) { pixelShader= name;  }
-		void SetLayout(InputLayout& l) { layout = &l;  }
 		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
 	};
 
