@@ -26,7 +26,7 @@ namespace engine::graphics
 	};
 	D3D12_RESOURCE_STATES CastEnum(ResourceState state);
 
-	enum class ResourceDescriptorFlags : std::uint32_t
+	enum class DescriptorFlags : std::uint32_t
 	{
 		None = 0,
 		RenderTarget = 1 << 0,
@@ -37,6 +37,13 @@ namespace engine::graphics
 	};
 	using namespace magic_enum::bitwise_operators;
 
+	struct DescriptorProperties
+	{
+		DescriptorFlags descriptor{};
+		D3D12_SRV_DIMENSION viewDimension{};
+		u32 bufferStride{};
+		u32 numElements{};
+	};
 
 	struct ResourceDescription
 	{
@@ -48,8 +55,7 @@ namespace engine::graphics
 		ResourceFlags flags = ResourceFlags::NONE;
 		ResourceState createState = ResourceState::COMMON;
 		D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
-		ResourceDescriptorFlags descriptor;
-		D3D12_SRV_DIMENSION viewDimension{};
+		DescriptorProperties descriptor;
 	};
 
 	//ResourceDescription desc{
@@ -62,7 +68,6 @@ namespace engine::graphics
 	//		.createState = ResourceState::,
 	//		.heapType = D3D12_HEAP_TYPE_DEFAULT,
 	//		.descriptor = ResourceDescriptorFlags::,
-	//		.viewDimension = D3D12_SRV_DIMENSION_
    //};
 
 	class Resource
@@ -93,7 +98,7 @@ namespace engine::graphics
 		ID3D12Resource* resource() { return m_resource; }
 		ID3D12Resource** getResourceAddress() { return &m_resource; }
 
-		void createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors);
+		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
 
 		DescriptorDSV dsv;
 		DescriptorRTV rtv;

@@ -37,7 +37,7 @@ private:
 	ConstandBufferData m_data;
 	BindlessSP m_rootIndexData;
 	graphics::Texture m_texture;
-	graphics::VertexBuffer m_vertexBuffer;
+	graphics::Buffer m_vertexBuffer;
 	graphics::ConstantBuffer m_constantBuffer;
 	graphics::ConstantBuffer m_rootStructure;
 };

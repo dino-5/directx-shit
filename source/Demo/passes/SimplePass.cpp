@@ -23,14 +23,14 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     
     Vertex triangleVertices[] =
     {
-         math::Vector3({0.0f, 0.25f * aspectRatio,    10.f}),
-         math::Vector3({0.25f, 0.95f * aspectRatio,  10.f }),
-         math::Vector3({0.95f, 0.05f * aspectRatio, 10.f }),
+         math::Vector3({0.0f, 0.25f * aspectRatio,    .9f}),
+         math::Vector3({0.25f, 0.95f * aspectRatio,  .9f }),
+         math::Vector3({0.95f, 0.05f * aspectRatio, .9f }),
     };
     m_data.color = 0.8;
     m_data.perspective = math::PerspectiveProjection(90, 1, 0, 0);
 
-    m_vertexBuffer.Init(context, triangleVertices, sizeof(triangleVertices));
+    m_vertexBuffer.Init(context, triangleVertices, sizeof(triangleVertices), sizeof(math::Vector3), 3);
     m_constantBuffer.Init(device, 1, &m_data, sizeof(m_data));
 
     system::Filepath path = g_homeDir / "textures" / "wall.jpg";
@@ -50,7 +50,6 @@ void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 
     commandList->SetGraphicsRootConstantBufferView(0, m_rootStructure.getAddress());
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    commandList->IASetVertexBuffers(0, 1, &m_vertexBuffer.GetView());
     commandList->DrawInstanced(3, 1, 0, 0);
 }
 

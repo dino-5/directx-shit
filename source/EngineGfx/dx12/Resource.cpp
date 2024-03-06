@@ -20,7 +20,6 @@ namespace engine::graphics
 	{
 		m_bufferSize = desc.dimension== D3D12_RESOURCE_DIMENSION_BUFFER ? desc.width : 0;
 		m_currentState = desc.createState;
-		m_viewDimension = desc.viewDimension;
 		D3D12_RESOURCE_DESC resourceDesc = {};
 		resourceDesc.Format = desc.format;
 		resourceDesc.Width = desc.width;
@@ -45,14 +44,15 @@ namespace engine::graphics
 		createViews(device, desc.descriptor);
 	}
 
-	void Resource::createViews(ID3D12Device* device, ResourceDescriptorFlags descriptors)
+	void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptors)
 	{
 		D3D12_RESOURCE_DESC desc = m_resource->GetDesc();
-		if ((descriptors & ResourceDescriptorFlags::RenderTarget) == ResourceDescriptorFlags::RenderTarget)
+		DescriptorFlags descriptor = descriptors.descriptor;
+		if ((descriptor & DescriptorFlags::RenderTarget) == DescriptorFlags::RenderTarget)
 		{
 			DescriptorHeapManager::CurrentRTVHeap.createRTV(device, *this);
 		}
-		if ((descriptors & ResourceDescriptorFlags::DepthStencil) == ResourceDescriptorFlags::DepthStencil)
+		if ((descriptor & DescriptorFlags::DepthStencil) == DescriptorFlags::DepthStencil)
 		{
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
@@ -62,29 +62,29 @@ namespace engine::graphics
 			DescriptorHeapManager::CurrentDSVHeap.createDSV(device, *this, dsvDesc);
 		}
 
-		if ((descriptors & ResourceDescriptorFlags::ShaderResource) == ResourceDescriptorFlags::ShaderResource && 
+		if ((descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource && 
 			desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			srvDesc.Format = desc.Format;
-			srvDesc.ViewDimension = m_viewDimension;
+			srvDesc.ViewDimension = descriptors.viewDimension;
 			srvDesc.Texture2D.MipLevels = 1;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
-		if ((descriptors & ResourceDescriptorFlags::ShaderResource) == ResourceDescriptorFlags::ShaderResource &&
+		if ((descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource &&
 			desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			srvDesc.Format = desc.Format;
-			srvDesc.ViewDimension = m_viewDimension;
-			srvDesc.Buffer.StructureByteStride = desc.Width;
+			srvDesc.ViewDimension = descriptors.viewDimension;
+			srvDesc.Buffer.StructureByteStride = descriptors.bufferStride;
 			srvDesc.Buffer.FirstElement = 0;
-			srvDesc.Buffer.NumElements = 1;
+			srvDesc.Buffer.NumElements = descriptors.numElements;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
-		if ((descriptors & ResourceDescriptorFlags::UnorderedAccess) == ResourceDescriptorFlags::UnorderedAccess)
+		if ((descriptor & DescriptorFlags::UnorderedAccess) == DescriptorFlags::UnorderedAccess)
 		{
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 			uavDesc.Format = desc.Format;
@@ -92,7 +92,7 @@ namespace engine::graphics
 			uavDesc.Texture2D.MipSlice = 0;
 			DescriptorHeapManager::CurrentSRVHeap.createUAV(device, *this, uavDesc);
 		}
-		if ((descriptors & ResourceDescriptorFlags::ConstantBuffer) == ResourceDescriptorFlags::ConstantBuffer)
+		if ((descriptor & DescriptorFlags::ConstantBuffer) == DescriptorFlags::ConstantBuffer)
 		{
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 			cbvDesc.BufferLocation = m_resource->GetGPUVirtualAddress();

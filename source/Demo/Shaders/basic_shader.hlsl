@@ -33,9 +33,9 @@ PS_Input VS_Basic(uint index : SV_VertexID)
 	PS_Input ret;
     StructuredBuffer<float3> vertexBuffer = ResourceDescriptorHeap[cbIndex.vertexBufferIndex];
     ConstantBuffer<General> buffer = ResourceDescriptorHeap[cbIndex.constantBufferIndex];
-    float4 pos = mul(float4(vertexBuffer[index], 1.0f),buffer.perspective );
-    ret.pos = pos;
-    ret.uv = pos.xy;
+    float4 pos = mul(float4(vertexBuffer.Load(index), 1.0f), buffer.perspective);
+    ret.pos = pos;//    float4(buffer.perspective[2 - index].xyz, 0.9f);
+    ret.uv = ret.pos.xy;
     return ret;
 }
 

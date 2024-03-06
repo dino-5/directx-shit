@@ -66,7 +66,7 @@ namespace engine::graphics
 
 		ResourceDescription desc;
 		desc.createState = ResourceState::DEPTH_WRITE;
-		desc.descriptor = ResourceDescriptorFlags::DepthStencil;
+		desc.descriptor.descriptor = DescriptorFlags::DepthStencil;
 		desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		desc.flags = ResourceFlags::DEPTH_STENCIL;
 		desc.format = DXGI_FORMAT_R24G8_TYPELESS;

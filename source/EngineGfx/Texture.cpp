@@ -23,8 +23,8 @@ namespace engine::graphics
         desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
         desc.flags = ResourceFlags::NONE;
         desc.createState = ResourceState::COPY_DEST;
-        desc.descriptor = ResourceDescriptorFlags::ShaderResource;
-        desc.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        desc.descriptor.descriptor = DescriptorFlags::ShaderResource;
+        desc.descriptor.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
         Resource::init(Device::device->GetDevice(), desc);
 
@@ -38,7 +38,7 @@ namespace engine::graphics
         uploadDesc.flags = ResourceFlags::NONE;
         uploadDesc.heapType = D3D12_HEAP_TYPE_UPLOAD;
         uploadDesc.createState = ResourceState::GENERIC_READ_STATE;
-        uploadDesc.descriptor = ResourceDescriptorFlags::None;
+        uploadDesc.descriptor.descriptor = DescriptorFlags::None;
         textureUploadHeap.init(Device::device->GetDevice(), uploadDesc);
 
         D3D12_SUBRESOURCE_DATA textureData = {};

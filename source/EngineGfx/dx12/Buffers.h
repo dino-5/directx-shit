@@ -33,7 +33,7 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::GENERIC_READ_STATE,
                     .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .descriptor = ResourceDescriptorFlags::None
+                    .descriptor = DescriptorFlags::None
             };
 			Resource::init(device, desc);
             ThrowIfFailed(resource()->Map(0, nullptr, reinterpret_cast<void**>(&m_MappedData)));
@@ -60,12 +60,12 @@ namespace engine::graphics
         bool m_IsConstantBuffer = false;
     };
 
-	class VertexBuffer : public Resource
+	class Buffer : public Resource
 	{
 	public:
-		VertexBuffer() = default;
+		Buffer() = default;
 		template<typename T>
-		void Init(RenderContext& context, T* data, uint bufferSize)
+		void Init(RenderContext& context, T* data, uint bufferSize, u32 bufferStride, u32 numElements)
 		{
             ID3D12Device* device = context.GetDevice().GetDevice();
             ID3D12GraphicsCommandList* commandList = context.GetList().GetList();
@@ -78,8 +78,12 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::COMMON,
                     .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                    .descriptor = ResourceDescriptorFlags::ShaderResource,
-                    .viewDimension = D3D12_SRV_DIMENSION_BUFFER
+                    .descriptor = {
+                        .descriptor = DescriptorFlags::ShaderResource,
+                        .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
+                        .bufferStride = bufferStride,
+                        .numElements = numElements
+                    }
             };
             Resource::init(device, desc);
 
@@ -93,17 +97,12 @@ namespace engine::graphics
             UpdateSubresources(commandList, resource(), buffer.resource(), 0, 0, 1, &subresData);
             transition(commandList, ResourceState::GENERIC_READ_STATE);
 
-			m_vertexBufferView.BufferLocation = resource()->GetGPUVirtualAddress();
-			m_vertexBufferView.StrideInBytes = sizeof(T);
-			m_vertexBufferView.SizeInBytes = bufferSize;
 		}
-		D3D12_VERTEX_BUFFER_VIEW& GetView(){ return m_vertexBufferView; }
 		u32 GetDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}
 	private:
-		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 	};
 
 	class ConstantBuffer : public Resource
@@ -123,7 +122,7 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::GENERIC_READ_STATE,
                     .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .descriptor = ResourceDescriptorFlags::ConstantBuffer
+                    .descriptor = DescriptorFlags::ConstantBuffer
             };
 			Resource::init(device, desc);
 			CD3DX12_RANGE readRange(0, 0);       
