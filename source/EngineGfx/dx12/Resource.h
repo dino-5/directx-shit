@@ -121,4 +121,9 @@ namespace engine::graphics
 		std::array<T, engine::config::NumFrames> m_resources;
 	};
 
+	class Sampler
+	{
+
+	};
+
 };

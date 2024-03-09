@@ -1,10 +1,11 @@
 #pragma once
-#include "EngineCommon/math/Vector.h"
-#include "EngineCommon/include/types.h"
 #include "Demo/passes/Pass.h"
+#include "EngineCommon/math/Vector.h"
+#include "EngineCommon/math/Matrix.h"
+#include "EngineCommon/include/types.h"
 #include "EngineGfx/dx12/Buffers.h"
 #include "EngineGfx/Texture.h"
-#include "EngineCommon/math/Matrix.h"
+#include "EngineGfx/Model.h"
 
 using namespace engine;
 
@@ -40,5 +41,6 @@ private:
 	graphics::Buffer m_vertexBuffer;
 	graphics::ConstantBuffer m_constantBuffer;
 	graphics::ConstantBuffer m_rootStructure;
+	graphics::Model m_model;
 };
 

@@ -33,13 +33,13 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_vertexBuffer.Init(context, triangleVertices, sizeof(triangleVertices), sizeof(math::Vector3), 3);
     m_constantBuffer.Init(device, 1, &m_data, sizeof(m_data));
 
-    system::Filepath path = g_homeDir / "textures" / "wall.jpg";
-    m_texture.Init(path, device, commandList.GetList());
+    m_texture.Init(g_homeDir / "textures" / "wall.jpg", device, commandList.GetList());
 
     m_rootIndexData.vertexBufferIndex = m_vertexBuffer.GetDescriptorHeapIndex();
     m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
     m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
     m_rootStructure.Init(device, 1, &m_rootIndexData, sizeof(m_rootIndexData));
+    m_model.Init(g_homeDir/"textures/models/Sponza/gltf/Sponza.gltf", commandList.GetList());
 }
 
 void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)

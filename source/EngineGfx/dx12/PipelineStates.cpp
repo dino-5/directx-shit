@@ -16,20 +16,6 @@ D3D12_STENCIL_OP CastType(StencilOP obj)
 	return static_cast<D3D12_STENCIL_OP>(obj);
 }
 
-
-unsigned int InputLayoutElement::GetFormatSize()
-{
-	switch (m_format)
-	{
-	case Format::float3:
-		return 3 * sizeof(float);
-	case Format::float2:
-		return 2 * sizeof(float);
-	default:
-		return 0;
-	}
-}
-
 BlendState::BlendState(ColorBlendEquation cl_eq, AlphaBlendEquation al_eq, WriteEnable wr)
 {
 	m_desc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
