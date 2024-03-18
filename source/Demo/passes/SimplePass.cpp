@@ -18,7 +18,6 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     Pass::SetRootSignature(graphics::ROOT_SIG_BINDLESS);
     ID3D12Device* device = context.GetDevice().native();
     graphics::CommandList& commandList = context.GetList();
-    graphics::CommandQueue& queue = context.GetQueue();
     float aspectRatio = context.GetAspectRatio();
     
     Vertex triangleVertices[] =
@@ -33,13 +32,16 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_vertexBuffer.Init(context, triangleVertices, sizeof(triangleVertices), sizeof(math::Vector3), 3);
     m_constantBuffer.Init(device, 1, &m_data, sizeof(m_data));
 
-    m_texture.Init(g_homeDir / "textures" / "wall.jpg", device, commandList.GetList());
+    m_texture.Init(graphics::ImageData(g_homeDir / "textures" / "wall.jpg"), device, commandList.GetList());
 
     m_rootIndexData.vertexBufferIndex = m_vertexBuffer.GetDescriptorHeapIndex();
     m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
     m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
     m_rootStructure.Init(device, 1, &m_rootIndexData, sizeof(m_rootIndexData));
-    m_model.Init(g_homeDir/"textures/models/Sponza/gltf/Sponza.gltf", commandList.GetList());
+    //m_model.Init(g_homeDir / "textures/models/Sponza/gltf/Sponza.gltf", context);
+    //auto str = graphics::Texture::s_textures.begin()->first;
+    //m_textureNew.Init("6772804448157695701.jpg");
+    //m_rootIndexData.textureIndex = m_textureNew->getDescriptorHeapIndex();
 }
 
 void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)

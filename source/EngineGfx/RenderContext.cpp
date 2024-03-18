@@ -1,4 +1,5 @@
 #include "EngineGfx/RenderContext.h"
+#include "EngineGfx/dx12/Buffers.h"
 #include "EngineCommon/util/Logger.h"
 #include <format>
 
@@ -23,13 +24,13 @@ namespace engine::graphics
 		m_graphicsCommandList.Initialize(m_device);
 		engine::util::PrintInfo("list initialized");
 		m_device.CreateFence(&m_fence);
+		u32 value = m_fence->GetCompletedValue();
 
 		DescriptorHeapManager::CreateRTVHeap(engine::config::NumFrames);
 		DescriptorHeapManager::CreateDSVHeap(1);
 		engine::util::PrintInfo("heaps created");
 		LoadPipeline(m_device.GetDevice());
 		{
-			m_currentFence=1;
 
 			// Create an event handle to use for frame synchronization.
 			if (m_fenceEvent == nullptr)
@@ -77,7 +78,8 @@ namespace engine::graphics
 
 	void RenderContext::FlushCommandQueue()
 	{
-		auto value = m_fence->GetCompletedValue();
+		u64 value = m_fence->GetCompletedValue();
+		m_swapChain.m_fence[m_currentFrame] = ++m_currentFence;
 		ThrowIfFailed(m_graphicsQueue->Signal(m_fence, m_currentFence));
 
 		// Wait until the previous frame is finished.
@@ -88,6 +90,7 @@ namespace engine::graphics
 			WaitForSingleObject(m_fenceEvent, INFINITE);
 			CloseHandle(m_fenceEvent);
 		}
+		m_currentFrame = (m_currentFrame + 1) % (engine::config::NumFrames);
 	}
 
 	void RenderContext::NextFrame()
@@ -106,7 +109,7 @@ namespace engine::graphics
 		m_graphicsCommandList.Reset(m_currentFrame);
 		m_graphicsCommandList->RSSetViewports(1, &m_viewport);
 		m_graphicsCommandList->RSSetScissorRects(1, &m_scissorRect);
-		m_swapChain.ChangeState(m_graphicsCommandList.GetList(), m_currentFrame, ResourceState::RENDER_TARGET);
+		m_currentFrame = m_swapChain.ChangeState(m_graphicsCommandList.GetList(), ResourceState::RENDER_TARGET);
 		auto rtvHandle = m_swapChain.GetView(m_currentFrame);
 		auto dsvHandle = m_dsvBuffer.dsv;
 		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -117,15 +120,13 @@ namespace engine::graphics
 
 	void RenderContext::EndFrame()
 	{
-		m_swapChain.ChangeState(m_graphicsCommandList.GetList(), m_currentFrame, ResourceState::PRESENT);
+		m_swapChain.ChangeState(m_graphicsCommandList.GetList(), ResourceState::PRESENT);
 		ThrowIfFailed(m_graphicsCommandList->Close());
 		ID3D12CommandList* ppCommandLists[] = { m_graphicsCommandList.GetList()};
 		m_graphicsQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 		// Present the frame.
 		m_swapChain->Present(0, 0);
-		m_swapChain.m_fence[m_currentFrame] = ++m_currentFence;
 		FlushCommandQueue();
-		m_currentFrame = (m_currentFrame + 1) % (engine::config::NumFrames);
 		ThrowIfFailed(m_device.GetDevice()->GetDeviceRemovedReason());
 	}
 

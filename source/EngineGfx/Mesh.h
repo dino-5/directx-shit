@@ -8,6 +8,10 @@
 
 namespace engine::graphics
 {
+	struct Material
+	{
+
+	};
 	class RenderContext;
 	struct Submesh
 	{

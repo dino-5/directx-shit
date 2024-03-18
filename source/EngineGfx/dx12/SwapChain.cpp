@@ -13,7 +13,8 @@ namespace engine::graphics
 	void SwapChain::Init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
 	{
 		m_currentSettings = settings;
-		m_swapChain.Reset();
+		if(m_swapChain)
+            m_swapChain->Release();
 
 		DXGI_SWAP_CHAIN_DESC sd;
 		sd.BufferDesc.Width = m_currentSettings.width;
@@ -35,7 +36,7 @@ namespace engine::graphics
 		ThrowIfFailed(factory->CreateSwapChain(
 			queue.Get(),
 			&sd,
-			m_swapChain.GetAddressOf()));
+			&m_swapChain));
 		OnResize();
 	}
 

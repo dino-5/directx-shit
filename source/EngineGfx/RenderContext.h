@@ -11,6 +11,7 @@
 #include "EngineCommon/include/types.h"
 #include "EngineGfx/dx12/d3dx12.h"
 
+
 namespace engine::graphics
 {
 	struct RenderSettings
@@ -44,6 +45,7 @@ namespace engine::graphics
 		CommandList& GetList() { return m_graphicsCommandList; }
 		Device& GetDevice() { return m_device; }
 		CommandQueue& GetQueue() { return m_graphicsQueue; }
+		u64 GetFenceValue() { return m_fence->GetCompletedValue(); }
 
 	private:
 		D3D12_VIEWPORT m_viewport;

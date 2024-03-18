@@ -1,30 +1,35 @@
 #include "EngineGfx/Texture.h"
-#include "third_party/stb/stb_image.h"
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/include/common.h"
 #include "EngineGfx/dx12/DescriptorHeap.h"
 #include "EngineGfx/dx12/Device.h"
+#include "third_party/stb/stb_image.h"
 
 namespace engine::graphics
 {
-    Texture::Texture(system::Filepath path, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    void ImageData::Init(system::Filepath path)
     {
-        Init(path, device, commandList, s);
+        SetData((stbi_load(path.str().c_str(), &width, &height, &channels, 4)));
+        needToDestruct = true;
     }
 
-    void Texture::Init(system::Filepath path , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    Texture::Texture(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
-		Resource textureUploadHeap;
-        std::uint8_t* data = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 4);
+        Init(imData, device, commandList, s);
+    }
+
+    void Texture::Init(ImageData imData , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    {
         ResourceDescription desc;
         desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        desc.width = width;
-        desc.height = height;
+        desc.width = imData.width;
+        desc.height = imData.height;
         desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
         desc.flags = ResourceFlags::NONE;
         desc.createState = ResourceState::COPY_DEST;
         desc.descriptor.descriptor = DescriptorFlags::ShaderResource;
         desc.descriptor.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        desc.name = imData.name;
 
         Resource::init(Device::device->GetDevice(), desc);
 
@@ -42,19 +47,22 @@ namespace engine::graphics
         textureUploadHeap.init(Device::device->GetDevice(), uploadDesc);
 
         D3D12_SUBRESOURCE_DATA textureData = {};
-        textureData.pData = &data[0];
+        textureData.pData = imData.data;
         int size = 4;
-        textureData.RowPitch = width * size;
-        textureData.SlicePitch = textureData.RowPitch * height;
+        textureData.RowPitch = imData.width * size;
+        textureData.SlicePitch = textureData.RowPitch * imData.height;
 
         UpdateSubresources(commandList, resource(), textureUploadHeap, 0, 0, 1, &textureData);
         Resource::transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
-        index = srv.HeapIndex;
         m_name = s;
     }
 
-    bool operator==(Material mat1, Material mat2)
+    Texture* Texture::CreateTexture(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
+        std::string s )
     {
-        return (mat1.diffuseTexture == mat2.diffuseTexture) && (mat1.specularTexture == mat2.specularTexture);
+        if(s_textures.find(std::string(imData.name))==s_textures.end())
+            s_textures[imData.name] = Texture(imData, device, cmdList, s);
+        return &s_textures[imData.name];
     }
+
 };

@@ -8,7 +8,7 @@
 
 namespace engine::graphics
 {
-    void Model::Init(system::Filepath path, ComPtr<ID3D12GraphicsCommandList> cmList)
+    void Model::Init(system::Filepath path, graphics::RenderContext& context)
     {
         tinygltf::Model model;
         tinygltf::TinyGLTF gltfContext;
@@ -26,9 +26,33 @@ namespace engine::graphics
         if (!ret) {
             util::PrintError("Failed to parse glTF\n");
         }
-        for (tinygltf::Sampler& sampler : model.samplers)
+
+      //Accessor
+      //Buffer
+      //BufferView
+      //Material
+      //Mesh
+      //Node
+      //Texture
+      //Image
+      //Skin
+      //Sampler
+      //Camera
+      //Scene
+      //Light
+
+        ID3D12Device* device = context.GetDevice().native();
+        graphics::CommandList& commandList = context.GetList();
+        for (tinygltf::Texture & texture: model.textures)
         {
-            
+            tinygltf::Image image = model.images[texture.source];
+            ImageData data;
+            data.SetData(image.image.data());
+            data.width = image.width;
+            data.height = image.height;
+            data.channels = image.component;
+            data.name = image.uri.c_str();
+            Texture::CreateTexture(data, device, commandList.GetList());
         }
     }
 

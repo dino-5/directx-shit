@@ -24,6 +24,7 @@
 #include <minwinbase.h>
 #include "EngineCommon/include/types.h"
 
+using namespace engine;
 
 namespace engine::util
 {
@@ -107,6 +108,7 @@ namespace engine::util
         }
         return nullptr;
     }
+    
 
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }

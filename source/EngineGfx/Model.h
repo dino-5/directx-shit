@@ -11,11 +11,12 @@
 
 namespace engine::graphics
 {
+	class RenderContext;
 	class Model
 	{
 	public:
 		Model() = default;
-		void Init(system::Filepath path, ComPtr<ID3D12GraphicsCommandList> cmList);
+		void Init(system::Filepath path, RenderContext& context);
 		Mesh GetMesh() { return m_mesh; }
 		void DrawModel(ID3D12GraphicsCommandList* cmdList);
 

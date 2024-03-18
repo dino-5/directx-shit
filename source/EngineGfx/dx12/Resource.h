@@ -1,9 +1,10 @@
 #pragma once
-#include "EngineCommon/include/common.h"
 #include "DescriptorHeap.h"
 #include "third_party/magic_enum/include/magic_enum.hpp"
+#include "EngineCommon/include/common.h"
 #include "EngineCommon/include/types.h"
 #include "EngineCommon/System/config.h"
+#include "EngineCommon/util/Logger.h"
 
 #include <array>
 
@@ -56,6 +57,7 @@ namespace engine::graphics
 		ResourceState createState = ResourceState::COMMON;
 		D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
 		DescriptorProperties descriptor;
+		const char* name=nullptr;
 	};
 
 	//ResourceDescription desc{
@@ -81,22 +83,21 @@ namespace engine::graphics
 
 		void reset()
 		{
-			if (m_resource)
-				m_resource->Release();
+			m_resource.Reset();
 		}
 
 		operator ID3D12Resource* ()
 		{
-			return m_resource;
+			return m_resource.Get();
 		}
 
 		ID3D12Resource* operator->()
 		{
-			return m_resource;
+			return m_resource.Get();
 		}
 
-		ID3D12Resource* resource() { return m_resource; }
-		ID3D12Resource** getResourceAddress() { return &m_resource; }
+		ID3D12Resource* resource() { return m_resource.Get(); }
+		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
 
 		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
 
@@ -106,9 +107,10 @@ namespace engine::graphics
 		DescriptorUAV uav;
 
 	private:
-		ID3D12Resource* m_resource;
+		ComPtr<ID3D12Resource> m_resource;
 		ResourceState m_currentState = ResourceState::COMMON;
 		D3D12_SRV_DIMENSION m_viewDimension{};
+		std::wstring name;
 		u32 m_bufferSize = 0;
 	};
 
@@ -119,11 +121,6 @@ namespace engine::graphics
 		T& operator[](u16 index) { return m_resources[index]; }
 	private:
 		std::array<T, engine::config::NumFrames> m_resources;
-	};
-
-	class Sampler
-	{
-
 	};
 
 };

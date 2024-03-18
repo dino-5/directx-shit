@@ -18,6 +18,7 @@ namespace engine::graphics
 
 	void Resource::init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val)
 	{
+		static u32 resIndex = 0;
 		m_bufferSize = desc.dimension== D3D12_RESOURCE_DIMENSION_BUFFER ? desc.width : 0;
 		m_currentState = desc.createState;
 		D3D12_RESOURCE_DESC resourceDesc = {};
@@ -41,7 +42,17 @@ namespace engine::graphics
 			CastEnum(desc.createState),
 			val,
 			IID_PPV_ARGS(&m_resource)));
+		if (desc.name)
+		{
+            name = util::to_wstring(std::string(desc.name));
+		}
+		else
+		{
+			name = std::to_wstring(resIndex++);
+		}
+        m_resource->SetName(name.c_str());
 		createViews(device, desc.descriptor);
+        util::PrintInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
 	}
 
 	void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptors)
@@ -106,7 +117,7 @@ namespace engine::graphics
 	{
 		if (state == m_currentState)
 			return;
-		auto transitionDesc = CD3DX12_RESOURCE_BARRIER::Transition(m_resource,
+		auto transitionDesc = CD3DX12_RESOURCE_BARRIER::Transition(m_resource.Get(),
 			CastEnum(m_currentState), CastEnum(state));
 		cmdList->ResourceBarrier(1, &transitionDesc);
 		m_currentState = state;

@@ -133,4 +133,5 @@ void Device::CreateFence(ID3D12Fence** fence)
 {
 	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
         __uuidof(**fence), reinterpret_cast<void**>(fence)));
+    u32 value = (*fence)->GetCompletedValue();
 }

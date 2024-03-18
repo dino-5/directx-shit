@@ -33,7 +33,8 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::GENERIC_READ_STATE,
                     .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .descriptor = DescriptorFlags::None
+                    .descriptor = DescriptorFlags::None,
+                    .name = "Upload Buffer"
             };
 			Resource::init(device, desc);
             ThrowIfFailed(resource()->Map(0, nullptr, reinterpret_cast<void**>(&m_MappedData)));
@@ -43,7 +44,8 @@ namespace engine::graphics
         UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
         ~UploadBuffer()
         {
-            resource()->Unmap(0, nullptr);
+            if(auto res= resource())
+                res->Unmap(0, nullptr);
 
             m_MappedData = nullptr;
         }
@@ -83,11 +85,11 @@ namespace engine::graphics
                         .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
                         .bufferStride = bufferStride,
                         .numElements = numElements
-                    }
+                    },
+                    .name = "Buffer"
             };
             Resource::init(device, desc);
 
-            UploadBuffer buffer;
             buffer.Init(device, 1, bufferSize, false);
             D3D12_SUBRESOURCE_DATA subresData = {};
             subresData.pData = data;
@@ -103,6 +105,7 @@ namespace engine::graphics
 			return srv.getDescriptorIndex();
 		}
 	private:
+        UploadBuffer buffer;
 	};
 
 	class ConstantBuffer : public Resource
@@ -122,7 +125,8 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::GENERIC_READ_STATE,
                     .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .descriptor = DescriptorFlags::ConstantBuffer
+                    .descriptor = DescriptorFlags::ConstantBuffer,
+                    .name = "Constant Buffer"
             };
 			Resource::init(device, desc);
 			CD3DX12_RANGE readRange(0, 0);       

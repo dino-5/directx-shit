@@ -36,13 +36,18 @@ void BaseDemo::InitializePasses()
 
     commandList->Close();
     ID3D12CommandList* lists[] = { commandList.GetList() };
+	u64 value = m_renderContext.GetFenceValue();
     m_renderContext.GetQueue()->ExecuteCommandLists(1, lists);
+	value = m_renderContext.GetFenceValue();
 }
 
 void BaseDemo::Draw()
 {
+	u64 value = m_renderContext.GetFenceValue();
 	m_renderContext.StartFrame();
+	value = m_renderContext.GetFenceValue();
 	m_pass.Draw(m_renderContext.GetList().GetList(), m_currentFrameIndex);
+	value = m_renderContext.GetFenceValue();
 	m_renderContext.EndFrame();
 }
 
