@@ -80,6 +80,7 @@ namespace engine::graphics
 	{
 	public:
 		TextureHandle() = default;
+		TextureHandle(Texture* texture) : m_ptr(texture) {}
 		TextureHandle(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = ""){
 			Init(imData, device, cmdList, s);
 		}
@@ -91,9 +92,10 @@ namespace engine::graphics
 		{
 			m_ptr = Texture::GetTexture(name);
 		}
+
 		Texture* operator->() { return m_ptr; }
 	private:
-		Texture* m_ptr;
+		Texture* m_ptr = nullptr;
 	};
 
 };

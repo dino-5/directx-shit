@@ -5,20 +5,20 @@ namespace engine::util
 {
 Geometry::MeshData Geometry::CreateCylinder
 (
-    float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount)
+    float bottomRadius, float topRadius, float height, u32 sliceCount, u32 stackCount)
 {
     MeshData mesh;
     float stackHeight = height / stackCount;
     float radiusStep = (bottomRadius - topRadius) / stackCount;
 
 	float c_dr = bottomRadius - topRadius;
-    uint32 ringCount = stackCount + 1;
-    for (uint32 i = 0; i < ringCount; i++)
+    u32 ringCount = stackCount + 1;
+    for (u32 i = 0; i < ringCount; i++)
     {
         float y = -0.5f * height + i * stackHeight;
         float r = bottomRadius + i * radiusStep;
         float dTheta = 2.0f * XM_PI / sliceCount;
-        for (uint32 j = 0; j < sliceCount; ++j)
+        for (u32 j = 0; j < sliceCount; ++j)
         {
             Vertex vertex;
             float c = cosf(j * dTheta);
@@ -31,9 +31,9 @@ Geometry::MeshData Geometry::CreateCylinder
         }
     }
     auto vertexCount = sliceCount + 1;
-    for (uint32 i = 0; i < stackCount; i++)
+    for (u32 i = 0; i < stackCount; i++)
     {
-        for (uint32 j = 0; j < sliceCount; j++)
+        for (u32 j = 0; j < sliceCount; j++)
         {
             mesh.Indices32.push_back(i*vertexCount+j);
             mesh.Indices32.push_back((i+1)*vertexCount +j);
@@ -49,7 +49,7 @@ Geometry::MeshData Geometry::CreateCylinder
     return mesh;
 }
 
-Geometry::MeshData Geometry::CreateBox(float width, float height, float depth, uint32 numSubdivisions)
+Geometry::MeshData Geometry::CreateBox(float width, float height, float depth, u32 numSubdivisions)
 {
     MeshData mesh;
 
@@ -185,12 +185,12 @@ Geometry::MeshData Geometry::CreateQuad()
     return result;
 }
 
-void Geometry::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
+void Geometry::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, u32 sliceCount, u32 stackCount, MeshData& meshData)
 {
-    uint32 baseIndex = (uint32)meshData.Vertices.size();
+    u32 baseIndex = (u32)meshData.Vertices.size();
     float y = 0.5f * height;
     float dTheta = 2.0f * XM_PI / sliceCount;
-    for (uint32 i = 0; i <= sliceCount; i++)
+    for (u32 i = 0; i <= sliceCount; i++)
     {
         float x = topRadius * cosf(dTheta * i);
         float z = topRadius * sinf(dTheta * i);
@@ -206,8 +206,8 @@ void Geometry::BuildCylinderTopCap(float bottomRadius, float topRadius, float he
         Vertex(0, y, 0, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f)
     );
 
-    uint32 centerIndex = meshData.Vertices.size() - 1;
-    for (uint32 i = 0; i < sliceCount; i++)
+    u32 centerIndex = meshData.Vertices.size() - 1;
+    for (u32 i = 0; i < sliceCount; i++)
     {
         meshData.Indices32.push_back(centerIndex);
         meshData.Indices32.push_back(baseIndex+i+1);
@@ -216,13 +216,13 @@ void Geometry::BuildCylinderTopCap(float bottomRadius, float topRadius, float he
 
 }
 
-void Geometry::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32 sliceCount, uint32 stackCount, MeshData& meshData)
+void Geometry::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, u32 sliceCount, u32 stackCount, MeshData& meshData)
 {
 
-    uint32 baseIndex = (uint32)meshData.Vertices.size();
+    u32 baseIndex = (u32)meshData.Vertices.size();
     float y = -0.5f * height;
     float dTheta = 2.0f * XM_PI / sliceCount;
-    for (uint32 i = 0; i <= sliceCount; i++)
+    for (u32 i = 0; i <= sliceCount; i++)
     {
         float x = bottomRadius* cosf(dTheta * i);
         float z = bottomRadius* sinf(dTheta * i);
@@ -238,8 +238,8 @@ void Geometry::BuildCylinderBottomCap(float bottomRadius, float topRadius, float
         Vertex(0, y, 0, 0.0f, -1.0f, 0.0f, 0.5f, 0.5f)
     );
 
-    uint32 centerIndex = meshData.Vertices.size() - 1;
-    for (uint32 i = 0; i < sliceCount; i++)
+    u32 centerIndex = meshData.Vertices.size() - 1;
+    for (u32 i = 0; i < sliceCount; i++)
     {
         meshData.Indices32.push_back(centerIndex);
         meshData.Indices32.push_back(baseIndex+i+1);

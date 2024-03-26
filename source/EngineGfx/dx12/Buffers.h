@@ -44,10 +44,9 @@ namespace engine::graphics
         UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
         ~UploadBuffer()
         {
-            if(auto res= resource())
-                res->Unmap(0, nullptr);
-
-            m_MappedData = nullptr;
+            //if(auto res= resource())
+            //    res->Unmap(0, nullptr);
+            //m_MappedData = nullptr;
         }
 
         void CopyData(int elementIndex, const void* data)

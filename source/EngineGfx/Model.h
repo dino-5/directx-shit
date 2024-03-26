@@ -17,11 +17,11 @@ namespace engine::graphics
 	public:
 		Model() = default;
 		void Init(system::Filepath path, RenderContext& context);
-		Mesh GetMesh() { return m_mesh; }
+		//Mesh GetMesh() { return m_mesh; }
 		void DrawModel(ID3D12GraphicsCommandList* cmdList);
 
 	public:
-		Mesh m_mesh;
+		std::vector<Mesh> m_mesh;
 		std::string m_directory;
 
 	private:

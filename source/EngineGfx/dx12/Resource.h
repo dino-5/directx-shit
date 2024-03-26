@@ -107,7 +107,7 @@ namespace engine::graphics
 		DescriptorUAV uav;
 
 	private:
-		ComPtr<ID3D12Resource> m_resource;
+		ComPtr<ID3D12Resource> m_resource = nullptr;
 		ResourceState m_currentState = ResourceState::COMMON;
 		D3D12_SRV_DIMENSION m_viewDimension{};
 		std::wstring name;

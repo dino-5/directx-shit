@@ -1,5 +1,5 @@
 #pragma once
-#include <vector>
+#include <unordered_map>
 #include "Texture.h"
 #include "EngineGfx/dx12/Buffers.h"
 #include "EngineCommon/util/Util.h"
@@ -10,7 +10,8 @@ namespace engine::graphics
 {
 	struct Material
 	{
-
+		TextureHandle occlusionTexture;
+		//TextureHandle emmisiveTexture;
 	};
 	class RenderContext;
 	struct Submesh
@@ -32,11 +33,18 @@ namespace engine::graphics
 	public:
 		using MeshDataVector = std::vector < util::Geometry::MeshData>;
 		Mesh() = default;
+		Mesh(
+			RenderContext& context,
+			const void* vertexData, UINT vertexDataSize, UINT structSize,
+			const void* indexData, UINT indexDataSize, Material material = Material())
+		{
+			Init(context, vertexData, vertexDataSize, structSize, indexData, indexDataSize, material);
+		}
 
 		void Init(
 			RenderContext& context,
 			const void* vertexData, UINT vertexDataSize, UINT structSize,
-			const void* indexData, UINT indexDataSize);
+			const void* indexData, UINT indexDataSize, Material material = Material());
 
 	public:
 
@@ -48,7 +56,8 @@ namespace engine::graphics
 		UINT VertexBufferByteSize = 0;
 		UINT IndexBufferByteSize = 0;
 
-		std::vector<std::pair< Material, std::vector<Submesh> >> DrawArgs;
+		//std::unordered_map<Material, std::vector<Submesh>> DrawArgs;
+		Material m_material;
 
 	};
 };

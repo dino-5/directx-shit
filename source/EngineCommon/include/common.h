@@ -21,7 +21,7 @@ extern fs::path g_demoDir;
 {                                                                     \
     HRESULT hr__ = (x);                                               \
     std::string wfn = __FILE__;                       \
-    if(FAILED(hr__)) { throw engine::util::DxException(hr__, #x, wfn, __LINE__); } \
+    if(FAILED(hr__)) {DebugBreak(); throw engine::util::DxException(hr__, #x, wfn, __LINE__); } \
 }
 #endif
 

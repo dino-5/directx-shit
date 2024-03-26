@@ -37,11 +37,8 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_rootIndexData.vertexBufferIndex = m_vertexBuffer.GetDescriptorHeapIndex();
     m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
     m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
+    m_model.Init(g_homeDir / "textures/models/Sponza/gltf/Sponza.gltf", context);
     m_rootStructure.Init(device, 1, &m_rootIndexData, sizeof(m_rootIndexData));
-    //m_model.Init(g_homeDir / "textures/models/Sponza/gltf/Sponza.gltf", context);
-    //auto str = graphics::Texture::s_textures.begin()->first;
-    //m_textureNew.Init("6772804448157695701.jpg");
-    //m_rootIndexData.textureIndex = m_textureNew->getDescriptorHeapIndex();
 }
 
 void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)

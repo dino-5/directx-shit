@@ -96,6 +96,6 @@ namespace engine::graphics
 	
 	void PopulateDescriptorHeaps()
 	{
-		DescriptorHeapManager::CreateSRVHeap(100);
+		DescriptorHeapManager::CreateSRVHeap(450);
 	}
 };

@@ -86,6 +86,8 @@ namespace engine::graphics
 		if ((descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource &&
 			desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
+            if (descriptors.numElements == 0)
+                DebugBreak();
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			srvDesc.Format = desc.Format;
