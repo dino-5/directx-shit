@@ -35,13 +35,13 @@ namespace engine::graphics
 
 		void Reset() {
 			m_swapChain.Reset();
-			m_dsvBuffer.reset();
+			m_dsvBuffer.Reset();
 		}
 
 		void StartFrame();
 		void EndFrame();
 
-		int GetAspectRatio()const { return m_swapChain.GetAspectRatio(); }
+		f32 GetAspectRatio()const { return m_swapChain.GetAspectRatio(); }
 		CommandList& GetList() { return m_graphicsCommandList; }
 		Device& GetDevice() { return m_device; }
 		CommandQueue& GetQueue() { return m_graphicsQueue; }

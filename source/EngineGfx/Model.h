@@ -8,6 +8,7 @@
 #include "EngineGfx/Texture.h"
 #include "EngineCommon/util/GeometryGenerator.h"
 #include "EngineCommon/System/Filesystem.h"
+#include "EngineCommon/math/Matrix.h"
 
 namespace engine::graphics
 {
@@ -21,10 +22,15 @@ namespace engine::graphics
 		void DrawModel(ID3D12GraphicsCommandList* cmdList);
 
 	public:
-		std::vector<Mesh> m_mesh;
+		Mesh m_mesh;
+		std::vector<Submesh> m_submeshes;
+        ConstantBuffer m_constantBuffer;
 		std::string m_directory;
+		Buffer m_buffer;
 
-	private:
+		Buffer m_vertexBuffer;
+		Buffer m_indexBuffer;
+
 
 	};
 };

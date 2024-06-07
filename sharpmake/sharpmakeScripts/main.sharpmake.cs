@@ -171,7 +171,7 @@ public class DemoSolution : Solution
     public DemoSolution()
     {
         // The name of the solution.
-        Name = "Dx12 Engine";
+        Name = "D12Engine";
 
         // As with the project, define which target this solution builds for.
         // It's usually the same thing.

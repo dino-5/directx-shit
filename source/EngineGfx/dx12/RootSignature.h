@@ -17,6 +17,7 @@ namespace engine::graphics
 		ROOT_SIG_EMPTY,
 		ROOT_SIG_ONE_CONST,
 		ROOT_SIG_BINDLESS,
+		ROOT_SIG_TWO_CONSTANTS,
 		ROOT_SIG_COUNT
 	};
 	constexpr const u32 rootSignatureCount = castEnum(ROOT_SIG_COUNT);

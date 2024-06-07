@@ -27,6 +27,8 @@ struct BindlessSP
 	u32 textureIndex;
 };
 
+class graphics::Mesh;
+
 class SimplePass : public Pass
 {
 public:
@@ -35,13 +37,16 @@ public:
 	void Initialize(graphics::RenderContext& context);
 	void Draw(ID3D12GraphicsCommandList*, u32 nt)override;
 private:
-	ConstandBufferData m_data;
 	BindlessSP m_rootIndexData;
+	ConstandBufferData m_data;
+	//graphics::Mesh* mesh;
 	graphics::Texture m_texture;
 	graphics::TextureHandle m_textureNew;
 	graphics::Buffer m_vertexBuffer;
-	graphics::ConstantBuffer m_constantBuffer;
+	graphics::Buffer m_indexBuffer;
+	graphics::Buffer m_constantBuffer;
 	graphics::ConstantBuffer m_rootStructure;
 	graphics::Model m_model;
+	u32 test = 0;
 };
 

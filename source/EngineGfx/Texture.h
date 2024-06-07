@@ -46,7 +46,7 @@ namespace engine::graphics
         ImageData() = default;
         ImageData(engine::system::Filepath path) { Init(path); }
         void Init(engine::system::Filepath path);
-		const char* name;
+		const char* name = nullptr;
 		bool needToDestruct = false;
     };
 
@@ -57,7 +57,7 @@ namespace engine::graphics
 		Texture() = default;
 		Texture (ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
 		void Init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
-		u32 getDescriptorHeapIndex()
+		u32 GetDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}
@@ -92,6 +92,7 @@ namespace engine::graphics
 		{
 			m_ptr = Texture::GetTexture(name);
 		}
+		operator bool() { return m_ptr != nullptr; }
 
 		Texture* operator->() { return m_ptr; }
 	private:

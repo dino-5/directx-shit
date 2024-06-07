@@ -16,11 +16,12 @@ namespace engine::graphics
 	class RenderContext;
 	struct Submesh
 	{
-		UINT IndexCount = 0;
-		UINT StartIndexLocation = 0;
-		INT BaseVertexLocation = 0;
-		Submesh(UINT indexCount, UINT startIndex, UINT baseVertexLoc) : IndexCount(indexCount), StartIndexLocation(startIndex),
-			BaseVertexLocation(baseVertexLoc) {}
+		u32 IndexCount = 0;
+		u32 StartIndexLocation = 0;
+		u32 BaseVertexLocation = 0;
+		u32 materialIndex = 0;
+		Submesh(u32 indexCount, u32 startIndex, u32 baseVertexLoc, u32 matIndex) : IndexCount(indexCount), StartIndexLocation(startIndex),
+			BaseVertexLocation(baseVertexLoc), materialIndex(matIndex) {}
 		Submesh() = default;
 
 		void Draw(ID3D12GraphicsCommandList* cmList);
@@ -33,18 +34,33 @@ namespace engine::graphics
 	public:
 		using MeshDataVector = std::vector < util::Geometry::MeshData>;
 		Mesh() = default;
+
+        template<typename VertexType, typename IndexType>
 		Mesh(
-			RenderContext& context,
-			const void* vertexData, UINT vertexDataSize, UINT structSize,
-			const void* indexData, UINT indexDataSize, Material material = Material())
+            RenderContext& context,
+            const VertexType* vertexData, UINT vertexCount,
+            const IndexType* indexData, UINT indexCount)
 		{
-			Init(context, vertexData, vertexDataSize, structSize, indexData, indexDataSize, material);
+			Init(context, vertexData, vertexCount, indexData, indexCount);
 		}
 
+        template<typename VertexType, typename IndexType>
 		void Init(
 			RenderContext& context,
-			const void* vertexData, UINT vertexDataSize, UINT structSize,
-			const void* indexData, UINT indexDataSize, Material material = Material());
+			const VertexType* vertexData, UINT vertexCount,
+			const IndexType* indexData, UINT indexCount)
+		{
+            m_vertexBuffer.Init(context, vertexData, vertexCount);
+            if (indexData != nullptr)
+            {
+                m_indexBuffer.Init(context, indexData, indexCount);
+				m_indexBuffer.Transition(context.GetList().GetList(), ResourceState::INDEX_BUFFER);
+                m_indexBufferByteSize = sizeof(IndexType);
+				m_indexCount = indexCount;
+            }
+            m_vertexByteStride = sizeof(VertexType);
+            m_vertexBufferByteSize = m_vertexByteStride * vertexCount;
+		}
 
 	public:
 
@@ -52,9 +68,10 @@ namespace engine::graphics
 		Buffer m_vertexBuffer;
 		Buffer m_indexBuffer;
 		// Data about the buffers.
-		UINT VertexByteStride = 0;
-		UINT VertexBufferByteSize = 0;
-		UINT IndexBufferByteSize = 0;
+		u32 m_vertexByteStride = 0;
+		u32 m_vertexBufferByteSize = 0;
+		u32 m_indexBufferByteSize = 0;
+		u32 m_indexCount = 0;
 
 		//std::unordered_map<Material, std::vector<Submesh>> DrawArgs;
 		Material m_material;

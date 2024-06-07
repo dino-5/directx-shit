@@ -56,19 +56,4 @@ namespace engine::graphics
 		return submeshes;
 	}
 
-	void Mesh::Init(
-		RenderContext& context,
-		const void* vertexData, UINT vertexDataSize, UINT structSize,
-		const void* indexData, UINT indexDataSize, Material material)
-	{
-		m_vertexBuffer.Init(context, vertexData, vertexDataSize, structSize, vertexDataSize / structSize);
-		if (indexData != nullptr)
-		{
-            m_indexBuffer.Init(context, indexData, indexDataSize, sizeof(u16), indexDataSize / sizeof(u16));
-			IndexBufferByteSize = indexDataSize;
-		}
-		VertexByteStride = structSize;
-		VertexBufferByteSize = vertexDataSize;
-		m_material = material;
-	}
 };

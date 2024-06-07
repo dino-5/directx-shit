@@ -23,6 +23,12 @@ public:
 		}
 	}
 
+	Vector(float value)
+	{
+		for (int i = 0; i < N; i++)
+			m_data[i] = value;
+	}
+
 	Vector(initializer_list<float> list) 
 	{
 		auto itr = list.begin();
@@ -37,7 +43,7 @@ public:
 	{
 		for (int i = 0; i < N; i++)
 		{
-			m_data[i] = vector[i];
+			m_data[i] = vector.m_data[i];
 		}
 	}
 
@@ -59,10 +65,17 @@ public:
 		return *this;
 	}
 	
-	friend const Vector operator+(const Vector& v1, const Vector& v2);
-	friend const Vector operator-(const Vector& v1, const Vector& v2);
-	friend const Vector CrossProduct(const Vector& v1, const Vector& v2);
-	friend float DotProduct(const Vector& v1, const Vector& v2);
+	friend const Vector operator+(const Vector v1, const Vector v2);
+	friend const Vector operator-(const Vector v1, const Vector v2);
+
+	friend const Vector operator*(const Vector v1, const float v);
+	friend const Vector operator*(const float v, const Vector<N> v1);
+
+	friend const Vector operator/(const Vector v1, const float v);
+	friend const Vector operator/(const float v, const Vector<N> v1);
+
+	friend const Vector CrossProduct(const Vector v1, const Vector v2);
+	friend float DotProduct(const Vector v1, const Vector v2);
 
 	float Length()
 	{
@@ -110,7 +123,7 @@ private:
 };
 
 template<int N>
-const Vector<N> operator+(const Vector<N>& v1, const Vector<N>& v2)
+const Vector<N> operator+(const Vector<N> v1, const Vector<N> v2)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -121,7 +134,7 @@ const Vector<N> operator+(const Vector<N>& v1, const Vector<N>& v2)
 }
 
 template<int N>
-const Vector<N> operator-(const Vector<N>& v1, const Vector<N>& v2)
+const Vector<N> operator-(const Vector<N> v1, const Vector<N> v2)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -132,7 +145,51 @@ const Vector<N> operator-(const Vector<N>& v1, const Vector<N>& v2)
 }
 
 template<int N>
-const Vector<N> CrossProduct(const Vector<N>& v1, const Vector<N>& v2)
+const Vector<N> operator*(const Vector<N> v1, const float v)
+{
+	Vector<N> result;
+	for (int i = 0; i < N; i++)
+	{
+		result[i] = v1[i] * v;
+	}
+	return result;
+}
+
+template<int N>
+const Vector<N> operator*(const float v, const Vector<N> v1)
+{
+	Vector<N> result;
+	for (int i = 0; i < N; i++)
+	{
+		result[i] = v1[i] * v;
+	}
+	return result;
+}
+
+template<int N>
+const Vector<N> operator/(const Vector<N> v1, const float v)
+{
+	Vector<N> result;
+	for (int i = 0; i < N; i++)
+	{
+		result[i] = v1[i] / v;
+	}
+	return result;
+}
+
+template<int N>
+const Vector<N> operator/(const float v, const Vector<N> v1)
+{
+	Vector<N> result;
+	for (int i = 0; i < N; i++)
+	{
+		result[i] = v1[i] / v;
+	}
+	return result;
+}
+
+template<int N>
+const Vector<N> CrossProduct(const Vector<N> v1, const Vector<N> v2)
 {
 	Vector<N> result;
 	if constexpr(N != 2)

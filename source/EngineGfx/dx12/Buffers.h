@@ -33,10 +33,10 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::GENERIC_READ_STATE,
                     .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .descriptor = DescriptorFlags::None,
+                    //.descriptor = DescriptorFlags::None,
                     .name = "Upload Buffer"
             };
-			Resource::init(device, desc);
+			Resource::InitResource(device, desc, DescriptorProperties(DescriptorFlags::None));
             ThrowIfFailed(resource()->Map(0, nullptr, reinterpret_cast<void**>(&m_MappedData)));
         }
 
@@ -66,10 +66,11 @@ namespace engine::graphics
 	public:
 		Buffer() = default;
 		template<typename T>
-		void Init(RenderContext& context, T* data, uint bufferSize, u32 bufferStride, u32 numElements)
+		void Init(RenderContext& context, T* data, uint numberOfElements)
 		{
             ID3D12Device* device = context.GetDevice().GetDevice();
             ID3D12GraphicsCommandList* commandList = context.GetList().GetList();
+            u32 bufferSize = numberOfElements * sizeof(T);
             ResourceDescription desc{
                     .format = DXGI_FORMAT_UNKNOWN,
                     .width = bufferSize,
@@ -79,30 +80,37 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::COMMON,
                     .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                    .descriptor = {
-                        .descriptor = DescriptorFlags::ShaderResource,
-                        .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
-                        .bufferStride = bufferStride,
-                        .numElements = numElements
-                    },
                     .name = "Buffer"
             };
-            Resource::init(device, desc);
+            DescriptorProperties descriptorProps = {
+                .descriptor = DescriptorFlags::ShaderResource,
+                .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
+                .bufferStride = sizeof(T),
+                .numElements = numberOfElements 
+            };
+            Resource::InitResource(device, desc, descriptorProps);
 
             buffer.Init(device, 1, bufferSize, false);
             D3D12_SUBRESOURCE_DATA subresData = {};
             subresData.pData = data;
             subresData.RowPitch = bufferSize;
             subresData.SlicePitch = 1;
-            transition(commandList, ResourceState::COPY_DEST);
+            Transition(commandList, ResourceState::COPY_DEST);
             UpdateSubresources(commandList, resource(), buffer.resource(), 0, 0, 1, &subresData);
-            transition(commandList, ResourceState::GENERIC_READ_STATE);
+            Transition(commandList, ResourceState::GENERIC_READ_STATE);
 
 		}
 		u32 GetDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}
+        D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() {
+            D3D12_INDEX_BUFFER_VIEW view;
+            view.BufferLocation = resource()->GetGPUVirtualAddress();
+            view.Format = DXGI_FORMAT_R32_UINT;
+            view.SizeInBytes = resource()->GetDesc().Width * sizeof(u32);
+            return view;
+        }
 	private:
         UploadBuffer buffer;
 	};
@@ -111,9 +119,12 @@ namespace engine::graphics
 	{
 	public:
         ConstantBuffer() = default;
-		void Init(ID3D12Device* device, uint numberOfElements, const void* data, u32 size) 
+		template<typename T>
+		void Init(RenderContext& context, T* data, uint numberOfElements)
 		{
-            m_structSize = CalcConstantBufferByteSize(size);
+            ID3D12Device* device = context.GetDevice().GetDevice();
+            m_structSize = CalcConstantBufferByteSize(sizeof(T)); // do we need make single entry of buffer be
+            // divided by 256 or all all buffer?
 			uint bufferSize = m_structSize*numberOfElements;
             ResourceDescription desc{
                     .format = DXGI_FORMAT_UNKNOWN,
@@ -124,10 +135,16 @@ namespace engine::graphics
                     .flags = ResourceFlags::NONE,
                     .createState = ResourceState::GENERIC_READ_STATE,
                     .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .descriptor = DescriptorFlags::ConstantBuffer,
                     .name = "Constant Buffer"
             };
-			Resource::init(device, desc);
+
+            DescriptorProperties descProps{
+                .descriptor = DescriptorFlags::ConstantBuffer,
+                .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
+                .bufferStride = bufferSize,
+                .numElements = numberOfElements 
+            };
+			Resource::InitResource(device, desc, descProps);
 			CD3DX12_RANGE readRange(0, 0);       
             ThrowIfFailed(resource()->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
             Update(data);
@@ -136,7 +153,7 @@ namespace engine::graphics
 		D3D12_GPU_VIRTUAL_ADDRESS getAddress(u32 element=0) 		{
 			return resource()->GetGPUVirtualAddress() + m_structSize * element;
 		}
-		u32 getDescriptorHeapIndex()
+		u32 GetDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}

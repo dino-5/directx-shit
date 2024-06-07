@@ -40,11 +40,18 @@ namespace engine::graphics
 
 	struct DescriptorProperties
 	{
-		DescriptorFlags descriptor{};
+		DescriptorFlags descriptor{0};
 		D3D12_SRV_DIMENSION viewDimension{};
 		u32 bufferStride{};
 		u32 numElements{};
 	};
+
+	//DescriptorProperties descProps{
+	//	.descriptor = DescriptorFlags::None,
+	//	.viewDimension = D3D12_SRV_DIMENSION_UNKNOWN,
+	//	.bufferStride = 0,
+	//	.numElements = 0
+	//};
 
 	struct ResourceDescription
 	{
@@ -56,7 +63,6 @@ namespace engine::graphics
 		ResourceFlags flags = ResourceFlags::NONE;
 		ResourceState createState = ResourceState::COMMON;
 		D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
-		DescriptorProperties descriptor;
 		const char* name=nullptr;
 	};
 
@@ -69,7 +75,6 @@ namespace engine::graphics
 	//		.flags = ResourceFlags::None,
 	//		.createState = ResourceState::,
 	//		.heapType = D3D12_HEAP_TYPE_DEFAULT,
-	//		.descriptor = ResourceDescriptorFlags::,
    //};
 
 	class Resource
@@ -77,11 +82,10 @@ namespace engine::graphics
 	public:
 		Resource() = default;
 
-		Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
-		void init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val = nullptr);
-		void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
+		void InitResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val=nullptr);
+		void Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
-		void reset()
+		void Reset()
 		{
 			m_resource.Reset();
 		}
@@ -99,7 +103,7 @@ namespace engine::graphics
 		ID3D12Resource* resource() { return m_resource.Get(); }
 		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
 
-		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
+		void CreateViews(ID3D12Device* device, DescriptorProperties descriptors);
 
 		DescriptorDSV dsv;
 		DescriptorRTV rtv;

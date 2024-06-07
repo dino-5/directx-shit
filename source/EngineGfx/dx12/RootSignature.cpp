@@ -33,9 +33,9 @@ namespace engine::graphics
 		ShaderVisibility visibility)
 	{
 		RootParameter val;
-		val.m_argument.Constants.Num32BitValues = num32BitValues;
 		val.m_argument.Constants.ShaderRegister= shaderRegister;
 		val.m_argument.Constants.RegisterSpace = registerSpace;
+		val.m_argument.Constants.Num32BitValues = num32BitValues;
 		val.m_argument.ShaderVisibility = CastType(visibility);
 		val.m_argument.ParameterType = CastType(RootParameterType::CONSTANT);
 		return val;
@@ -156,6 +156,14 @@ namespace engine::graphics
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 10, RootParameterType::CBV, ShaderVisibility::ALL));
 			RootSignature::AddEntry(ROOT_SIG_BINDLESS, RootSignature(device, parameters,
+				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX));// |
+                //RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT ));
+		}
+        {
+			RootParameters parameters;
+			parameters.push_back(RootParameter::CreateConstants(1, 0, 10));
+			parameters.push_back(RootParameter::CreateConstants(1, 1, 10));
+			RootSignature::AddEntry(ROOT_SIG_TWO_CONSTANTS, RootSignature(device, parameters,
 				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX));// |
                 //RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT ));
 		}

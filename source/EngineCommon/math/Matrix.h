@@ -57,9 +57,9 @@ public:
 
 	void TransposeSelf()
 	{
-		for (int i = 0; i < N; i++)
+		for (int i = 1; i < N; i++)
 		{
-			for (int j = 0; j < N; j++)
+			for (int j = 0; j <= (i+1)/2; j++)
 			{
 				std::swap(m_data[i][j], m_data[j][i]);
 			}

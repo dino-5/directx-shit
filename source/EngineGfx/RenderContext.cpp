@@ -67,13 +67,13 @@ namespace engine::graphics
 
 		ResourceDescription desc;
 		desc.createState = ResourceState::DEPTH_WRITE;
-		desc.descriptor.descriptor = DescriptorFlags::DepthStencil;
+		//desc.descriptor.descriptor = DescriptorFlags::DepthStencil;
 		desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		desc.flags = ResourceFlags::DEPTH_STENCIL;
 		desc.format = DXGI_FORMAT_R24G8_TYPELESS;
 		desc.width = set.width;
 		desc.height = set.height;
-		m_dsvBuffer.init(Device::device->GetDevice(), desc, &optClear);
+		m_dsvBuffer.InitResource(Device::device->GetDevice(), desc, DescriptorProperties(DescriptorFlags::DepthStencil), &optClear);
 	}
 
 	void RenderContext::FlushCommandQueue()

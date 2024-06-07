@@ -15,30 +15,31 @@ SimplePass::SimplePass(graphics::RenderContext& context)
 void SimplePass::Initialize(graphics::RenderContext& context)
 {
     Pass::SetPSO(L"default");
-    Pass::SetRootSignature(graphics::ROOT_SIG_BINDLESS);
+    Pass::SetRootSignature(graphics::ROOT_SIG_TWO_CONSTANTS);
     ID3D12Device* device = context.GetDevice().native();
     graphics::CommandList& commandList = context.GetList();
     float aspectRatio = context.GetAspectRatio();
     
     Vertex triangleVertices[] =
     {
-         math::Vector3({0.0f, 0.25f * aspectRatio,    .9f}),
-         math::Vector3({0.25f, 0.95f * aspectRatio,  .9f }),
-         math::Vector3({0.95f, 0.05f * aspectRatio, .9f }),
+         math::Vector3({-0.3f, -0.2f * aspectRatio,    .5f}),
+         math::Vector3({0.2f, 0.8f * aspectRatio,  .5f }),
+         math::Vector3({0.75f, -0.20f * aspectRatio, .9f }),
     };
-    m_data.color = 0.8;
-    m_data.perspective = math::PerspectiveProjection(90, 1, 0, 0);
+    u16 indexData[] = { 0, 1, 2  };
 
-    m_vertexBuffer.Init(context, triangleVertices, sizeof(triangleVertices), sizeof(math::Vector3), 3);
-    m_constantBuffer.Init(device, 1, &m_data, sizeof(m_data));
+    m_vertexBuffer.Init(context, triangleVertices, 3);
+    m_indexBuffer.Init(context, indexData, 3);
+    m_data.perspective = math::PerspectiveProjection(90, aspectRatio, 0.f, 100.f);
+    m_constantBuffer.Init(context, &m_data, 1);
 
     m_texture.Init(graphics::ImageData(g_homeDir / "textures" / "wall.jpg"), device, commandList.GetList());
 
     m_rootIndexData.vertexBufferIndex = m_vertexBuffer.GetDescriptorHeapIndex();
-    m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
-    m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
-    m_model.Init(g_homeDir / "textures/models/Sponza/gltf/Sponza.gltf", context);
-    m_rootStructure.Init(device, 1, &m_rootIndexData, sizeof(m_rootIndexData));
+    m_rootIndexData.constantBufferIndex = m_constantBuffer.GetDescriptorHeapIndex();
+    m_rootIndexData.textureIndex = m_texture.GetDescriptorHeapIndex();
+    m_rootStructure.Init(context, &m_rootIndexData, 1);
+    //m_model.Init(g_homeDir / "textures/models/Sponza/gltf/Sponza.gltf", context);
 }
 
 void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
@@ -47,7 +48,6 @@ void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 	commandList->SetGraphicsRootSignature( *m_rootSignature );
 	commandList->SetPipelineState( *m_pso );
 
-    commandList->SetGraphicsRootConstantBufferView(0, m_rootStructure.getAddress());
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     commandList->DrawInstanced(3, 1, 0, 0);
 }

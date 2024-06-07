@@ -26,12 +26,14 @@ namespace engine::graphics
 		void OnResize();
 
 		IDXGISwapChain* operator->() { return m_swapChain; }
-		int GetAspectRatio()const { return m_currentSettings.width / m_currentSettings.height; }
+		f32 GetAspectRatio()const { 
+			return static_cast<f32>(m_currentSettings.width) / static_cast<f32>(m_currentSettings.height); 
+		}
 
 		void Reset() {
 			m_swapChain->Release();
 			for (int i = 0; i < engine::config::NumFrames; i++)
-				m_swapChainBuffer[i].reset();
+				m_swapChainBuffer[i].Reset();
 		}
 
 		u32 ChangeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
@@ -39,7 +41,7 @@ namespace engine::graphics
 			IDXGISwapChain3* swapChain;
 			m_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
 			u32 index = swapChain->GetCurrentBackBufferIndex();
-			m_swapChainBuffer[index].transition(cmdList, state);
+			m_swapChainBuffer[index].Transition(cmdList, state);
 			swapChain->QueryInterface(IID_PPV_ARGS(&m_swapChain));
 			return index;
 		}

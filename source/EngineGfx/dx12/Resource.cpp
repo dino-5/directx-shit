@@ -11,12 +11,7 @@ namespace engine::graphics
 		return static_cast<D3D12_RESOURCE_STATES>(state);
 	}
 
-	Resource::Resource(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val)
-	{
-		init(device, desc, val);
-	}
-
-	void Resource::init(ID3D12Device* device, ResourceDescription desc, D3D12_CLEAR_VALUE* val)
+	void Resource::InitResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val)
 	{
 		static u32 resIndex = 0;
 		m_bufferSize = desc.dimension== D3D12_RESOURCE_DIMENSION_BUFFER ? desc.width : 0;
@@ -51,14 +46,16 @@ namespace engine::graphics
 			name = std::to_wstring(resIndex++);
 		}
         m_resource->SetName(name.c_str());
-		createViews(device, desc.descriptor);
+		CreateViews(device, descriptorDesc);
         util::PrintInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
 	}
 
-	void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptors)
+	void Resource::CreateViews(ID3D12Device* device, DescriptorProperties descriptorProps)
 	{
+		if (descriptorProps.descriptor == DescriptorFlags::None)
+			return;
 		D3D12_RESOURCE_DESC desc = m_resource->GetDesc();
-		DescriptorFlags descriptor = descriptors.descriptor;
+		DescriptorFlags descriptor = descriptorProps.descriptor;
 		if ((descriptor & DescriptorFlags::RenderTarget) == DescriptorFlags::RenderTarget)
 		{
 			DescriptorHeapManager::CurrentRTVHeap.createRTV(device, *this);
@@ -79,22 +76,22 @@ namespace engine::graphics
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			srvDesc.Format = desc.Format;
-			srvDesc.ViewDimension = descriptors.viewDimension;
+			srvDesc.ViewDimension = descriptorProps.viewDimension;
 			srvDesc.Texture2D.MipLevels = 1;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
 		if ((descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource &&
 			desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
-            if (descriptors.numElements == 0)
+            if (descriptorProps.numElements == 0)
                 DebugBreak();
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			srvDesc.Format = desc.Format;
-			srvDesc.ViewDimension = descriptors.viewDimension;
-			srvDesc.Buffer.StructureByteStride = descriptors.bufferStride;
+			srvDesc.ViewDimension = descriptorProps.viewDimension;
+			srvDesc.Buffer.StructureByteStride = descriptorProps.bufferStride;
 			srvDesc.Buffer.FirstElement = 0;
-			srvDesc.Buffer.NumElements = descriptors.numElements;
+			srvDesc.Buffer.NumElements = descriptorProps.numElements;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
 		if ((descriptor & DescriptorFlags::UnorderedAccess) == DescriptorFlags::UnorderedAccess)
@@ -115,7 +112,7 @@ namespace engine::graphics
 	}
 
 
-	void Resource::transition(ID3D12GraphicsCommandList* cmdList, ResourceState state)
+	void Resource::Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state)
 	{
 		if (state == m_currentState)
 			return;

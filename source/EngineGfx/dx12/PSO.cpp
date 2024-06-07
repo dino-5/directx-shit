@@ -207,7 +207,7 @@ namespace engine::graphics
         LogScope("PSO");
         PSO::allPSO.reserve(0);
         ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic",
-            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_BINDLESS) };
+            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_TWO_CONSTANTS) };
         RenderState state;
         DepthState depthState;
         depthState.depthFunc = ComparisonFunc::LE; 
