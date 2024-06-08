@@ -7,7 +7,6 @@ struct PS_Input
 struct General 
 {
     float4x4 perspective;
-    float color;
 };
 
 struct Vertex
@@ -36,16 +35,16 @@ PS_Input VS_Basic(uint index : SV_VertexID)
 {
     PS_Input ret;
     StructuredBuffer<Vertex> vertexBuffer = ResourceDescriptorHeap[cbIndex.vertexBufferIndex];
-    ConstantBuffer<General> buffer = ResourceDescriptorHeap[cbIndex.constantBufferIndex];
+    StructuredBuffer<General> buffer = ResourceDescriptorHeap[cbIndex.constantBufferIndex];
     Vertex vertex = vertexBuffer.Load(index);
-    float4 pos = mul(buffer.perspective, float4(vertex.pos, 1.0f));
-    ret.pos = float4(vertex.pos, 1.0f);
+    float4 pos = mul(buffer[0].perspective, float4(vertex.pos, 1.0f));
+    ret.pos = pos;
     return ret;
 }
 
 float4 PS_Basic(PS_Input input): SV_Target
 {
-    //return float4(1.f, 0.0f, 0.f, 1.0f);
+    return float4(1.f, 0.0f, 0.f, 1.0f);
     Texture2D tex = ResourceDescriptorHeap[cbIndex.textureBufferIndex];
     return float4(1.0f, 0.0f, 0.f, 1.f);
 

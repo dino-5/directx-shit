@@ -17,7 +17,6 @@ struct Vertex
 struct ConstandBufferData
 {
 	math::Matrix4 perspective;
-	f32 color;
 };
 
 struct BindlessSP
