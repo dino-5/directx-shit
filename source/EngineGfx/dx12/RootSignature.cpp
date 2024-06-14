@@ -156,8 +156,7 @@ namespace engine::graphics
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 10, RootParameterType::CBV, ShaderVisibility::ALL));
 			RootSignature::AddEntry(ROOT_SIG_BINDLESS, RootSignature(device, parameters,
-				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX));// |
-                //RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT ));
+				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX));
 		}
         {
 			RootParameters parameters;

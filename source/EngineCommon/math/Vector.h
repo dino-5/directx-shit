@@ -7,9 +7,10 @@
 
 using std::initializer_list;
 using namespace engine;
+
+
 namespace engine::math
 {
-
 
 template<int N>
 class Vector
@@ -65,17 +66,25 @@ public:
 		return *this;
 	}
 	
-	friend const Vector operator+(const Vector v1, const Vector v2);
-	friend const Vector operator-(const Vector v1, const Vector v2);
+	template<int M>
+	friend Vector<M> operator+(const Vector<M>& v1, const Vector<M>& v2);
+	template<int M>
+	friend const Vector<M> operator-(const Vector<M>& v1, const Vector<M>& v2);
 
-	friend const Vector operator*(const Vector v1, const float v);
-	friend const Vector operator*(const float v, const Vector<N> v1);
+	template<int M>
+	friend const Vector<M> operator*(const Vector<M>& v1, const float v);
+	template<int M>
+	friend const Vector<M> operator*(const float v, const Vector<M>& v1);
 
-	friend const Vector operator/(const Vector v1, const float v);
-	friend const Vector operator/(const float v, const Vector<N> v1);
+	template<int M>
+	friend const Vector<M> operator/(const Vector<M>& v1, const float v);
+	template<int M>
+	friend const Vector<M> operator/(const float v, const Vector<M>& v1);
 
-	friend const Vector CrossProduct(const Vector v1, const Vector v2);
-	friend float DotProduct(const Vector v1, const Vector v2);
+	template<int M>
+	friend const Vector<M> CrossProduct(const Vector<M>& v1, const Vector<M>& v2);
+	template<int M>
+	friend float DotProduct(const Vector<M>& v1, const Vector<M>& v2);
 
 	float Length()
 	{
@@ -115,6 +124,7 @@ public:
 			return util::ImGuiSettings::SliderFloat2(name, m_data, min, max);
 	}
 	float& operator[](int i) { return m_data[i]; }
+	float operator[](int i) const { return m_data[i]; }
 	float* data() { return m_data; }
 	uint size() { return N * sizeof(float); }
 	
@@ -123,7 +133,7 @@ private:
 };
 
 template<int N>
-const Vector<N> operator+(const Vector<N> v1, const Vector<N> v2)
+Vector<N> operator+(const Vector<N>& v1, const Vector<N>& v2)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -134,7 +144,7 @@ const Vector<N> operator+(const Vector<N> v1, const Vector<N> v2)
 }
 
 template<int N>
-const Vector<N> operator-(const Vector<N> v1, const Vector<N> v2)
+const Vector<N> operator-(const Vector<N>& v1, const Vector<N>& v2)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -145,7 +155,7 @@ const Vector<N> operator-(const Vector<N> v1, const Vector<N> v2)
 }
 
 template<int N>
-const Vector<N> operator*(const Vector<N> v1, const float v)
+const Vector<N> operator*(const Vector<N>& v1, const float v)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -156,7 +166,7 @@ const Vector<N> operator*(const Vector<N> v1, const float v)
 }
 
 template<int N>
-const Vector<N> operator*(const float v, const Vector<N> v1)
+const Vector<N> operator*(const float v, const Vector<N>& v1)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -167,7 +177,7 @@ const Vector<N> operator*(const float v, const Vector<N> v1)
 }
 
 template<int N>
-const Vector<N> operator/(const Vector<N> v1, const float v)
+const Vector<N> operator/(const Vector<N>& v1, const float v)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -178,7 +188,7 @@ const Vector<N> operator/(const Vector<N> v1, const float v)
 }
 
 template<int N>
-const Vector<N> operator/(const float v, const Vector<N> v1)
+const Vector<N> operator/(const float v, const Vector<N>& v1)
 {
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
@@ -189,7 +199,7 @@ const Vector<N> operator/(const float v, const Vector<N> v1)
 }
 
 template<int N>
-const Vector<N> CrossProduct(const Vector<N> v1, const Vector<N> v2)
+const Vector<N> CrossProduct(const Vector<N>& v1, const Vector<N>& v2)
 {
 	Vector<N> result;
 	if constexpr(N != 2)

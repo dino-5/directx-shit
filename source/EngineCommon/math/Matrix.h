@@ -66,18 +66,6 @@ public:
 		}
 	}
 
-	static Matrix OrhographicProjection(int l, int r, int b, int t, int n, int f)
-	{
-		Matrix matrix;
-		//matrix[0][0] = 2 / (r - l);
-		//matrix[1][1] = 2 / (t - b);
-		//matrix[2][2] =-2 / (f - n);
-		//matrix[0][3] = -(r + l) / (r - l);
-		//matrix[1][3] = -(t + b) / (t - b);
-		//matrix[2][3] = -(f + n) / (f - n);
-		matrix.TransposeSelf();
-		return matrix;
-	}
 
 	Vector<N>& operator[](int i)
 	{
@@ -89,6 +77,14 @@ public:
 
 using Matrix4 = Matrix<4>;
 
+// view matrices 
+Matrix4 Translate(Vector4 vec);
+Matrix4 Translate(Vector3 vec);
+void SelfTranslate(Matrix4& mat, Vector4 vec);
+void SelfTranslate(Matrix4& mat, Vector3 vec);
+
+// projection matrices
 Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ);
+Matrix4 OrhographicProjection(int l, int r, int b, int t, int n, int f);
 
 }

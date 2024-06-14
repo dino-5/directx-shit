@@ -8,7 +8,9 @@ using namespace DirectX;
 
 BaseDemo::BaseDemo(int width, int height, std::string name):
 	WindowApp(width, height, name)
-{}
+{
+	m_inputManager = &system::InputManager::GetInputManager();
+}
 
 engine::graphics::SwapChainSettings BaseDemo::GetCurrentWindowSettings()
 {
@@ -65,28 +67,7 @@ void BaseDemo::OnResize()
 
 }
 
-void BaseDemo::OnMouseDown(WPARAM btnState, int x, int y)
+LRESULT BaseDemo::ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-
+    return m_inputManager->ProcessInput(hwnd, msg, wParam, lParam);
 }
-
-void BaseDemo::OnMouseUp(WPARAM btnState, int x, int y)
-{
-	
-}
-
-void BaseDemo::OnMouseMove(WPARAM btnState, int x, int y)
-{
-
-}
-
-void BaseDemo::OnKeyDown(Key key)
-{
-
-}
-
-void BaseDemo::OnKeyUp(Key key)
-{
-
-}
-

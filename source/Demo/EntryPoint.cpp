@@ -1,4 +1,7 @@
 #include "Demo/BaseDemo.h"
+#include "EngineCommon/math/Vector.h"
+
+using namespace engine::math;
 
 int main()
 {
@@ -11,6 +14,7 @@ int main()
     {
         g_demoDir = fs::current_path();
         g_homeDir = g_demoDir.parent_path().parent_path();
+        g_shaderDir = g_demoDir / "Shaders";
     }
 
     //{
@@ -22,6 +26,9 @@ int main()
 
     try
     {
+        Vector4 a{ 1,2,3,4 };
+        Vector4 b{ 2,3,4,5 };
+        Vector4 c = a + b;
         BaseDemo theApp(width, height, name);
         if(!theApp.Initialize())
             return 0;

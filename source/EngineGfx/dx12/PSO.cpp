@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/util/Logger.h"
+#include "EngineCommon/System/Filesystem.h"
 #include <dxcapi.h>
 #include "d3d12shader.h"
 #include <format>
@@ -117,24 +118,27 @@ namespace engine::graphics
             BOOL fl;
             sourceBlob->GetEncoding(&fl, &sourceBuffer.Encoding);
             std::wstring type = GetShaderTypeString(info.type);
-            constexpr const u32 numberOfArgs = 5;
+            
+            system::Filepath pdbPath(std::filesystem::absolute(g_shaderDir / L"pdb" / system::Filepath(info.path).wfilename()));
+            std::wstring pdbPathWstr = pdbPath.wstr() + info.entryPoint + L".pdb";
             std::vector<const wchar_t*> args= 
             {
                 info.shaderName.c_str(),
                 L"-E", info.entryPoint.c_str(),
                 L"-T", type.c_str(),
-                //L"-Fd", pdbPath  
+                DXC_ARG_DEBUG
             };
             IDxcResult* result;
             HRESULT hr = s_compiler->Compile(
                 &sourceBuffer,
                 args.data(),
-                numberOfArgs,
+                args.size(),
                 s_includer,
                 IID_PPV_ARGS(&result)
             );
             if(SUCCEEDED(hr) && result)
                 result->GetStatus(&hr);
+
             if (FAILED(hr))
             {
                 if (result)
@@ -152,6 +156,17 @@ namespace engine::graphics
                 DxBlob* blob;
                 result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&blob), nullptr);
                 allShaders.push_back({ info.shaderName, blob});
+
+                std::vector<std::byte> pdbData;
+                DxBlob* pdbBlob;
+                result->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(&pdbBlob), nullptr);
+                auto* data = reinterpret_cast<std::byte*>(pdbBlob->GetBufferPointer());
+                size_t size = pdbBlob->GetBufferSize();
+                pdbData.assign(data, data + size);
+
+                std::ofstream file(pdbPathWstr.data(), std::ios::binary | std::ios::trunc);
+                file.write(reinterpret_cast<const char*>(pdbData.data()), pdbData.size());
+                file.close();
             }
 
 		}

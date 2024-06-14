@@ -7,6 +7,8 @@
 #include <fstream>
 fs::path g_homeDir;
 fs::path g_demoDir;
+fs::path g_shaderDir;
+
 namespace engine::system
 {
 Filepath::Filepath(std::string name):m_path(name)
@@ -24,7 +26,7 @@ Filepath::Filepath(fs::path path):m_path(path)
 	{
 		std::string error = engine::util::to_string(path.native());
 		engine::util::PrintError("{} is not exist", error);
-		throw std::runtime_error(fmt::format("{} is not exist", error));
+//		throw std::runtime_error(fmt::format("{} is not exist", error));
 	}
 }
 

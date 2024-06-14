@@ -47,10 +47,5 @@ protected:
 	virtual void Update() = 0;
 	virtual void Draw() = 0;
 	virtual void Destroy() = 0;
-
-	virtual void OnMouseDown(WPARAM btnState, int x, int y) = 0;
-	virtual void OnMouseUp(WPARAM btnState, int x, int y) = 0;
-	virtual void OnMouseMove(WPARAM btnState, int x, int y) = 0;
-	virtual void OnKeyDown(Key key) = 0;
-	virtual void OnKeyUp(Key key) = 0;
+    virtual LRESULT ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) = 0;
 };

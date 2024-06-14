@@ -4,16 +4,18 @@
 #include "EngineGfx/RenderContext.h"
 #include "EngineCommon/include/defines.h"
 #include "EngineCommon/System/Window.h"
+#include "EngineCommon/System/InputManager.h"
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 #include "Demo/passes/SimplePass.h"
 
 class CommandLine;
+using namespace engine;
 
 // ?
 struct DemoSettings
 {
-	engine::graphics::SwapChainSettings m_settings; 
+	graphics::SwapChainSettings m_settings; 
 };
 
 
@@ -30,21 +32,17 @@ protected:
 	void Update()override;
 	void Draw()override;
 	void Destroy()override;
-
-	void OnMouseDown(WPARAM btnState, int x, int y)override;
-	void OnMouseUp(WPARAM btnState, int x, int y)override;
-	void OnMouseMove(WPARAM btnState, int x, int y)override;
-	void OnKeyDown(Key key)override;
-	void OnKeyUp(Key key)override;
+    LRESULT ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)override;
 
 private:
-	engine::graphics::SwapChainSettings GetCurrentWindowSettings();
+	graphics::SwapChainSettings GetCurrentWindowSettings();
 
 private:
 	CommandLine* cmdLine;
 	SimplePass m_pass;
 	DemoSettings m_currentSettings;
 	u32 m_currentFrameIndex = 0;
-	engine::graphics::RenderContext m_renderContext;
+	graphics::RenderContext m_renderContext;
+	system::InputManager* m_inputManager;
 };
 
