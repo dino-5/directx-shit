@@ -67,7 +67,8 @@ public:
 		{
 			for (int j = 0; j < N; j++)
 			{
-				result[i][j] += m_data[i][j] * matrix[j][i];
+				for(int k=0; k<N; k++)
+                    result[i][j] += m_data[i][k] * matrix[k][j];
 			}
 		}
 		return result;

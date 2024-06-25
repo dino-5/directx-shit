@@ -32,7 +32,7 @@ bool BaseDemo::Initialize()
 
 void BaseDemo::SetupCallbacks()
 {
-	float velocity = 1.f;
+	float velocity = .5f;
 	graphics::Camera& camera = m_renderContext.GetCamera();
 	system::CallbackInfo info;
 	info.oneTimeTouch = false;

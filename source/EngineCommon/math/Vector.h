@@ -61,9 +61,14 @@ public:
 		{
 			if (list.size()!=0)
 			{
-                static_assert(list.size()==N-M,"trying to extent vector with wrong number of parameters");
+                assert(list.size()==N-M,"trying to extent vector with wrong number of parameters");
+				auto itr = list.begin();
 				for (int i = M; i < N; i++)
-					m_data[i] = list[i - M];
+				{
+					m_data[i] = *itr;
+					itr++;
+				}
+
 			}
 			else
 				for (int i = M; i < N; i++)
