@@ -9,6 +9,7 @@ namespace engine::math
         row-major
     */
 
+
     Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ)
     {
         //positive z direction is assumed
@@ -40,40 +41,72 @@ namespace engine::math
         return matrix;
     }
 
-    Matrix4 Translate(const Matrix4& mat, Vector4 vec)
+ 
+
+    Matrix4 Translate(Vector3 vec)
     {
-        Matrix4 res = mat;
-        res[3][0] = -vec[0];
-        res[3][1] = -vec[1];
-        res[3][2] = -vec[2];
-        res[3][3] = -vec[3];
-        return res;
-        
-    }
-    Matrix4 Translate(const Matrix4& mat, Vector3 vec)
-    {
-        Matrix4 res = mat;
-        res[3][0] = -vec[0];
-        res[3][1] = -vec[1];
-        res[3][2] = -vec[2];
+        Matrix4 res;
+        res[0][3] = -vec[0];
+        res[1][3] = -vec[1];
+        res[2][3] = -vec[2];
         res[3][3] = 1;
         return res;
     }
 
-    void SelfTranslate(Matrix4& mat, Vector4 vec)
-    {
-        mat[3][0] = -vec[0];
-        mat[3][1] = -vec[1];
-        mat[3][2] = -vec[2];
-        mat[3][3] = -vec[3];
-    }
-    void SelfTranslate(Matrix4& mat, Vector3 vec)
-    {
-        mat[3][0] = -vec[0];
-        mat[3][1] = -vec[1];
-        mat[3][2] = -vec[2];
-        mat[3][3] = 1;
-    }
+     Matrix4 RotateX(float degrees)
+     {
+         float radians = ToRadians(degrees);
+         float sinValue = sin(radians);
+         float cosValue = cos(radians);
+         
+         Matrix4 result;
+         result[1][1] = cosValue;
+         result[1][2] = -sinValue;
+         result[2][1] = sinValue;
+         result[2][2] = cosValue;
+         return result;
+     }
 
+    Matrix4 RotateY(float degrees)
+     {
+         float radians = ToRadians(degrees);
+         float sinValue = sin(radians);
+         float cosValue = cos(radians);
+         
+         Matrix4 result;
+         result[0][0] = cosValue;
+         result[0][2] = sinValue;
+         result[2][0] = -sinValue;
+         result[2][2] = cosValue;
+         return result;
+     }
+
+    Matrix4 RotateZ(float degrees)
+     {
+         float radians = ToRadians(degrees);
+         float sinValue = sin(radians);
+         float cosValue = cos(radians);
+         
+         Matrix4 result;
+         result[0][0] = cosValue;
+         result[0][1] = -sinValue;
+         result[1][0] = sinValue;
+         result[1][2] = cosValue;
+         return result;
+     }
+
+    Matrix4 CreateViewMatrix(const Vector3& position, const Vector3& viewDirection,
+	    Vector3 upDirection, Vector3 rightDirection)
+    {
+        Matrix4 res;
+        res[0] = rightDirection;
+        res[1] = upDirection;
+        res[2] = viewDirection;
+        res[0][3] = position[0];
+        res[1][3] = position[1];
+        res[2][3] = position[2];
+        res[3][3] = 1;
+        return res;
+    }
 
 };

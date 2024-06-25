@@ -18,6 +18,7 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     Pass::SetRootSignature(graphics::ROOT_SIG_BINDLESS);
     ID3D12Device* device = context.GetDevice().native();
     graphics::CommandList& commandList = context.GetList();
+    graphics::Camera& camera = context.GetCamera();
     float aspectRatio = context.GetAspectRatio();
     
     Vertex triangleVertices[] =
@@ -31,6 +32,7 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_vertexBuffer.Init(context, triangleVertices, 3);
     m_indexBuffer.Init(context, indexData, 3);
     m_data.perspective = math::PerspectiveProjection(90, aspectRatio, 1.f, 5.f);
+    m_data.view = camera.GetViewMatrix();
     m_constantBuffer.Init(context, &m_data, 1);
 
     m_texture.Init(graphics::ImageData(g_homeDir / "textures" / "wall.jpg"), device, commandList.GetList());
@@ -39,6 +41,12 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_rootIndexData.constantBufferIndex = m_constantBuffer.GetDescriptorHeapIndex();
     m_rootIndexData.textureIndex = m_texture.GetDescriptorHeapIndex();
     m_rootStructure.Init(context, &m_rootIndexData, 1);
+
+    context.GetCamera().AddChangeCallback([this, &camera]()
+        {
+            this->m_data.view = camera.GetViewMatrix();
+            m_constantBuffer.Update(&this->m_data);
+        });
 }
 
 void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)

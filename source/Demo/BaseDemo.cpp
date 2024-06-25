@@ -26,7 +26,37 @@ bool BaseDemo::Initialize()
 	m_renderContext.Initialize(GetCurrentWindowSettings());
 	InitializePasses();
 	m_renderContext.FlushCommandQueue();
+	SetupCallbacks();
 	return true;
+}
+
+void BaseDemo::SetupCallbacks()
+{
+	float velocity = 1.f;
+	graphics::Camera& camera = m_renderContext.GetCamera();
+	system::CallbackInfo info;
+	info.oneTimeTouch = false;
+
+	info.ptr = [&camera, velocity]() {
+		camera.Translate(math::Vector3({ velocity, 0.f, 0.f }));
+	};
+	m_inputManager->AddCallback(system::Key::W, info);
+
+	info.ptr = [&camera, velocity]() {
+		camera.Translate(math::Vector3({ 0.f, 0.f, velocity }));
+	};
+	m_inputManager->AddCallback(system::Key::A, info);
+
+	info.ptr = [&camera, velocity]() {
+		camera.Translate(math::Vector3({ -velocity, 0.f, 0.f }));
+	};
+	m_inputManager->AddCallback(system::Key::S, info);
+
+	info.ptr = [&camera, velocity]() {
+		camera.Translate(math::Vector3({ 0.f, 0.f, -velocity }));
+	};
+	m_inputManager->AddCallback(system::Key::D, info);
+
 }
 
 void BaseDemo::InitializePasses()

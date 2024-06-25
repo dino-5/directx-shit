@@ -16,6 +16,7 @@ struct Vertex
 
 struct ConstandBufferData
 {
+	math::Matrix4 view;
 	math::Matrix4 perspective;
 };
 
@@ -43,7 +44,7 @@ private:
 	graphics::TextureHandle m_textureNew;
 	graphics::Buffer m_vertexBuffer;
 	graphics::Buffer m_indexBuffer;
-	graphics::Buffer m_constantBuffer;
+	graphics::ConstantBuffer m_constantBuffer;
 	graphics::ConstantBuffer m_rootStructure;
 	graphics::Model m_model;
 	u32 test = 0;

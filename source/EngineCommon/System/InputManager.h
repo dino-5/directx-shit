@@ -22,6 +22,10 @@ namespace engine::system
         N2 = 50,
         N3 = 51,
         N4 = 52,
+        LEFT = 37,
+        UP = 38,
+        RIGHT = 39,
+        DOWN = 40,
         SWITCH_CAMERA = 192,
     };
     constexpr auto KeyCount = magic_enum::enum_count<Key>();

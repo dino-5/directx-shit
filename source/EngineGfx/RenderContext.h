@@ -7,6 +7,7 @@
 #include "EngineGfx/dx12/CommandList.h"
 #include "EngineGfx/dx12/Resource.h"
 #include "EngineGfx/dx12/DescriptorHeap.h"
+#include "EngineGfx/util/Camera.h"
 #include "EngineCommon/include/defines.h"
 #include "EngineCommon/include/types.h"
 #include "EngineGfx/dx12/d3dx12.h"
@@ -46,6 +47,7 @@ namespace engine::graphics
 		Device& GetDevice() { return m_device; }
 		CommandQueue& GetQueue() { return m_graphicsQueue; }
 		u64 GetFenceValue() { return m_fence->GetCompletedValue(); }
+		Camera& GetCamera() { return m_camera; }
 
 	private:
 		D3D12_VIEWPORT m_viewport;
@@ -55,6 +57,8 @@ namespace engine::graphics
 		CommandList m_graphicsCommandList;
 		SwapChain m_swapChain;
 		Resource m_dsvBuffer;
+
+		Camera m_camera;
 
 		HANDLE m_fenceEvent;
 

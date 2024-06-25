@@ -2,7 +2,9 @@
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/include/types.h"
 #include "EngineCommon/include/common.h"
+
 #include <initializer_list>
+#include <type_traits>
 #include <math.h>
 
 using std::initializer_list;
@@ -49,11 +51,23 @@ public:
 	}
 
 	template<int M>
-	Vector(const Vector<M>& vector)
+	Vector(const Vector<M>& vector, std::initializer_list<float> list = {})
 	{
 		for (int i = 0; i < N && i < M; i++)
 		{
 			m_data[i] = vector[i];
+		}
+		if constexpr (M < N)
+		{
+			if (list.size()!=0)
+			{
+                static_assert(list.size()==N-M,"trying to extent vector with wrong number of parameters");
+				for (int i = M; i < N; i++)
+					m_data[i] = list[i - M];
+			}
+			else
+				for (int i = M; i < N; i++)
+					m_data[i] = 0;
 		}
 	}
 
@@ -86,7 +100,7 @@ public:
 	template<int M>
 	friend float DotProduct(const Vector<M>& v1, const Vector<M>& v2);
 
-	float Length()
+	float Length() const
 	{
 		float result = 0;
 		for (int i = 0; i < N; i++)
@@ -96,7 +110,7 @@ public:
 		return sqrt(result);
 	}
 
-	const Vector Normalize()
+	Vector Normalize() const
 	{
 		Vector result;
 		float len = Length();
@@ -130,6 +144,20 @@ public:
 	
 private:
 	float m_data[N];
+};
+using Vector2 = Vector<2>;
+using Vector3 = Vector<3>;
+using Vector4 = Vector<4>;
+
+
+class Quartenion 
+{
+public:
+	Quartenion(Vector3 direction, float angle /*in degrees*/);
+	float& operator[](i32 index) { return m_quarternion[index]; }
+	float operator[](i32 index) const { return m_quarternion[index]; }
+private:
+	Vector4 m_quarternion;
 };
 
 template<int N>
@@ -225,9 +253,5 @@ float DotProduct(const Vector<N>& v1, const Vector<N>& v2)
 	}
 	return res;
 }
-
-using Vector2 = Vector<2>;
-using Vector3 = Vector<3>;
-using Vector4 = Vector<4>;
 
 };
