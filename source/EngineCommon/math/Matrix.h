@@ -4,6 +4,8 @@
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/math/Functions.h"	
 
+#include <iostream>
+
 namespace engine::math
 {
 template<int N>
@@ -74,6 +76,18 @@ public:
 		return result;
 	}
 
+	void Print()
+	{
+		for (int i = 0; i < N; i++)
+		{
+			for (int j = 0; j < N; j++)
+			{
+				std::cout << m_data[i][j] << " ";
+			}
+			std::cout << "\n";
+		}
+	}
+
 	Matrix(const Quartenion& quart)
 	{
         static_assert(N==4, "dimension!=4 to create matrix from quartenion");
@@ -142,8 +156,7 @@ Matrix4 RotateY(float degrees);
 Matrix4 RotateZ(float degrees);
 Matrix4 Translate(Vector3 vec);
 
-Matrix4 CreateViewMatrix(const Vector3& position, const Vector3& viewDirection,
-	Vector3 upDirection, Vector3 rightDirection);
+Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection, Vector3 upDirection, Vector3 rightDirection);
 
 // projection matrices
 Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ);

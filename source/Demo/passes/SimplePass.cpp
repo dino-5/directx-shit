@@ -15,7 +15,7 @@ SimplePass::SimplePass(graphics::RenderContext& context)
 void SimplePass::Initialize(graphics::RenderContext& context)
 {
     Pass::SetPSO(L"default");
-    Pass::SetRootSignature(graphics::ROOT_SIG_BINDLESS);
+    Pass::SetRootSignature(graphics::ROOT_SIG_VERTEX);
     ID3D12Device* device = context.GetDevice().native();
     graphics::CommandList& commandList = context.GetList();
     graphics::Camera& camera = context.GetCamera();
@@ -23,21 +23,58 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     
     Vertex triangleVertices[] =
     {
-         math::Vector3({-0.3f, -0.2f , 1.5f}),
-         math::Vector3({0.2f, 0.8f ,  4.5f }),
-         math::Vector3({0.75f, -0.20f , 1.5f }),
-    };
-    u16 indexData[] = { 0, 1, 2  };
+         math::Vector3({-0.5f,  -0.5f,  1.5f}),
+         math::Vector3({-0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,  -0.5f,  1.5f }),
 
-    m_vertexBuffer.Init(context, triangleVertices, 3);
-    m_indexBuffer.Init(context, indexData, 3);
-    m_data.perspective = math::PerspectiveProjection(90, aspectRatio, 1.f, 5.f);
+         math::Vector3({ 0.5f,  -0.5f,  1.5f}),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  2.5f }),
+         math::Vector3({ 0.5f,  -0.5f,  2.5f }),
+
+         math::Vector3({-0.5f,  -0.5f,  2.5f}),
+         math::Vector3({-0.5f,   0.5f,  2.5f }),
+         math::Vector3({-0.5f,   0.5f,  1.5f }),
+         math::Vector3({-0.5f,  -0.5f,  1.5f }),
+
+         math::Vector3({-0.5f,  -0.5f,  1.5f}),
+         math::Vector3({-0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+
+         math::Vector3({-0.5f,  -0.5f,  1.5f}),
+         math::Vector3({-0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+
+         math::Vector3({-0.5f,  -0.5f,  1.5f}),
+         math::Vector3({-0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+         math::Vector3({ 0.5f,   0.5f,  1.5f }),
+
+    };
+    u32 indexData[36]; 
+    for (uint i = 0; i < 6; i++)
+    {
+        indexData[i*6 + 0] = i * 4 + 0;
+        indexData[i*6 + 1] = i * 4 + 1;
+        indexData[i*6 + 2] = i * 4 + 2;
+        indexData[i*6 + 3] = i * 4 + 2;
+        indexData[i*6 + 4] = i * 4 + 3;
+        indexData[i*6 + 5] = i * 4 + 0;
+    }
+                        
+
+    m_vertexBuffer.InitAsVertexBuffer(context, triangleVertices, sizeof(triangleVertices) / sizeof(Vertex));
+    m_indexBuffer.InitAsIndexBuffer(context, indexData, sizeof(indexData) / sizeof(u32));
+    numberOfIndices = sizeof(indexData) / sizeof(u32);
+    m_data.perspective = math::PerspectiveProjection(90, aspectRatio, 1.f, 100.f);
     m_data.view = camera.GetViewMatrix();
     m_constantBuffer.Init(context, &m_data, 1);
 
     m_texture.Init(graphics::ImageData(g_homeDir / "textures" / "wall.jpg"), device, commandList.GetList());
 
-    m_rootIndexData.vertexBufferIndex = m_vertexBuffer.GetDescriptorHeapIndex();
     m_rootIndexData.constantBufferIndex = m_constantBuffer.GetDescriptorHeapIndex();
     m_rootIndexData.textureIndex = m_texture.GetDescriptorHeapIndex();
     m_rootStructure.Init(context, &m_rootIndexData, 1);
@@ -55,9 +92,14 @@ void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 	commandList->SetGraphicsRootSignature( *m_rootSignature );
 	commandList->SetPipelineState( *m_pso );
 
+    auto vertexView = GetVertexBufferView(m_vertexBuffer);
+    auto indexBuffer = GetIndexBufferView(m_indexBuffer);
+
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->IASetVertexBuffers(0, 1, &vertexView);
     commandList->SetGraphicsRootConstantBufferView(0, m_rootStructure.getAddress());
-    commandList->DrawInstanced(3, 1, 0, 0);
+    commandList->IASetIndexBuffer(&indexBuffer);
+    commandList->DrawIndexedInstanced(numberOfIndices, 1, 0, 0, 0);
 }
 
 

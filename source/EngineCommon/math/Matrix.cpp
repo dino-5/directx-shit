@@ -13,18 +13,19 @@ namespace engine::math
     Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ)
     {
         //positive z direction is assumed
-        float tanf = tan(ToRadians(fov / 2));
+        float tanf = tan(ToRadians(fov / 2.f)/2.f);
         float d = 1 / tanf;
-        float RangeZ = farZ - nearZ;
-        float a = farZ / RangeZ;
-        float b = (-1.f) * nearZ * farZ / RangeZ;
+        float RangeZ = nearZ - farZ;
+        float a =-farZ / RangeZ;
+        float b =-nearZ * a;
+        float c = 1;
 
 
         Matrix4 matrix{ d / aspectRatio, 0,  0, 0,
                         0, d,  0, 0,
-                        0, 0,  a, b,
-                        0, 0, 1, 0 };
-        matrix.TransposeSelf();
+                        0, 0,  a, c,
+                        0, 0,  b, 0 };
+        //matrix.TransposeSelf();
         return matrix;
     }
 
@@ -46,9 +47,9 @@ namespace engine::math
     Matrix4 Translate(Vector3 vec)
     {
         Matrix4 res;
-        res[0][3] = -vec[0];
-        res[1][3] = -vec[1];
-        res[2][3] = -vec[2];
+        res[3][0] = -vec[0];
+        res[3][1] = -vec[1];
+        res[3][2] = -vec[2];
         res[3][3] = 1;
         return res;
     }
@@ -95,18 +96,15 @@ namespace engine::math
          return result;
      }
 
-    Matrix4 CreateViewMatrix(const Vector3& position, const Vector3& viewDirection,
-	    Vector3 upDirection, Vector3 rightDirection)
+    Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection, Vector3 upDirection, Vector3 rightDirection)
     {
         Matrix4 res;
         res[0] = rightDirection;
         res[1] = upDirection;
         res[2] = viewDirection;
-        res[0][3] = position[0];
-        res[1][3] = position[1];
-        res[2][3] = position[2];
         res[3][3] = 1;
-        return res;
+        return res.Transpose();
     }
+
 
 };

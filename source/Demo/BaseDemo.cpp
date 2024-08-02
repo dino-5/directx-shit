@@ -40,22 +40,22 @@ void BaseDemo::SetupCallbacks()
 	info.ptr = [&camera, velocity]() {
 		camera.Translate(math::Vector3({ velocity, 0.f, 0.f }));
 	};
-	m_inputManager->AddCallback(system::Key::W, info);
+	m_inputManager->AddCallback(system::Key::D, info);
 
 	info.ptr = [&camera, velocity]() {
 		camera.Translate(math::Vector3({ 0.f, 0.f, velocity }));
 	};
-	m_inputManager->AddCallback(system::Key::A, info);
+	m_inputManager->AddCallback(system::Key::W, info);
 
 	info.ptr = [&camera, velocity]() {
 		camera.Translate(math::Vector3({ -velocity, 0.f, 0.f }));
 	};
-	m_inputManager->AddCallback(system::Key::S, info);
+	m_inputManager->AddCallback(system::Key::A, info);
 
 	info.ptr = [&camera, velocity]() {
 		camera.Translate(math::Vector3({ 0.f, 0.f, -velocity }));
 	};
-	m_inputManager->AddCallback(system::Key::D, info);
+	m_inputManager->AddCallback(system::Key::S, info);
 
 }
 

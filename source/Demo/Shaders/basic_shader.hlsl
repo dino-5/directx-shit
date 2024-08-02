@@ -12,12 +12,11 @@ struct General
 
 struct Vertex
 {
-    float3 pos;
+    float3 pos : POSITION;
 };
 
 struct PassInfo
 {
-    uint vertexBufferIndex;
     uint constantBufferIndex;
     uint textureBufferIndex;
 };
@@ -32,15 +31,14 @@ SamplerState MeshTextureSampler
 };
 
 
-PS_Input VS_Basic(uint index : SV_VertexID)
+PS_Input VS_Basic(Vertex vertex)
 {
     PS_Input ret;
-    StructuredBuffer<Vertex> vertexBuffer = ResourceDescriptorHeap[cbIndex.vertexBufferIndex];
     ConstantBuffer<General> buffer = ResourceDescriptorHeap[cbIndex.constantBufferIndex];
 
-    Vertex vertex = vertexBuffer.Load(index);
-    float4 pos = mul(buffer.perspective,
-    mul(buffer.viewMatrix, float4(vertex.pos, 1.0f)));
+    float4 pos = float4(vertex.pos, 1.0f);;
+    pos = mul(buffer.viewMatrix, pos);
+    pos = mul(buffer.perspective, pos);
     ret.pos = pos;
 
     return ret;
@@ -48,7 +46,7 @@ PS_Input VS_Basic(uint index : SV_VertexID)
 
 float4 PS_Basic(PS_Input input): SV_Target
 {
-    return float4(1.f, 0.0f, 0.f, 1.0f);
+    return float4(input.pos);
     Texture2D tex = ResourceDescriptorHeap[cbIndex.textureBufferIndex];
     return float4(1.0f, 0.0f, 0.f, 1.f);
 

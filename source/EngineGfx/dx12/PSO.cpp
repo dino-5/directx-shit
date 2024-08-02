@@ -29,7 +29,8 @@ namespace engine::graphics
 
     PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
     {
-        m_psoDesc.InputLayout = D3D12_INPUT_LAYOUT_DESC{nullptr, 0};
+        auto desc = *util::FindElement(ShaderManager::allDescriptions, shader.vertexShader);
+        m_psoDesc.InputLayout = D3D12_INPUT_LAYOUT_DESC{desc.data(), static_cast<u32>(desc.size())};
         m_psoDesc.pRootSignature = *shader.rootSignature;
         m_psoDesc.VS = GetShader(shader.vertexShader);
         m_psoDesc.PS = GetShader(shader.pixelShader);
@@ -97,6 +98,7 @@ namespace engine::graphics
     {
 
 		std::vector< TableEntry< DxBlob*>> allShaders;
+		std::vector< TableEntry<std::vector<D3D12_INPUT_ELEMENT_DESC> >> allDescriptions;
 		DxCompiler* s_compiler = nullptr;
 		DxUtils* s_utils = nullptr;
 		DxIncludeHandler* s_includer = nullptr;
@@ -106,6 +108,7 @@ namespace engine::graphics
             ThrowIfFailed(::DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&s_utils)));
             s_utils->CreateDefaultIncludeHandler(&s_includer);
         }
+
 		void CreateShader(ShaderInfo info)
 		{
             UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -204,6 +207,11 @@ namespace engine::graphics
             info.shaderName = L"VS_Basic";
             info.type = ShaderType::VERTEX;
             ShaderManager::CreateShader(info);
+
+            std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
+                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+            };
+            ShaderManager::allDescriptions.push_back({ info.shaderName, desc });
         }
 
         {
@@ -222,7 +230,7 @@ namespace engine::graphics
         LogScope("PSO");
         PSO::allPSO.reserve(0);
         ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic",
-            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_BINDLESS) };
+            RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_VERTEX) };
         RenderState state;
         DepthState depthState;
         depthState.depthFunc = ComparisonFunc::LE; 

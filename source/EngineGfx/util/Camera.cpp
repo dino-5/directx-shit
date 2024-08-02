@@ -14,7 +14,8 @@ void Camera::Initialize(math::Vector3 pos, math::Vector3 viewDirection)
 {
     m_viewDir = viewDirection;
     m_position = pos;
-    m_viewMatrix = math::CreateViewMatrix(pos, m_viewDir, m_upDir, m_rightDir);
+    m_rotationMatrix = math::CreateViewRotationMatrix(m_viewDir, m_upDir, m_rightDir);
+    m_viewMatrix = math::Translate(pos) * m_rotationMatrix;
 }
 
 void Camera::Update()
@@ -26,6 +27,15 @@ void Camera::Update()
 void Camera::Translate(const math::Vector3& offset)
 {
     m_position = m_position + offset;
-    m_viewMatrix = m_viewMatrix * math::Translate(m_position);
+    m_viewMatrix =  math::Translate(m_position) * m_rotationMatrix;
     Update();
+}
+
+/*
+    vertical represent camera movement up and down, where up direction >0
+    horizontal represent right and left, where right >0
+*/
+void Camera::Rotate(float vertical, float horizontal)
+{
+        
 }

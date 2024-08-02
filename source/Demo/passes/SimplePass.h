@@ -22,7 +22,6 @@ struct ConstandBufferData
 
 struct BindlessSP
 {
-	u32 vertexBufferIndex;
 	u32 constantBufferIndex;
 	u32 textureIndex;
 };
@@ -39,6 +38,7 @@ public:
 private:
 	BindlessSP m_rootIndexData;
 	ConstandBufferData m_data;
+	uint numberOfIndices;
 	//graphics::Mesh* mesh;
 	graphics::Texture m_texture;
 	graphics::TextureHandle m_textureNew;
@@ -47,6 +47,7 @@ private:
 	graphics::ConstantBuffer m_constantBuffer;
 	graphics::ConstantBuffer m_rootStructure;
 	graphics::Model m_model;
+	ID3D12Resource* vertexBuffer;
 	u32 test = 0;
 };
 

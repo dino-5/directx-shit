@@ -36,12 +36,14 @@ namespace engine::graphics
 		std::wstring shaderName;
 		std::wstring path;
 		std::wstring entryPoint;
+		D3D12_INPUT_LAYOUT_DESC desc;
 		ShaderType  type;
 	};
 
 	namespace ShaderManager
 	{
 		extern std::vector< TableEntry< DxBlob*>> allShaders;
+		extern std::vector< TableEntry<std::vector<D3D12_INPUT_ELEMENT_DESC> >> allDescriptions;
 		extern DxCompiler* s_compiler;
 		extern DxUtils* s_utils;
 		extern DxIncludeHandler* s_includer;
