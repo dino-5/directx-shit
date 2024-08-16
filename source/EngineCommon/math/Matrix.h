@@ -120,6 +120,7 @@ public:
 		m_data[3][1] = 0;
 		m_data[3][2] = 0;
 		m_data[3][3] = 1;
+		TransposeSelf();
 
 	}
 
@@ -146,7 +147,20 @@ public:
 	}
 public:
 	Vector<N> m_data[N];
+
+	template<int M>
+	friend auto operator*(Matrix<M> m, Vector<M> v);
 };
+
+template<int N>
+auto operator*(Matrix<N> m, Vector<N> v)
+{
+	Vector<N> result;
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			result[i] += m[i][j] * v[j];
+	return result;
+}
 
 using Matrix4 = Matrix<4>;
 

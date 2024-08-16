@@ -52,6 +52,35 @@ namespace engine::system
         void operator()(){ ptr();}
     };
 
+    class KeyState
+    {
+    public:
+        enum State
+        {
+            JustPressed,
+            AlreadyPressed,
+            Released,
+            Off
+        };
+        bool IsPressed() const { return m_state == JustPressed || m_state == AlreadyPressed; }
+        bool IsUp() const { return m_state == Released || m_state == Off;}
+        State GetState() const { return m_state; }
+        void SetPressed()
+        {
+            if (m_state == JustPressed)
+                m_state = AlreadyPressed;
+            else
+                m_state = JustPressed;
+        }
+        void Release()
+        {
+            m_state = Released;
+        }
+
+    private:
+        State m_state=Off;
+    };
+
     class InputManager
     {
     public:
@@ -61,6 +90,8 @@ namespace engine::system
         {
             m_callbacks[KeyToIndex(key)].push_back(func);
         }
+
+        auto GetKeyState(Key key) const { return m_pressed[KeyToIndex(key)]; }
     private:
         InputManager()=default;
 
@@ -70,7 +101,7 @@ namespace engine::system
         virtual void OnKeyDown(Key key);
         virtual void OnKeyUp(Key key);
         std::array<std::vector<CallbackInfo>, KeyCount> m_callbacks;
-        std::array<bool, KeyCount> m_pressed{false};
+        std::array<KeyState, KeyCount> m_pressed;
     };
 
 };

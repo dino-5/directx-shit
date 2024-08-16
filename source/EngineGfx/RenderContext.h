@@ -34,6 +34,11 @@ namespace engine::graphics
 		void FlushCommandQueue();
 		void NextFrame();
 
+		void Update()
+		{
+			m_camera.Update();
+		}
+
 		void Reset() {
 			m_swapChain.Reset();
 			m_dsvBuffer.Reset();

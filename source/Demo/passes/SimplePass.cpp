@@ -69,7 +69,7 @@ void SimplePass::Initialize(graphics::RenderContext& context)
     m_vertexBuffer.InitAsVertexBuffer(context, triangleVertices, sizeof(triangleVertices) / sizeof(Vertex));
     m_indexBuffer.InitAsIndexBuffer(context, indexData, sizeof(indexData) / sizeof(u32));
     numberOfIndices = sizeof(indexData) / sizeof(u32);
-    m_data.perspective = math::PerspectiveProjection(90, aspectRatio, 1.f, 100.f);
+    m_data.perspective = math::PerspectiveProjection(90, aspectRatio, .1f, 1000.f);
     m_data.view = camera.GetViewMatrix();
     m_constantBuffer.Init(context, &m_data, 1);
 

@@ -32,30 +32,57 @@ bool BaseDemo::Initialize()
 
 void BaseDemo::SetupCallbacks()
 {
-	float velocity = .5f;
+	/*float velocity = .5f;
+	float rotationVelocity = 5.f;
 	graphics::Camera& camera = m_renderContext.GetCamera();
 	system::CallbackInfo info;
 	info.oneTimeTouch = false;
 
 	info.ptr = [&camera, velocity]() {
-		camera.Translate(math::Vector3({ velocity, 0.f, 0.f }));
+		camera.Translate(graphics::MovementDirection::SideDirection, velocity);
 	};
 	m_inputManager->AddCallback(system::Key::D, info);
 
 	info.ptr = [&camera, velocity]() {
-		camera.Translate(math::Vector3({ 0.f, 0.f, velocity }));
+		camera.Translate(graphics::MovementDirection::ViewDirection, velocity);
 	};
 	m_inputManager->AddCallback(system::Key::W, info);
 
 	info.ptr = [&camera, velocity]() {
-		camera.Translate(math::Vector3({ -velocity, 0.f, 0.f }));
+		camera.Translate(graphics::MovementDirection::SideDirection, -velocity);
 	};
 	m_inputManager->AddCallback(system::Key::A, info);
 
 	info.ptr = [&camera, velocity]() {
-		camera.Translate(math::Vector3({ 0.f, 0.f, -velocity }));
+		camera.Translate(graphics::MovementDirection::ViewDirection, -velocity);
 	};
 	m_inputManager->AddCallback(system::Key::S, info);
+	
+
+	info.ptr = [&camera, rotationVelocity]() {
+		camera.Rotate(-rotationVelocity, 0);
+	};
+	m_inputManager->AddCallback(system::Key::UP, info);
+
+	info.ptr = [&camera, rotationVelocity]() {
+		camera.Rotate( rotationVelocity, 0);
+	};
+	m_inputManager->AddCallback(system::Key::DOWN, info);
+
+	info.ptr = [&camera, rotationVelocity]() {
+		camera.Rotate(0, rotationVelocity);
+	};
+	m_inputManager->AddCallback(system::Key::RIGHT, info);
+
+	info.ptr = [&camera, rotationVelocity]() {
+		camera.Rotate(0, -rotationVelocity);
+	};
+	m_inputManager->AddCallback(system::Key::LEFT, info);
+
+	info.ptr = [&camera]() {
+		camera.Reset();
+	};
+	m_inputManager->AddCallback(system::Key::R, info);*/
 
 }
 
@@ -86,6 +113,7 @@ void BaseDemo::Draw()
 void BaseDemo::Update()
 {
 	m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
+	m_renderContext.Update();
 }
 void BaseDemo::Destroy()
 {

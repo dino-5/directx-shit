@@ -13,19 +13,19 @@ namespace engine::math
     Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ)
     {
         //positive z direction is assumed
-        float tanf = tan(ToRadians(fov / 2.f)/2.f);
+        float f = ToRadians(fov / 2.f);
+        float tanf = tan(f); // 
         float d = 1 / tanf;
         float RangeZ = nearZ - farZ;
         float a =-farZ / RangeZ;
         float b =-nearZ * a;
-        float c = 1;
+        float x = d / aspectRatio;
 
 
-        Matrix4 matrix{ d / aspectRatio, 0,  0, 0,
+        Matrix4 matrix{ x, 0,  0, 0,
                         0, d,  0, 0,
-                        0, 0,  a, c,
+                        0, 0,  a, 1,
                         0, 0,  b, 0 };
-        //matrix.TransposeSelf();
         return matrix;
     }
 

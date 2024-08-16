@@ -35,21 +35,13 @@ namespace engine::system
     void InputManager::OnKeyDown(Key key)
     {
         u32 index = KeyToIndex(key);
-        bool isPressed = m_pressed[index];
-        for (auto& func : m_callbacks[index])
-        {
-            if (!isPressed)
-                func();
-            else if (isPressed && !func.oneTimeTouch)
-                func();
-        }
-        m_pressed[index] = true;
+        m_pressed[index].SetPressed();
     }
 
     void InputManager::OnKeyUp(Key key)
     {
         u32 index = KeyToIndex(key);
-        m_pressed[index] = false;
+        m_pressed[index].Release();
     }
 
     LRESULT InputManager::ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)

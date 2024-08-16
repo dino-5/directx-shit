@@ -16,3 +16,10 @@ Quartenion::Quartenion(Vector3 direction, float angle)
     m_quarternion[3] = cosValue;
 }
 
+
+Quartenion Quartenion::operator*(const Quartenion& q1)
+{
+    Vector3 v1(m_quarternion), v2(q1.m_quarternion);
+    Vector3 res = CrossProduct(v1, v2) + v1 * q1.Real() + v2 * Real();
+    return Vector4(res, {-DotProduct(v1, v2)+q1.Real()*Real()});
+}
