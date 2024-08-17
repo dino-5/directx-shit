@@ -36,7 +36,6 @@ protected:
 
 private:
 	graphics::SwapChainSettings GetCurrentWindowSettings();
-	void SetupCallbacks();
 
 private:
 	CommandLine* cmdLine;

@@ -36,10 +36,7 @@ public:
 	{
 		auto itr = list.begin();
 		for (int i = 0; i < list.size() && i < N; i++)
-		{
-			m_data[i] = *itr;
-			itr++;
-		}
+			m_data[i] = *(itr++);
 	}
 
 	Vector(const Vector& vector)
@@ -76,6 +73,18 @@ public:
 		}
 	}
 
+	template<int M, typename... Args>
+	Vector(const Vector<M>& vector, Args... args)
+	{
+		static_assert(M + sizeof...(Args) == N);
+		int i = 0;
+		for (auto& el : vector)
+			m_data[i++] = el;
+
+		for (auto el : std::initializer_list<float>{ args... })
+			m_data[i++] = el;
+	}
+
 	Vector& operator=(const Vector& v1)
 	{
 		for (int i = 0; i < N; i++)
@@ -84,12 +93,12 @@ public:
 		}
 		return *this;
 	}
-	
-	template<int M>
-	friend Vector<M> operator+(const Vector<M>& v1, const Vector<M>& v2);
-	template<int M>
-	friend const Vector<M> operator-(const Vector<M>& v1, const Vector<M>& v2);
 
+	auto begin() { return m_data.begin(); }
+	auto begin() const{ return m_data.begin(); }
+	auto end() { return m_data.end(); }
+	auto end() const { return m_data.end(); }
+	
 	template<int M>
 	friend const Vector<M> operator*(const Vector<M>& v1, const float v);
 	template<int M>
@@ -104,6 +113,9 @@ public:
 	friend const Vector<M> CrossProduct(const Vector<M>& v1, const Vector<M>& v2);
 	template<int M>
 	friend float DotProduct(const Vector<M>& v1, const Vector<M>& v2);
+
+	template<int M>
+	friend const Vector<M> PerElementOperation(const Vector<M>& v1, const Vector<M>& v2, float (*op)(float, float));
 
 	float Length() const
 	{
@@ -138,9 +150,9 @@ public:
 	bool OnImGui(const char* name, float min=-10.f, float max=10.f)
 	{
 		if constexpr(N != 2)
-			return util::ImGuiSettings::SliderFloat3(name, m_data, min, max);
+			return util::ImGuiSettings::SliderFloat3(name, m_data.data(), min, max);
 		else
-			return util::ImGuiSettings::SliderFloat2(name, m_data, min, max);
+			return util::ImGuiSettings::SliderFloat2(name, m_data.data(), min, max);
 	}
 	float& operator[](int i) { return m_data[i]; }
 	float operator[](int i) const { return m_data[i]; }
@@ -148,7 +160,7 @@ public:
 	uint size() { return N * sizeof(float); }
 	
 private:
-	float m_data[N];
+	std::array<float, N> m_data;
 };
 using Vector2 = Vector<2>;
 using Vector3 = Vector<3>;
@@ -171,24 +183,46 @@ private:
 };
 
 
-template<int N>
-Vector<N> operator+(const Vector<N>& v1, const Vector<N>& v2)
+template<int M>
+const Vector<M> PerElementOperation(const Vector<M>& v1, const Vector<M>& v2, float (*op)(float, float))
 {
-	Vector<N> result;
-	for (int i = 0; i < N; i++)
-	{
-		result[i] = v1[i] + v2[i];
-	}
+	Vector<M> result;
+	for (int i = 0; i < M; i++)
+		result[i] = op(v1[i], v2[i]);
 	return result;
+}
+
+template<int M>
+const Vector<M> operator+(const Vector<M>& v1, const Vector<M>& v2)
+{
+	return PerElementOperation(v1, v2, [](float a, float b) {return a + b; });
 }
 
 template<int N>
 const Vector<N> operator-(const Vector<N>& v1, const Vector<N>& v2)
 {
+	return PerElementOperation(v1, v2, [](float a, float b) {return a - b; });
+}
+
+template<int M>
+const Vector<M> operator*(const Vector<M>& v1, const Vector<M>& v2)
+{
+	return PerElementOperation(v1, v2, [](float a, float b) {return a * b; });
+}
+
+template<int N>
+const Vector<N> operator/(const Vector<N>& v1, const Vector<N>& v2)
+{
+	return PerElementOperation(v1, v2, [](float a, float b) {return a / b; });
+}
+
+template<int N>
+const Vector<N> VectorOpFloat(const Vector<N>& v1, const float v, float (*op)(float, float))
+{
 	Vector<N> result;
 	for (int i = 0; i < N; i++)
 	{
-		result[i] = v1[i] - v2[i];
+		result[i] = op(v1[i], v);
 	}
 	return result;
 }
@@ -196,46 +230,21 @@ const Vector<N> operator-(const Vector<N>& v1, const Vector<N>& v2)
 template<int N>
 const Vector<N> operator*(const Vector<N>& v1, const float v)
 {
-	Vector<N> result;
-	for (int i = 0; i < N; i++)
-	{
-		result[i] = v1[i] * v;
-	}
-	return result;
+	return VectorOpFloat(v1, v, [](float a, float b) { return a * b; });
 }
 
 template<int N>
 const Vector<N> operator*(const float v, const Vector<N>& v1)
 {
-	Vector<N> result;
-	for (int i = 0; i < N; i++)
-	{
-		result[i] = v1[i] * v;
-	}
-	return result;
+	return v1*v;
 }
 
 template<int N>
 const Vector<N> operator/(const Vector<N>& v1, const float v)
 {
-	Vector<N> result;
-	for (int i = 0; i < N; i++)
-	{
-		result[i] = v1[i] / v;
-	}
-	return result;
+	return VectorOpFloat(v1, v, [](float a, float b) { return a / b; });
 }
 
-template<int N>
-const Vector<N> operator/(const float v, const Vector<N>& v1)
-{
-	Vector<N> result;
-	for (int i = 0; i < N; i++)
-	{
-		result[i] = v1[i] / v;
-	}
-	return result;
-}
 
 template<int N>
 const Vector<N> CrossProduct(const Vector<N>& v1, const Vector<N>& v2)

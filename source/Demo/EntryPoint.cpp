@@ -26,9 +26,6 @@ int main()
 
     try
     {
-        Vector4 a{ 1,2,3,4 };
-        Vector4 b{ 2,3,4,5 };
-        Vector4 c = a + b;
         BaseDemo theApp(width, height, name);
         if(!theApp.Initialize())
             return 0;

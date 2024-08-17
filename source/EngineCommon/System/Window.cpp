@@ -1,10 +1,13 @@
 #include "Window.h"
 #include "EngineCommon/util/ImGuiSettings.h"
+#include "EngineCommon/util/Logger.h"
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 #include "EngineGfx/dx12/Device.h"
 #include <string>
 #include <windowsx.h>
+#include <chrono>
+#include <ctime>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -84,9 +87,11 @@ bool WindowApp::Initialize()
 
 void WindowApp::Run()
 {
+	// TODO : make timer 
 	MSG msg = { };
 	while (msg.message !=WM_QUIT)
 	{
+		auto start = std::chrono::system_clock::now();
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
@@ -97,6 +102,9 @@ void WindowApp::Run()
 			Update();
 			Draw();
 		}
+		auto end = std::chrono::system_clock::now();
+		std::chrono::duration<double> time_elapsed = end - start;
+		util::PrintInfo("frame rate is {}", 1.0 / time_elapsed.count());
 	}
 	Destroy();
 }

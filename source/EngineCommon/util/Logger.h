@@ -30,6 +30,7 @@ namespace engine::util
             std::cout << resetColor;
         }
     };
+#define SET_RED_COLOR() ColorSetter _(redColor)
 
 	extern std::vector<std::string> log_info;
 
@@ -45,7 +46,7 @@ namespace engine::util
     {
         if (g_loggerState.errorsEnabled)
         {
-            ColorSetter _(redColor);
+            SET_RED_COLOR();
             std::cout << std::string(log_info.size(), '\t') <<
                       std::format(fmt, std::forward<Args>(args)...) << '\n';
         }

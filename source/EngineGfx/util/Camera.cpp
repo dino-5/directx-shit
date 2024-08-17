@@ -31,7 +31,7 @@ void Camera::Update()
 
     // TODO: frame independent movement https://gamedev.stackexchange.com/questions/9515/frame-independent-movement
 	float velocity = .1f;
-	float rotationVelocity = .1f;
+	float rotationVelocity = 2.f;
 
     auto inputManager = system::InputManager::GetInputManager();
 
@@ -92,14 +92,16 @@ void Camera::Translate(MovementDirection direction, float velocity)
 */
 void Camera::Rotate(float vertical, float horizontal)
 {
-    static math::Vector3 Y{0.f, 1.f, 0.f};
-    static math::Vector3 X{1.f, 0.f, 0.f};
-    math::Quartenion rotationY(Y, horizontal);
-    math::Quartenion rotationX(X, vertical);
-    auto rotationMatrix = math::Matrix4(rotationX * rotationY);
+    math::Quartenion rotationY(m_upDir, horizontal);
+    math::Quartenion rotationX(m_rightDir, vertical);
+    auto rotationMatrixX = math::Matrix4(rotationX);
+    auto rotationMatrixY = math::Matrix4(rotationY);
+    auto rotationMatrixXY = rotationMatrixX * rotationMatrixY;
 
-    m_viewDir = (rotationMatrix * math::Vector4(m_viewDir, { 1.f }));
+    m_viewDir = (rotationMatrixXY * math::Vector4(m_viewDir, { 1.f }));
     m_viewDir.NormalizeSelf();
-    m_rightDir = CrossProduct(Y, m_viewDir).Normalize();
-    m_upDir = CrossProduct(m_viewDir, m_rightDir).Normalize();
+    m_rightDir = (rotationMatrixY * math::Vector4(m_rightDir, { 1.f }));
+    m_rightDir.NormalizeSelf();
+    m_upDir = (rotationMatrixX * math::Vector4(m_upDir, { 1.f }));
+    m_upDir.NormalizeSelf();
 }
