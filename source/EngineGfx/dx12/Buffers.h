@@ -108,7 +108,7 @@ namespace engine::graphics
     private:
         template<typename T>
         void Init(RenderContext& context, T* data, uint numberOfElements, std::string_view name);
-        void CopyData(void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state);
+        void CopyData(const void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state);
 
 	private:
         UploadBuffer m_uploadBuffer;
@@ -117,7 +117,7 @@ namespace engine::graphics
         BufferType m_type;
 	};
 
-    inline void Buffer::CopyData(void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state)
+    inline void Buffer::CopyData(const void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state)
     {
         m_uploadBuffer.Init(device, 1, m_bufferSize, false);
 

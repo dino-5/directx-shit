@@ -135,7 +135,7 @@ namespace engine::graphics
             HRESULT hr = s_compiler->Compile(
                 &sourceBuffer,
                 args.data(),
-                args.size(),
+                static_cast<UINT32>(args.size()),
                 s_includer,
                 IID_PPV_ARGS(&result)
             );
@@ -209,7 +209,9 @@ namespace engine::graphics
             ShaderManager::CreateShader(info);
 
             std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
-                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+                {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+                {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
             };
             ShaderManager::allDescriptions.push_back({ info.shaderName, desc });
         }
@@ -237,6 +239,7 @@ namespace engine::graphics
         DepthStencilState depthStencilState(depthState, StencilState());
         state.SetDepthStencilState(depthStencilState);
         state.SetShaderInputGroup(shaderIG);
+        state.SetRasterizerState(RasterizerState(CullMode::NONE, true));
         state.Compile(L"default");
         engine::util::PrintInfo("successfuly created pso");
     }

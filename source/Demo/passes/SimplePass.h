@@ -35,19 +35,15 @@ public:
 	SimplePass(graphics::RenderContext& context);
 	void Initialize(graphics::RenderContext& context);
 	void Draw(ID3D12GraphicsCommandList*, u32 nt)override;
+
 private:
 	BindlessSP m_rootIndexData;
 	ConstandBufferData m_data;
-	uint numberOfIndices;
-	//graphics::Mesh* mesh;
 	graphics::Texture m_texture;
 	graphics::TextureHandle m_textureNew;
-	graphics::Buffer m_vertexBuffer;
-	graphics::Buffer m_indexBuffer;
 	graphics::ConstantBuffer m_constantBuffer;
 	graphics::ConstantBuffer m_rootStructure;
 	graphics::Model m_model;
-	ID3D12Resource* vertexBuffer;
 	u32 test = 0;
 };
 

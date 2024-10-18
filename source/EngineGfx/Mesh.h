@@ -29,11 +29,45 @@ namespace engine::graphics
 		static std::vector<std::pair< Material, std::vector<Submesh> >> GetSubmeshes(std::vector<std::pair< Material, std::vector<util::Geometry::MeshData> >>& mesh);
 	};
 
+	struct Vertex
+	{
+		math::Vector3 position;
+		math::Vector3 normal;
+		math::Vector2 uv;
+	};
+
+	template<typename VertexT>
+    struct Geometry
+    {
+        std::vector<VertexT> vertices;
+        std::vector<u32> indices;
+        u32 lastIndexLocation=0;
+        u32 lastVertexOffset=0;
+        Submesh GetSubmesh(u32 index)
+        {
+            Submesh result;
+            result.IndexCount = indices.size() - lastIndexLocation;
+            result.StartIndexLocation = lastIndexLocation;
+            result.BaseVertexLocation = lastVertexOffset;
+            lastIndexLocation = indices.size();
+            lastVertexOffset = vertices.size();
+			result.materialIndex = index;
+            return result;
+        }
+    };
+
 	struct Mesh
 	{
 	public:
 		using MeshDataVector = std::vector < util::Geometry::MeshData>;
 		Mesh() = default;
+
+		template<typename VertexType>
+		Mesh(RenderContext& context, const Geometry<VertexType>& geometry)
+		{
+			Init(context, geometry.vertices.data(), geometry.vertices.size(),
+				geometry.indices.data(), geometry.indices.size());
+		}
 
         template<typename VertexType, typename IndexType>
 		Mesh(
@@ -44,16 +78,23 @@ namespace engine::graphics
 			Init(context, vertexData, vertexCount, indexData, indexCount);
 		}
 
+		template<typename VertexType>
+		void Init(RenderContext& context, const Geometry<VertexType>& geometry)
+		{
+			Init(context, geometry.vertices.data(), geometry.vertices.size(),
+				geometry.indices.data(), geometry.indices.size());
+		}
+
         template<typename VertexType, typename IndexType>
 		void Init(
 			RenderContext& context,
 			const VertexType* vertexData, UINT vertexCount,
 			const IndexType* indexData, UINT indexCount)
 		{
-            m_vertexBuffer.Init(context, vertexData, vertexCount);
+            m_vertexBuffer.InitAsVertexBuffer(context, vertexData, vertexCount);
             if (indexData != nullptr)
             {
-                m_indexBuffer.Init(context, indexData, indexCount);
+                m_indexBuffer.InitAsIndexBuffer(context, indexData, indexCount);
 				m_indexBuffer.Transition(context.GetList().GetList(), ResourceState::INDEX_BUFFER);
                 m_indexBufferByteSize = sizeof(IndexType);
 				m_indexCount = indexCount;

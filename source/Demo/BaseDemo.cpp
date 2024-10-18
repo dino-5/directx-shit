@@ -45,11 +45,8 @@ void BaseDemo::InitializePasses()
 
 void BaseDemo::Draw()
 {
-	u64 value = m_renderContext.GetFenceValue();
 	m_renderContext.StartFrame();
-	value = m_renderContext.GetFenceValue();
 	m_pass.Draw(m_renderContext.GetList().GetList(), m_currentFrameIndex);
-	value = m_renderContext.GetFenceValue();
 	m_renderContext.EndFrame();
 }
 

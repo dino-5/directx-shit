@@ -167,8 +167,10 @@ namespace engine::graphics
                 RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT));
 		}
         {
+			DescriptorRange range1(DescriptorRangeType::SRV, 1);
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 10, RootParameterType::CBV, ShaderVisibility::ALL));
+			parameters.push_back(RootParameter::CreateTable(1, range1));
 			RootSignature::AddEntry(ROOT_SIG_VERTEX, RootSignature(device, parameters,
 				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX |
                 RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT));

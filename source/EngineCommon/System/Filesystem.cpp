@@ -11,22 +11,23 @@ fs::path g_shaderDir;
 
 namespace engine::system
 {
-Filepath::Filepath(std::string name):m_path(name)
+Filepath::Filepath(std::string path)
 {
-	if (!fs::exists(m_path))
-	{
-		engine::util::PrintError("{} is not exist", name);
-		throw std::runtime_error(fmt::format("{} is not exist", name));
-	}
+	Init(path);
 }
 
-Filepath::Filepath(fs::path path):m_path(path)
+Filepath::Filepath(fs::path path)
 {
+	Init(path);
+}
+
+void Filepath::Init(fs::path path)
+{
+	m_path = path;
 	if (!fs::exists(m_path))
 	{
 		std::string error = engine::util::to_string(path.native());
 		engine::util::PrintError("{} is not exist", error);
-//		throw std::runtime_error(fmt::format("{} is not exist", error));
 	}
 }
 

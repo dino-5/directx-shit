@@ -58,7 +58,6 @@ public:
 		{
 			if (list.size()!=0)
 			{
-                assert(list.size()==N-M,"trying to extent vector with wrong number of parameters");
 				auto itr = list.begin();
 				for (int i = M; i < N; i++)
 				{
