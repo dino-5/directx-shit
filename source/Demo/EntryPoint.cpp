@@ -1,7 +1,7 @@
 #include "Demo/BaseDemo.h"
 #include "EngineCommon/math/Vector.h"
 
-using namespace engine::math;
+using namespace engine::config;
 
 int main()
 {
@@ -12,9 +12,9 @@ int main()
 
     // global variable initialization
     {
-        g_demoDir = fs::current_path();
-        g_homeDir = g_demoDir.parent_path().parent_path();
-        g_shaderDir = g_demoDir / "Shaders";
+        g_state.demoDir   = fs::current_path();
+        g_state.homeDir   = g_state.demoDir.parent().parent();
+        g_state.shaderDir = g_state.demoDir / "Shaders";
     }
 
     //{
@@ -24,17 +24,17 @@ int main()
     //}
 
 
-    try
-    {
+    //try
+    //{
         BaseDemo theApp(width, height, name);
-        if(!theApp.Initialize())
+        if(!theApp.initialize())
             return 0;
 
-        theApp.Run();
-    }
-    catch(engine::util::DxException& e)
-    {
-        MessageBox(nullptr, e.ToString().c_str(), "HR Failed", MB_OK);
-        return 0;
-    }
+        theApp.run();
+    //}
+    //catch(engine::util::DxException& e)
+    //{
+    //    MessageBox(nullptr, e.ToString().c_str(), "HR Failed", MB_OK);
+    //    return 0;
+    //}
 }

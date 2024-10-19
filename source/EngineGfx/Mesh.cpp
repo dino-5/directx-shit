@@ -5,7 +5,7 @@
 
 namespace engine::graphics
 {
-	void Submesh::Draw(ID3D12GraphicsCommandList* cmList)
+	void Submesh::draw(ID3D12GraphicsCommandList* cmList)
 	{
 		if (IndexCount)
 		{

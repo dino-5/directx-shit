@@ -11,20 +11,20 @@ using namespace engine;
 
 using namespace engine::graphics;
 
-void Camera::Initialize(math::Vector3 pos, math::Vector3 viewDirection)
+void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection)
 {
     m_viewDir = viewDirection;
     m_position = pos;
-    UpdateViewMatrix();
+    updateViewMatrix();
 }
 
-void Camera::UpdateViewMatrix()
+void Camera::updateViewMatrix()
 {
     m_rotationMatrix = math::CreateViewRotationMatrix(m_viewDir, m_upDir, m_rightDir);
     m_viewMatrix = math::Translate(m_position) * m_rotationMatrix;
 }
 
-void Camera::Update()
+void Camera::update()
 {
     // TODO: optimize it to call it once per frame after all changes are done
     // TODO: move input handling in client specific implementation
@@ -35,44 +35,44 @@ void Camera::Update()
 
     auto inputManager = system::InputManager::GetInputManager();
 
-    if(inputManager.GetKeyState(system::Key::D).IsPressed())
-        Translate(graphics::MovementDirection::SideDirection, velocity);
+    if(inputManager.getKeyState(system::Key::D).isPressed())
+        translate(graphics::MovementDirection::SideDirection, velocity);
 
-    if(inputManager.GetKeyState(system::Key::W).IsPressed())
-        Translate(graphics::MovementDirection::ViewDirection, velocity);
+    if(inputManager.getKeyState(system::Key::W).isPressed())
+        translate(graphics::MovementDirection::ViewDirection, velocity);
 
-    if(inputManager.GetKeyState(system::Key::A).IsPressed())
-        Translate(graphics::MovementDirection::SideDirection, -velocity);
+    if(inputManager.getKeyState(system::Key::A).isPressed())
+        translate(graphics::MovementDirection::SideDirection, -velocity);
 
-    if(inputManager.GetKeyState(system::Key::S).IsPressed())
-        Translate(graphics::MovementDirection::ViewDirection, -velocity);
+    if(inputManager.getKeyState(system::Key::S).isPressed())
+        translate(graphics::MovementDirection::ViewDirection, -velocity);
 
-    if(inputManager.GetKeyState(system::Key::UP).IsPressed())
-        Rotate(-rotationVelocity, 0);
+    if(inputManager.getKeyState(system::Key::UP).isPressed())
+        rotate(-rotationVelocity, 0);
 
-    if(inputManager.GetKeyState(system::Key::DOWN).IsPressed())
-        Rotate(rotationVelocity, 0);
+    if(inputManager.getKeyState(system::Key::DOWN).isPressed())
+        rotate(rotationVelocity, 0);
 
-    if(inputManager.GetKeyState(system::Key::RIGHT).IsPressed())
-        Rotate(0, rotationVelocity);
+    if(inputManager.getKeyState(system::Key::RIGHT).isPressed())
+        rotate(0, rotationVelocity);
 
-    if(inputManager.GetKeyState(system::Key::LEFT).IsPressed())
-        Rotate(0, -rotationVelocity);
+    if(inputManager.getKeyState(system::Key::LEFT).isPressed())
+        rotate(0, -rotationVelocity);
 
-    if(inputManager.GetKeyState(system::Key::R).IsPressed())
-        Reset();
+    if(inputManager.getKeyState(system::Key::R).isPressed())
+        reset();
 
-    UpdateViewMatrix();
-    ProcessUpdate();
+    updateViewMatrix();
+    processUpdate();
 }
 
-void Camera::ProcessUpdate()
+void Camera::processUpdate()
 {
     for (auto& callback : m_callbacks)
         callback();
 }
 
-void Camera::Reset()
+void Camera::reset()
 {
     m_position = {0.f, 0.f, 0.f};
     m_viewDir  = {0.f, 0.f, 1.f};
@@ -80,7 +80,7 @@ void Camera::Reset()
     m_upDir    = {0.f, 1.f, 0.f};
 }
 
-void Camera::Translate(MovementDirection direction, float velocity)
+void Camera::translate(MovementDirection direction, float velocity)
 {
     auto offset = static_cast<math::Vector3*>(&m_viewDir)[(u8)direction] * velocity;
     m_position = m_position + offset;
@@ -90,7 +90,7 @@ void Camera::Translate(MovementDirection direction, float velocity)
     vertical represent camera movement up and down, where up direction >0
     horizontal represent right and left, where right >0
 */
-void Camera::Rotate(float vertical, float horizontal)
+void Camera::rotate(float vertical, float horizontal)
 {
     math::Quartenion rotationY(m_upDir, horizontal);
     math::Quartenion rotationX(m_rightDir, vertical);
@@ -99,9 +99,9 @@ void Camera::Rotate(float vertical, float horizontal)
     auto rotationMatrixXY = rotationMatrixX * rotationMatrixY;
 
     m_viewDir = (rotationMatrixXY * math::Vector4(m_viewDir, { 1.f }));
-    m_viewDir.NormalizeSelf();
+    m_viewDir.normalizeSelf();
     m_rightDir = (rotationMatrixY * math::Vector4(m_rightDir, { 1.f }));
-    m_rightDir.NormalizeSelf();
+    m_rightDir.normalizeSelf();
     m_upDir = (rotationMatrixX * math::Vector4(m_upDir, { 1.f }));
-    m_upDir.NormalizeSelf();
+    m_upDir.normalizeSelf();
 }

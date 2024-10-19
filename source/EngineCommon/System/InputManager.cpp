@@ -16,35 +16,19 @@ namespace engine::system
         return manager;
     }
 
-
-    void InputManager::OnMouseDown(WPARAM btnState, int x, int y)
-    {
-
-    }
-    
-    void InputManager::OnMouseUp(WPARAM btnState, int x, int y)
-    {
-
-    }
-
-    void InputManager::OnMouseMove(WPARAM btnState, int x, int y)
-    {
-
-    }
-
-    void InputManager::OnKeyDown(Key key)
+    void InputManager::onKeyDown(Key key)
     {
         u32 index = KeyToIndex(key);
-        m_pressed[index].SetPressed();
+        m_pressed[index].setPressed();
     }
 
-    void InputManager::OnKeyUp(Key key)
+    void InputManager::onKeyUp(Key key)
     {
         u32 index = KeyToIndex(key);
-        m_pressed[index].Release();
+        m_pressed[index].release();
     }
 
-    LRESULT InputManager::ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+    LRESULT InputManager::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
             return 0;
@@ -53,15 +37,15 @@ namespace engine::system
         case WM_LBUTTONDOWN:
         case WM_MBUTTONDOWN:
         case WM_RBUTTONDOWN:
-            OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            onMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             return 0;
         case WM_LBUTTONUP:
         case WM_MBUTTONUP:
         case WM_RBUTTONUP:
-            OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            onMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             return 0;
         case WM_MOUSEMOVE:
-            OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            onMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             return 0;
 
         case WM_KEYDOWN:
@@ -69,15 +53,15 @@ namespace engine::system
                 PostQuitMessage(0);
             if (!magic_enum::enum_contains(Key(wParam)))
             {
-                util::PrintInfo("key is pressed {} ", wParam);
+                util::printInfo("key is pressed {} ", wParam);
                 return 0;
             }
-                OnKeyDown(Key(wParam));
+                onKeyDown(Key(wParam));
             return 0;
         case WM_KEYUP:
             if (!magic_enum::enum_contains(Key(wParam)))
                 return 0;
-            OnKeyUp(Key(wParam));
+            onKeyUp(Key(wParam));
             return 0;
         case WM_DESTROY:
             PostQuitMessage(0);

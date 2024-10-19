@@ -1,7 +1,6 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/include/types.h"
 #include "EngineCommon/system/Filesystem.h"
 #include "EngineCommon/util/Logger.h"
@@ -39,13 +38,13 @@ namespace engine::graphics
 				delete[] data;
 		}
 		template<typename T>
-		void SetData(T* newData)
+		void setData(T* newData)
 		{
 			data = reinterpret_cast<u8*>(newData);
 		}
         ImageData() = default;
-        ImageData(engine::system::Filepath path) { Init(path); }
-        void Init(engine::system::Filepath path);
+        ImageData(engine::system::Filepath path) { init(path); }
+        void init(engine::system::Filepath path);
 		const char* name = nullptr;
 		bool needToDestruct = false;
     };
@@ -56,8 +55,8 @@ namespace engine::graphics
 	public:
 		Texture() = default;
 		Texture (ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
-		void Init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
-		u32 GetDescriptorHeapIndex()
+		void init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
+		u32 getDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}
@@ -66,7 +65,7 @@ namespace engine::graphics
 		static Texture* GetTexture(std::string name){
             if(s_textures.find(name)!=s_textures.end())
                 return &s_textures[name];
-			util::PrintError("trying to get texture which does not exist {}", name);
+			util::printError("trying to get texture which does not exist {}", name);
 			return nullptr;
 		}
 
@@ -82,13 +81,13 @@ namespace engine::graphics
 		TextureHandle() = default;
 		TextureHandle(Texture* texture) : m_ptr(texture) {}
 		TextureHandle(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = ""){
-			Init(imData, device, cmdList, s);
+			init(imData, device, cmdList, s);
 		}
-		void Init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "")
+		void init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "")
 		{
 			m_ptr = Texture::CreateTexture(imData, device, cmdList, s);
 		}
-		void Init(std::string name)
+		void init(std::string name)
 		{
 			m_ptr = Texture::GetTexture(name);
 		}

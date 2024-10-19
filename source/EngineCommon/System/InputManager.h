@@ -34,15 +34,15 @@ namespace engine::system
     class KeyboardHandler 
     {
     public:
-        virtual void OnKeyDown(Key key) = 0;
+        virtual void onKeyDown(Key key) = 0;
     };
 
     class MouseHandler
     {
     public:
-        virtual void OnMouseDown(WPARAM btnState, int x, int y) = 0;
-        virtual void OnMouseUp(WPARAM btnState, int x, int y) = 0;
-        virtual void OnMouseMove(WPARAM btnState, int x, int y) = 0;
+        virtual void onMouseDown(WPARAM btnState, int x, int y) = 0;
+        virtual void onMouseUp(WPARAM btnState, int x, int y) = 0;
+        virtual void onMouseMove(WPARAM btnState, int x, int y) = 0;
     };
 
     struct CallbackInfo
@@ -62,17 +62,17 @@ namespace engine::system
             Released,
             Off
         };
-        bool IsPressed() const { return m_state == JustPressed || m_state == AlreadyPressed; }
-        bool IsUp() const { return m_state == Released || m_state == Off;}
-        State GetState() const { return m_state; }
-        void SetPressed()
+        bool isPressed() const { return m_state == JustPressed || m_state == AlreadyPressed; }
+        bool isUp() const { return m_state == Released || m_state == Off;}
+        State getState() const { return m_state; }
+        void setPressed()
         {
             if (m_state == JustPressed)
                 m_state = AlreadyPressed;
             else
                 m_state = JustPressed;
         }
-        void Release()
+        void release()
         {
             m_state = Released;
         }
@@ -85,21 +85,21 @@ namespace engine::system
     {
     public:
         static InputManager& GetInputManager();
-        LRESULT ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        void AddCallback(Key key, CallbackInfo func)
+        LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+        void addCallback(Key key, CallbackInfo func)
         {
             m_callbacks[KeyToIndex(key)].push_back(func);
         }
 
-        auto GetKeyState(Key key) const { return m_pressed[KeyToIndex(key)]; }
+        auto getKeyState(Key key) const { return m_pressed[KeyToIndex(key)]; }
     private:
         InputManager()=default;
 
-        virtual void OnMouseDown(WPARAM btnState, int x, int y);
-        virtual void OnMouseUp(WPARAM btnState, int x, int y);
-        virtual void OnMouseMove(WPARAM btnState, int x, int y);
-        virtual void OnKeyDown(Key key);
-        virtual void OnKeyUp(Key key);
+        virtual void onMouseDown(WPARAM btnState, int x, int y) {}
+        virtual void onMouseUp(WPARAM btnState, int x, int y){}
+        virtual void onMouseMove(WPARAM btnState, int x, int y){}
+        virtual void onKeyDown(Key key);
+        virtual void onKeyUp(Key key);
         std::array<std::vector<CallbackInfo>, KeyCount> m_callbacks;
         std::array<KeyState, KeyCount> m_pressed;
     };

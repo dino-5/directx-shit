@@ -3,7 +3,6 @@
 #include <d3d12.h>
 #include <memory>
 #include "EngineGfx/dx12/d3dx12.h"
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/include/types.h"
 
 namespace engine::graphics

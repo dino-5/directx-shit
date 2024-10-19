@@ -30,3 +30,10 @@ constexpr u32 castEnum(Enum value)
 	return static_cast<u32>(value);
 }
 
+template<typename Enum>
+constexpr u32 operator+(Enum value)
+{
+	static_assert(std::is_enum<Enum>::value, "Enum must be an enum type");
+	return static_cast<u32>(value);
+}
+

@@ -1,7 +1,6 @@
 #pragma once
 #include <d3d12.h>
 #include <dxgi.h>
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/System/config.h"
 #include "Resource.h"
 
@@ -21,32 +20,32 @@ namespace engine::graphics
 	public:
 		SwapChain() = default;
 		SwapChain(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue);
-		void Init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue);
-		IDXGISwapChain* GetSwapChain() { return m_swapChain; }
-		void OnResize();
+		void init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue);
+		IDXGISwapChain* getSwapChain() { return m_swapChain; }
+		void onResize();
 
 		IDXGISwapChain* operator->() { return m_swapChain; }
-		f32 GetAspectRatio()const { 
+		f32 getAspectRatio()const { 
 			return static_cast<f32>(m_currentSettings.width) / static_cast<f32>(m_currentSettings.height); 
 		}
 
-		void Reset() {
+		void reset() {
 			m_swapChain->Release();
 			for (int i = 0; i < engine::config::NumFrames; i++)
-				m_swapChainBuffer[i].Reset();
+				m_swapChainBuffer[i].reset();
 		}
 
-		u32 ChangeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
+		u32 changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
 		{
 			IDXGISwapChain3* swapChain;
 			m_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
 			u32 index = swapChain->GetCurrentBackBufferIndex();
-			m_swapChainBuffer[index].Transition(cmdList, state);
+			m_swapChainBuffer[index].transition(cmdList, state);
 			swapChain->QueryInterface(IID_PPV_ARGS(&m_swapChain));
 			return index;
 		}
 
-		DescriptorRTV GetView(uint index) { return m_swapChainBuffer[index].rtv; }
+		DescriptorRTV getView(uint index) { return m_swapChainBuffer[index].rtv; }
 
 		uint m_fence[engine::config::NumFrames] = {};
 		SwapChainSettings m_currentSettings;

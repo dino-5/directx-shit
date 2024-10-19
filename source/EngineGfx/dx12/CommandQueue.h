@@ -1,6 +1,5 @@
 #pragma once
 #include <d3d12.h>
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/include/defines.h"
 
 namespace engine::graphics
@@ -18,10 +17,10 @@ namespace engine::graphics
 		CommandQueue() = default;
 		CommandQueue(ID3D12Device* device, CommandQueueDesc desc)
 		{
-			Init(device, desc);
+			init(device, desc);
 		}
 
-		void Init(ID3D12Device* device, CommandQueueDesc desc)
+		void init(ID3D12Device* device, CommandQueueDesc desc)
 		{
 			D3D12_COMMAND_QUEUE_DESC descQ{
 				.Type = desc.type,
@@ -37,7 +36,7 @@ namespace engine::graphics
 		SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12CommandQueue, Queue, m_queue);
 		SHIT_ENGINE_NON_COPYABLE(CommandQueue);
 
-		void Reset() { m_queue->Release(); }
+		void reset() { m_queue->Release(); }
 
 	private:
 		ID3D12CommandQueue* m_queue = nullptr;

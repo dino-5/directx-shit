@@ -13,12 +13,12 @@ class Pass
 {
 public:
 	Pass() = default;
-	void SetPSO(std::wstring name);
-	void SetRootSignature(engine::graphics::RootSignatureType type);
+	void setPSO(std::wstring name);
+	void setRootSignature(engine::graphics::RootSignatureType type);
 
-	void SetPipeline(ID3D12GraphicsCommandList* cmdList);
+	void setPipeline(ID3D12GraphicsCommandList* cmdList);
 	virtual ~Pass() = default;
-	virtual void Draw(ID3D12GraphicsCommandList*, unsigned int)=0;
+	virtual void draw(ID3D12GraphicsCommandList*, unsigned int)=0;
 
 protected:
 	engine::graphics::RootSignature* m_rootSignature;

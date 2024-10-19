@@ -1,10 +1,10 @@
 #pragma once
 #include "DescriptorHeap.h"
 #include "third_party/magic_enum/include/magic_enum.hpp"
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/include/types.h"
 #include "EngineCommon/System/config.h"
 #include "EngineCommon/util/Logger.h"
+#include "EngineGfx/dx12/dx12_includes.hpp"
 
 #include <array>
 
@@ -82,28 +82,30 @@ namespace engine::graphics
 	public:
 		Resource() = default;
 
-		void InitResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val=nullptr);
-		void Transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
+		void initResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val=nullptr);
+		void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
-		void Reset()
+		void reset()
 		{
-			m_resource.Reset();
+			if (m_resource)
+				m_resource->Release();
+			m_resource = nullptr;
 		}
 
 		operator ID3D12Resource* ()
 		{
-			return m_resource.Get();
+			return m_resource;
 		}
 
 		ID3D12Resource* operator->()
 		{
-			return m_resource.Get();
+			return m_resource;
 		}
 
-		ID3D12Resource* resource() { return m_resource.Get(); }
-		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
+		ID3D12Resource* resource() { return m_resource; }
+		ID3D12Resource** getResourceAddress() { return &m_resource; }
 
-		void CreateViews(ID3D12Device* device, DescriptorProperties descriptors);
+		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
 
 		DescriptorDSV dsv;
 		DescriptorRTV rtv;
@@ -111,7 +113,7 @@ namespace engine::graphics
 		DescriptorUAV uav;
 
 	private:
-		ComPtr<ID3D12Resource> m_resource = nullptr;
+		ID3D12Resource* m_resource = nullptr;
 		ResourceState m_currentState = ResourceState::COMMON;
 		D3D12_SRV_DIMENSION m_viewDimension{};
 		std::wstring name;

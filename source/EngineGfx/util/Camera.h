@@ -22,15 +22,15 @@ namespace engine::graphics
 	{
 	public:
 		Camera() = default;
-		void Initialize(math::Vector3 pos, math::Vector3 viewDirection);
-		math::Matrix4 GetViewMatrix() { return m_viewMatrix; }
-		void Translate(MovementDirection direction, float velocity);
-		void AddChangeCallback(std::function<void()> ptr) { m_callbacks.push_back(ptr); }
-		void Rotate(float vertical, float horizontal);
-		void UpdateViewMatrix();
-		void Update();
-		void Reset();
-		void ProcessUpdate();
+		void initialize(math::Vector3 pos, math::Vector3 viewDirection);
+		math::Matrix4 getViewMatrix() { return m_viewMatrix; }
+		void translate(MovementDirection direction, float velocity);
+		void addChangeCallback(std::function<void()> ptr) { m_callbacks.push_back(ptr); }
+		void rotate(float vertical, float horizontal);
+		void updateViewMatrix();
+		void update();
+		void reset();
+		void processUpdate();
 
 	private:
 		math::Vector3 m_position;

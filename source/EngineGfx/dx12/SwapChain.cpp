@@ -1,16 +1,15 @@
 #include "SwapChain.h"
 #include "Device.h"
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/util/Util.h"
 
 namespace engine::graphics
 {
 	SwapChain::SwapChain(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
 	{
-		Init(settings, factory, queue);
+		init(settings, factory, queue);
 	}
 
-	void SwapChain::Init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
+	void SwapChain::init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
 	{
 		m_currentSettings = settings;
 		if(m_swapChain)
@@ -37,13 +36,13 @@ namespace engine::graphics
 			queue.Get(),
 			&sd,
 			&m_swapChain));
-		OnResize();
+		onResize();
 	}
 
-	void SwapChain::OnResize()
+	void SwapChain::onResize()
 	{
 		for (int i = 0; i < engine::config::NumFrames; ++i)
-			m_swapChainBuffer[i].Reset();
+			m_swapChainBuffer[i].reset();
 
 
 		ThrowIfFailed(m_swapChain->ResizeBuffers(
@@ -57,7 +56,7 @@ namespace engine::graphics
 		for (UINT i = 0; i < engine::config::NumFrames; i++)
 		{
 			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].getResourceAddress())));
-			m_swapChainBuffer[i].CreateViews(Device::device->GetDevice(), 
+			m_swapChainBuffer[i].createViews(Device::device->getDevice(), 
 				DescriptorProperties(DescriptorFlags::RenderTarget));
 		}
 	}

@@ -17,12 +17,12 @@ bool locLoadModel(tinygltf::Model* model, const std::string& path)
     
     if (!warn.empty())
     {
-        util::PrintInfo("during the model loading warning occured : {}", warn);
+        util::printInfo("during the model loading warning occured : {}", warn);
     }
 
     if (!err.empty())
     {
-        util::PrintError("during the model loading error occured : {}", err);
+        util::printError("during the model loading error occured : {}", err);
     }
     return ret;
 }
@@ -30,62 +30,62 @@ bool locLoadModel(tinygltf::Model* model, const std::string& path)
 
 namespace engine::graphics
 {
-    void Model::Init(system::Filepath path, graphics::RenderContext& context)
+    void Model::init(system::Filepath path, graphics::RenderContext& context)
     {
-        m_directory.Init(path.getPath().remove_filename());
+        m_directory.init(path.getPath().remove_filename());
         m_renderContext = &context;
         m_model = std::make_unique<tinygltf::Model>();
         bool success= locLoadModel(m_model.get(), path.str());
 
         if (!success)
         {
-            util::PrintError("failed to load model {}", path.str());
+            util::printError("failed to load model {}", path.str());
             return;
         }
 
-        LoadTextures();
+        loadTextures();
         
         for (auto& scene : m_model->scenes)
         {
             for (auto& nodeIndex : scene.nodes)
             {
                 if(nodeIndex!=-1)
-                    ProcessNode(nodeIndex);
+                    processNode(nodeIndex);
             }
         }
-        m_mesh.Init(context, m_geometry);
+        m_mesh.init(context, m_geometry);
     }
 
-    void Model::LoadTextures()
+    void Model::loadTextures()
     {
         for (auto& texture : m_model->textures)
         {
             auto image = m_model->images[texture.source];
             if (!image.uri.length())
             {
-                util::PrintError("no uri is provided for an image");
+                util::printError("no uri is provided for an image");
                 return;
             }
             m_textures.push_back(Texture(ImageData(m_directory/image.uri),
-                m_renderContext->GetDevice().GetDevice(), m_renderContext->GetList().GetList()));
+                m_renderContext->getDevice().native(), m_renderContext->getList().getList()));
         }
 
     }
 
-    void Model::ProcessNode(uint index)
+    void Model::processNode(uint index)
     {
         auto& node = m_model->nodes[index];
         if (node.children.size())
             for (auto& nodeIndex : node.children)
             {
-                ProcessNode(index);
+                processNode(index);
             }
         if (node.mesh != -1)
-            ProcessMesh(node.mesh);
+            processMesh(node.mesh);
 
     }
 
-    void Model::ProcessMesh(uint index)
+    void Model::processMesh(uint index)
     {
         struct AccessorData
         {
@@ -93,8 +93,8 @@ namespace engine::graphics
             tinygltf::BufferView view;
             tinygltf::Buffer buffer;
 
-            int ByteStride() { return accessor.ByteStride(view); }
-            unsigned char* GetData() { return buffer.data.data() + view.byteOffset + accessor.byteOffset; }
+            int byteStride() { return accessor.ByteStride(view); }
+            unsigned char* getData() { return buffer.data.data() + view.byteOffset + accessor.byteOffset; }
         };
 
         auto getBufferView = [this](int index) -> auto& {
@@ -148,9 +148,9 @@ namespace engine::graphics
             assert(position.accessor.count == normal.accessor.count && normal.accessor.count == texture.accessor.count);
             u32 count = position.accessor.count;
             auto getSpan3 = [count](AccessorData& accessor) -> auto {
-                return std::span<math::Vector3>(reinterpret_cast<math::Vector3*>(accessor.GetData()), count); };
+                return std::span<math::Vector3>(reinterpret_cast<math::Vector3*>(accessor.getData()), count); };
             auto getSpan2 = [count](AccessorData& accessor) -> auto {
-                return std::span<math::Vector2>(reinterpret_cast<math::Vector2*>(accessor.GetData()), count); };
+                return std::span<math::Vector2>(reinterpret_cast<math::Vector2*>(accessor.getData()), count); };
 
             auto positionSpan = getSpan3(position);
             auto normalSpan = getSpan3(normal);
@@ -161,9 +161,9 @@ namespace engine::graphics
 
             auto indicesAccessor = getAccessor(primitive.indices);
             u32 indexCount = indicesAccessor.accessor.count;
-            i32 stride = indicesAccessor.ByteStride();
+            i32 stride = indicesAccessor.byteStride();
             // todo adapt indexData to stride size
-            const u16* indexData = reinterpret_cast<u16*>(indicesAccessor.GetData());
+            const u16* indexData = reinterpret_cast<u16*>(indicesAccessor.getData());
             const u32 index_remap[] = {
                 0, 2, 1
             };
@@ -176,12 +176,12 @@ namespace engine::graphics
 
             auto& material = m_model->materials[primitive.material != -1 ? primitive.material : 0];
             
-            m_submeshes.push_back(m_geometry.GetSubmesh(
+            m_submeshes.push_back(m_geometry.getSubmesh(
                 material.pbrMetallicRoughness.baseColorTexture.index));
         }
     }
 
-    void Model::DrawModel(ID3D12GraphicsCommandList* cmdList)
+    void Model::drawModel(ID3D12GraphicsCommandList* cmdList)
     {
         auto vertexBuffer = GetVertexBufferView(m_mesh.m_vertexBuffer);
         auto indexBuffer = GetIndexBufferView(m_mesh.m_indexBuffer);

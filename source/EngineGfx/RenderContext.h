@@ -26,33 +26,33 @@ namespace engine::graphics
 	public:
 		RenderContext() = default;
 		SHIT_ENGINE_NON_COPYABLE(RenderContext);
-		void Initialize(SwapChainSettings set);
-		void ResetSwapChain(SwapChainSettings set);
-		void SetupViewport(SwapChainSettings& set);
+		void initialize(SwapChainSettings set);
+		void resetSwapChain(SwapChainSettings set);
+		void setupViewport(SwapChainSettings& set);
 
-		void ResetCommandAllocator();
-		void FlushCommandQueue();
-		void NextFrame();
+		void resetCommandAllocator();
+		void flushCommandQueue();
+		void nextFrame();
 
-		void Update()
+		void update()
 		{
-			m_camera.Update();
+			m_camera.update();
 		}
 
-		void Reset() {
-			m_swapChain.Reset();
-			m_dsvBuffer.Reset();
+		void reset() {
+			m_swapChain.reset();
+			m_dsvBuffer.reset();
 		}
 
-		void StartFrame();
-		void EndFrame();
+		void startFrame();
+		void endFrame();
 
-		f32 GetAspectRatio()const { return m_swapChain.GetAspectRatio(); }
-		CommandList& GetList() { return m_graphicsCommandList; }
-		Device& GetDevice() { return m_device; }
-		CommandQueue& GetQueue() { return m_graphicsQueue; }
-		u64 GetFenceValue() { return m_fence->GetCompletedValue(); }
-		Camera& GetCamera() { return m_camera; }
+		f32 getAspectRatio()const { return m_swapChain.getAspectRatio(); }
+		CommandList& getList() { return m_graphicsCommandList; }
+		Device& getDevice() { return m_device; }
+		CommandQueue& getQueue() { return m_graphicsQueue; }
+		u64 getFenceValue() { return m_fence->GetCompletedValue(); }
+		Camera& getCamera() { return m_camera; }
 
 	private:
 		D3D12_VIEWPORT m_viewport;

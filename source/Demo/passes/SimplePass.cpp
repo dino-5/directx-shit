@@ -9,37 +9,37 @@ using namespace engine;
 
 SimplePass::SimplePass(graphics::RenderContext& context)
 {
-    Initialize(context);
+    initialize(context);
 }
 
-void SimplePass::Initialize(graphics::RenderContext& context)
+void SimplePass::initialize(graphics::RenderContext& context)
 {
-    Pass::SetPSO(L"default");
-    Pass::SetRootSignature(graphics::ROOT_SIG_VERTEX);
+    Pass::setPSO(L"default");
+    Pass::setRootSignature(graphics::ROOT_SIG_VERTEX);
 
-    ID3D12Device* device = context.GetDevice().native();
-    graphics::CommandList& commandList = context.GetList();
-    graphics::Camera& camera = context.GetCamera();
+    ID3D12Device* device = context.getDevice().native();
+    graphics::CommandList& commandList = context.getList();
+    graphics::Camera& camera = context.getCamera();
     
-    float aspectRatio = context.GetAspectRatio();
+    float aspectRatio = context.getAspectRatio();
     m_data.perspective = math::PerspectiveProjection(90, aspectRatio, .1f, 10000.f);
-    m_data.view = camera.GetViewMatrix();
-    m_constantBuffer.Init(context, &m_data, 1);
+    m_data.view = camera.getViewMatrix();
+    m_constantBuffer.init(context, &m_data, 1);
 
-    m_rootIndexData.constantBufferIndex = m_constantBuffer.GetDescriptorHeapIndex();
-    m_rootIndexData.textureIndex = m_texture.GetDescriptorHeapIndex();
-    m_rootStructure.Init(context, &m_rootIndexData, 1);
+    m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
+    m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
+    m_rootStructure.init(context, &m_rootIndexData, 1);
 
-    context.GetCamera().AddChangeCallback([this, &camera]()
+    context.getCamera().addChangeCallback([this, &camera]()
         {
-            this->m_data.view = camera.GetViewMatrix();
-            m_constantBuffer.Update(&this->m_data);
+            this->m_data.view = camera.getViewMatrix();
+            m_constantBuffer.update(&this->m_data);
         });
 
-    m_model.Init(g_homeDir / "textures/models/Sponza/gltf/Sponza.gltf", context);
+    m_model.init(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
 }
 
-void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
+void SimplePass::draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 {
     commandList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
 	commandList->SetGraphicsRootSignature( *m_rootSignature );
@@ -47,7 +47,7 @@ void SimplePass::Draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     commandList->SetGraphicsRootConstantBufferView(0, m_rootStructure->GetGPUVirtualAddress());
-    m_model.DrawModel(commandList);
+    m_model.drawModel(commandList);
 }
 
 

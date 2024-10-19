@@ -5,38 +5,46 @@
 #include "third_party/fmt/include/fmt/core.h"
 
 #include <fstream>
-fs::path g_homeDir;
-fs::path g_demoDir;
-fs::path g_shaderDir;
+
+inline bool checkFileExists(const fs::path& path)
+{
+	if (!fs::exists(path))
+	{
+		std::string error = engine::util::to_string(path.native());
+		engine::util::printError("{} is not exist", error);
+		return false;
+	}
+	return true;
+}
 
 namespace engine::system
 {
+
 Filepath::Filepath(std::string path)
 {
-	Init(path);
+	init(path);
 }
 
 Filepath::Filepath(fs::path path)
 {
-	Init(path);
+	init(path);
 }
 
-void Filepath::Init(fs::path path)
+void Filepath::init(fs::path path)
 {
 	m_path = path;
-	if (!fs::exists(m_path))
-	{
-		std::string error = engine::util::to_string(path.native());
-		engine::util::PrintError("{} is not exist", error);
-	}
 }
 
 std::string Filepath::readFile()
 {
-	std::ifstream file(m_path);
-	std::ostringstream s_str;
-	s_str << file.rdbuf();
-	return s_str.str();
+	if(checkFileExists(m_path))
+	{
+        std::ifstream file(m_path);
+        std::ostringstream s_str;
+        s_str << file.rdbuf();
+        return s_str.str();
+	}
+	return "";
 }
 
 };

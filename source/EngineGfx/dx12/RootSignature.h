@@ -4,7 +4,7 @@
 #include <d3d12.h>
 #include <variant>
 #include <array>
-#include "EngineCommon/include/common.h"
+#include <vector>
 #include "EngineCommon/include/types.h"
 #include "EngineGfx/dx12/d3dx12.h"
 #include "third_party/magic_enum/include/magic_enum.hpp"
@@ -112,7 +112,7 @@ namespace engine::graphics
 		}
 
 		static inline std::vector<RootSignature> allRootSignatures;
-		static void AddEntry(RootSignatureType, RootSignature);
+		static void addEntry(RootSignatureType, RootSignature);
 		static RootSignature* GetRootSignature(RootSignatureType type)
 		{
 			return &allRootSignatures[type];

@@ -128,7 +128,7 @@ namespace engine::graphics
 			IID_PPV_ARGS(&m_rootSignature)));
 	}
 
-	void RootSignature::AddEntry(RootSignatureType type, RootSignature obj)
+	void RootSignature::addEntry(RootSignatureType type, RootSignature obj)
 	{
 		static bool fl = false;
 		if (!fl)
@@ -144,25 +144,25 @@ namespace engine::graphics
 		LogScope("RootSignature");
 		// empty
 		{
-			RootSignature::AddEntry(ROOT_SIG_EMPTY, RootSignature(device));
+			RootSignature::addEntry(ROOT_SIG_EMPTY, RootSignature(device));
 		}
 		{
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 0, RootParameterType::CBV,
 					ShaderVisibility::VERTEX));
-			RootSignature::AddEntry(ROOT_SIG_ONE_CONST, RootSignature(device, parameters));
+			RootSignature::addEntry(ROOT_SIG_ONE_CONST, RootSignature(device, parameters));
 		}
 		{
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 10, RootParameterType::CBV, ShaderVisibility::ALL));
-			RootSignature::AddEntry(ROOT_SIG_BINDLESS, RootSignature(device, parameters,
+			RootSignature::addEntry(ROOT_SIG_BINDLESS, RootSignature(device, parameters,
 				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX));
 		}
         {
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateConstants(1, 0, 10));
 			parameters.push_back(RootParameter::CreateConstants(1, 1, 10));
-			RootSignature::AddEntry(ROOT_SIG_TWO_CONSTANTS, RootSignature(device, parameters,
+			RootSignature::addEntry(ROOT_SIG_TWO_CONSTANTS, RootSignature(device, parameters,
 				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX |
                 RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT));
 		}
@@ -171,11 +171,11 @@ namespace engine::graphics
 			RootParameters parameters;
 			parameters.push_back(RootParameter::CreateDescriptor(0, 10, RootParameterType::CBV, ShaderVisibility::ALL));
 			parameters.push_back(RootParameter::CreateTable(1, range1));
-			RootSignature::AddEntry(ROOT_SIG_VERTEX, RootSignature(device, parameters,
+			RootSignature::addEntry(ROOT_SIG_VERTEX, RootSignature(device, parameters,
 				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX |
                 RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT));
 		}
-        engine::util::PrintInfo("successfuly created root signatures");
+        engine::util::printInfo("successfuly created root signatures");
 
 	}
 

@@ -2,6 +2,7 @@
 #include "EngineGfx/dx12/Device.h"
 #include "EngineGfx/dx12/d3dx12.h"
 #include "EngineGfx/dx12/Resource.h"
+#include "EngineGfx/dx12/dx12_includes.hpp"
 #include "EngineCommon/util/Util.h"
 
 namespace engine::graphics
@@ -81,17 +82,17 @@ namespace engine::graphics
 
 	void DescriptorHeapManager::CreateSRVHeap(uint n)
 	{
-		CurrentSRVHeap.init(Device::device->GetDevice(), n, DescriptorHeapType::CBV_SRV_UAV);
+		CurrentSRVHeap.init(Device::device->getDevice(), n, DescriptorHeapType::CBV_SRV_UAV);
 	}
 
 	void DescriptorHeapManager::CreateRTVHeap(uint n)
 	{
-		CurrentRTVHeap.init(Device::device->GetDevice(), n, DescriptorHeapType::RTV);
+		CurrentRTVHeap.init(Device::device->getDevice(), n, DescriptorHeapType::RTV);
 	}
 
 	void DescriptorHeapManager::CreateDSVHeap(uint n)
 	{
-		CurrentDSVHeap.init(Device::device->GetDevice(), n, DescriptorHeapType::DSV);
+		CurrentDSVHeap.init(Device::device->getDevice(), n, DescriptorHeapType::DSV);
 	}
 	
 	void PopulateDescriptorHeaps()

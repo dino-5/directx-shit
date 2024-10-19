@@ -33,8 +33,8 @@ class SimplePass : public Pass
 public:
 	SimplePass() {}
 	SimplePass(graphics::RenderContext& context);
-	void Initialize(graphics::RenderContext& context);
-	void Draw(ID3D12GraphicsCommandList*, u32 nt)override;
+	void initialize(graphics::RenderContext& context);
+	void draw(ID3D12GraphicsCommandList*, u32 nt)override;
 
 private:
 	BindlessSP m_rootIndexData;

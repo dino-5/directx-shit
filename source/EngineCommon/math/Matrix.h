@@ -1,6 +1,5 @@
 #pragma once
 #include "EngineCommon/math/Vector.h"
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/math/Functions.h"	
 

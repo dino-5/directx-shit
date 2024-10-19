@@ -12,17 +12,17 @@ namespace engine::graphics
 	{
 	public:
 		CommandList() = default;
-		void Initialize(Device& dev)
+		void initialize(Device& dev)
 		{
 			for (uint i = 0; i < config::NumFrames; i++)
-				dev.CreateCommandAllocator(m_alloc[i]);
-			dev.CreateCommandList(m_list, m_alloc[0]);
+				dev.createCommandAllocator(m_alloc[i]);
+			dev.createCommandList(m_list, m_alloc[0]);
 		}
 
-		ID3D12GraphicsCommandList* GetList() { return m_list; }
-		ID3D12GraphicsCommandList** GetListAddress() { return &m_list; }
+		ID3D12GraphicsCommandList* getList() { return m_list; }
+		ID3D12GraphicsCommandList** getListAddress() { return &m_list; }
 		ID3D12GraphicsCommandList* operator->() { return m_list; }
-		void Reset(uint i)
+		void reset(uint i)
 		{
 			m_alloc[i]->Reset();
 			m_list->Reset(m_alloc[i], nullptr);

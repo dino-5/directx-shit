@@ -12,60 +12,60 @@ BaseDemo::BaseDemo(int width, int height, std::string name):
 	m_inputManager = &system::InputManager::GetInputManager();
 }
 
-engine::graphics::SwapChainSettings BaseDemo::GetCurrentWindowSettings()
+engine::graphics::SwapChainSettings BaseDemo::getCurrentWindowSettings()
 {
-	return { GetWidth(), GetHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, GetWindowHandle()};
+	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle()};
 }
 
 
-bool BaseDemo::Initialize()
+bool BaseDemo::initialize()
 {
 	cmdLine = &CommandLine::GetCommandLine();
 	LogScope("BaseDemo");
-	WindowApp::Initialize();
-	m_renderContext.Initialize(GetCurrentWindowSettings());
-	InitializePasses();
-	m_renderContext.FlushCommandQueue();
+	WindowApp::initialize();
+	m_renderContext.initialize(getCurrentWindowSettings());
+	initializePasses();
+	m_renderContext.flushCommandQueue();
 	return true;
 }
 
-void BaseDemo::InitializePasses()
+void BaseDemo::initializePasses()
 {
-	graphics::CommandList& commandList = m_renderContext.GetList();
-	commandList.Reset(0);
+	graphics::CommandList& commandList = m_renderContext.getList();
+	commandList.reset(0);
 
-	m_pass.Initialize(m_renderContext);
+	m_pass.initialize(m_renderContext);
 
     commandList->Close();
-    ID3D12CommandList* lists[] = { commandList.GetList() };
-	u64 value = m_renderContext.GetFenceValue();
-    m_renderContext.GetQueue()->ExecuteCommandLists(1, lists);
-	value = m_renderContext.GetFenceValue();
+    ID3D12CommandList* lists[] = { commandList.getList() };
+	u64 value = m_renderContext.getFenceValue();
+    m_renderContext.getQueue()->ExecuteCommandLists(1, lists);
+	value = m_renderContext.getFenceValue();
 }
 
-void BaseDemo::Draw()
+void BaseDemo::draw()
 {
-	m_renderContext.StartFrame();
-	m_pass.Draw(m_renderContext.GetList().GetList(), m_currentFrameIndex);
-	m_renderContext.EndFrame();
+	m_renderContext.startFrame();
+	m_pass.draw(m_renderContext.getList().getList(), m_currentFrameIndex);
+	m_renderContext.endFrame();
 }
 
-void BaseDemo::Update()
+void BaseDemo::update()
 {
 	m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
-	m_renderContext.Update();
+	m_renderContext.update();
 }
-void BaseDemo::Destroy()
+void BaseDemo::destroy()
 {
-	m_renderContext.Reset();
-}
-
-void BaseDemo::OnResize()
-{
-
+	m_renderContext.reset();
 }
 
-LRESULT BaseDemo::ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+void BaseDemo::onResize()
 {
-    return m_inputManager->ProcessInput(hwnd, msg, wParam, lParam);
+
+}
+
+LRESULT BaseDemo::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    return m_inputManager->processInput(hwnd, msg, wParam, lParam);
 }

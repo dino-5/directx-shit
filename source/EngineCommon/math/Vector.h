@@ -1,11 +1,11 @@
 #pragma once
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/include/types.h"
-#include "EngineCommon/include/common.h"
 
 #include <initializer_list>
 #include <type_traits>
 #include <math.h>
+#include <array>
 
 using std::initializer_list;
 using namespace engine;
@@ -116,7 +116,7 @@ public:
 	template<int M>
 	friend const Vector<M> PerElementOperation(const Vector<M>& v1, const Vector<M>& v2, float (*op)(float, float));
 
-	float Length() const
+	float length() const
 	{
 		float result = 0;
 		for (int i = 0; i < N; i++)
@@ -126,10 +126,10 @@ public:
 		return sqrt(result);
 	}
 
-	Vector Normalize() const
+	Vector normalize() const
 	{
 		Vector result;
-		float len = Length();
+		float len = length();
 		for (int i = 0; i < N; i++)
 		{
 			result[i] = m_data[i] / len;
@@ -137,16 +137,16 @@ public:
 		return result;
 	}
 
-	void NormalizeSelf()
+	void normalizeSelf()
 	{
-		float len = Length();
+		float len = length();
 		for (int i = 0; i < N; i++)
 		{
 			m_data[i] /= len;
 		}
 	}
 
-	bool OnImGui(const char* name, float min=-10.f, float max=10.f)
+	bool onImGui(const char* name, float min=-10.f, float max=10.f)
 	{
 		if constexpr(N != 2)
 			return util::ImGuiSettings::SliderFloat3(name, m_data.data(), min, max);
@@ -161,6 +161,7 @@ public:
 private:
 	std::array<float, N> m_data;
 };
+
 using Vector2 = Vector<2>;
 using Vector3 = Vector<3>;
 using Vector4 = Vector<4>;
@@ -171,10 +172,10 @@ class Quartenion
 public:
 	Quartenion(Vector3 direction, float angle /*in degrees*/);
 	Quartenion(Vector4 vec) :m_quarternion(vec) {}
-	Quartenion Conjugated() const { return  Vector4(-1 * Vector3(m_quarternion), { m_quarternion[3] }); }
+	Quartenion conjugated() const { return  Vector4(-1 * Vector3(m_quarternion), { m_quarternion[3] }); }
 	float& operator[](i32 index) { return m_quarternion[index]; }
 	float operator[](i32 index) const { return m_quarternion[index]; }
-	float Real()const { return m_quarternion[3]; }
+	float real()const { return m_quarternion[3]; }
 
 	Quartenion operator*(const Quartenion& q1);
 private:

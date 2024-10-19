@@ -23,19 +23,19 @@ class BaseDemo : public WindowApp
 {
 public:
 	BaseDemo(int width, int height, std::string name);
-	bool Initialize()override;
-	void InitializePasses();
+	bool initialize()override;
+	void initializePasses();
 	SHIT_ENGINE_SINGLETONE(BaseDemo);
 
 protected:
-	void OnResize()override;
-	void Update()override;
-	void Draw()override;
-	void Destroy()override;
-    LRESULT ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)override;
+	void onResize()override;
+	void update()override;
+	void draw()override;
+	void destroy()override;
+    LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)override;
 
 private:
-	graphics::SwapChainSettings GetCurrentWindowSettings();
+	graphics::SwapChainSettings getCurrentWindowSettings();
 
 private:
 	CommandLine* cmdLine;

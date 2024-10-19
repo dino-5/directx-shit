@@ -1,8 +1,10 @@
 #pragma once
-#include<iostream>
+#include <iostream>
 #include <format>
 #include <string>
 #include <vector>
+#include <source_location>
+#include "Util.h"
 
 namespace engine::util
 {
@@ -13,6 +15,7 @@ namespace engine::util
          LoggerVariable(infoEnabled)
          LoggerVariable(errorsEnabled)
     };
+    // TODO move this to the one global state object
     extern LoggerState g_loggerState;
 
     // ANSI escape code for red text
@@ -35,14 +38,14 @@ namespace engine::util
 	extern std::vector<std::string> log_info;
 
     template<typename... Args>
-    void PrintInfo(std::format_string<Args...> fmt, Args&&... args)
+    void printInfo(std::format_string<Args...> fmt, Args&&... args)
     {
         if(g_loggerState.infoEnabled)
             std::cout<< std::string(log_info.size(), '\t') <<
                      std::format(fmt, std::forward<Args>(args)...) << '\n';
     }
     template<typename... Args>
-    void PrintError(std::format_string<Args...> fmt, Args&&... args)
+    void printError(std::format_string<Args...> fmt, Args&&... args)
     {
         if (g_loggerState.errorsEnabled)
         {
@@ -52,20 +55,24 @@ namespace engine::util
         }
     }
 
+
 	struct ScopeInfo
 	{
-		ScopeInfo(std::string n): name(n)
+		ScopeInfo(const std::string_view& name = "", const std::source_location& location = std::source_location::current()) :
+            m_name(GetFormattedPath(location, name))
 		{
-			std::cout << std::string( log_info.size(), '\t')<< ' ' << name << " started\n";
-			log_info.push_back(name);
+			std::cout << std::string( log_info.size(), '\t')<< ' ' << m_name << " started\n";
+			log_info.push_back(m_name);
 		}
 		~ScopeInfo()
 		{
 			log_info.pop_back();
-			std::cout << std::string( log_info.size(), '\t') << ' ' << name << " ended\n";
+			std::cout << std::string( log_info.size(), '\t') << ' ' << m_name << " ended\n";
 		}
-		std::string name;
+		std::string m_name;
 	};
+#define LogScope engine::util::ScopeInfo _objectScope
+#define LogScope(name) engine::util::ScopeInfo _objectScope(name)
 };
 
  

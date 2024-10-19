@@ -1,6 +1,6 @@
 #include "CommandLine.h"
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/util/Logger.h"
+#include "EngineCommon/system/config.h"
 #include <string>
 
 std::vector<std::string> splitString(const std::string& str)
@@ -30,8 +30,8 @@ std::vector<std::string> splitString(const std::string& str)
 CommandLine::CommandLine()
 {
     LogScope("CommandLine initialization");
-    fs::path filePath = g_homeDir/"cmdline.txt";
-    std::ifstream file(filePath);
+    system::Filepath filepath = config::g_state.homeDir/"cmdline.txt";
+    std::ifstream file(filepath.str());
     if(!file.is_open())
         return;
 
@@ -49,11 +49,11 @@ CommandLine::CommandLine()
             if (output.size() == 2)
             {
                 args[i] = std::stoi(output[1]);
-                engine::util::PrintInfo("command line option {} {}", 
+                engine::util::printInfo("command line option {} {}", 
                     commandLineStr[i].c_str(), args[i].value());
             }
             else
-                engine::util::PrintError("incorrect command line arguments {}", fileStr[i].c_str());
+                engine::util::printError("incorrect command line arguments {}", fileStr[i].c_str());
         }
     }
 }

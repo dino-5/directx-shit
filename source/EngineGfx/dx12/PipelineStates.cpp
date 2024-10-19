@@ -42,13 +42,13 @@ DepthStencilState::DepthStencilState()
 	m_desc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 }
 
-void DepthStencilState::SetDepthState(DepthState state)
+void DepthStencilState::setDepthState(DepthState state)
 {
     m_desc.DepthEnable      = state.isEnabled;
     m_desc.DepthWriteMask   = CastType(state.writeMask);
     m_desc.DepthFunc        = CastType(state.depthFunc);
 }
-void DepthStencilState::SetStencilState(StencilState state)
+void DepthStencilState::setStencilState(StencilState state)
 {
     m_desc.StencilEnable    = state.isEnabled;
     m_desc.StencilReadMask  = state.readMask;
@@ -60,8 +60,8 @@ void DepthStencilState::SetStencilState(StencilState state)
 
 DepthStencilState::DepthStencilState(DepthState depthState, StencilState stencilState)
 {
-	SetDepthState(depthState);
-	SetStencilState(stencilState);
+	setDepthState(depthState);
+	setStencilState(stencilState);
 }
 
 RasterizerState::RasterizerState(CullMode cull, bool frontCounterClockwise)

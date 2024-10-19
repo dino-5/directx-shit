@@ -1,24 +1,23 @@
 #include "EngineGfx/Texture.h"
 #include "EngineCommon/util/Util.h"
-#include "EngineCommon/include/common.h"
 #include "EngineGfx/dx12/DescriptorHeap.h"
 #include "EngineGfx/dx12/Device.h"
 #include "third_party/stb/stb_image.h"
 
 namespace engine::graphics
 {
-    void ImageData::Init(system::Filepath path)
+    void ImageData::init(system::Filepath path)
     {
-        SetData((stbi_load(path.str().c_str(), &width, &height, &channels, 4)));
+        setData((stbi_load(path.str().c_str(), &width, &height, &channels, 4)));
         needToDestruct = true;
     }
 
     Texture::Texture(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
-        Init(imData, device, commandList, s);
+        init(imData, device, commandList, s);
     }
 
-    void Texture::Init(ImageData imData , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    void Texture::init(ImageData imData , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
     {
         ResourceDescription desc;
         desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -34,7 +33,7 @@ namespace engine::graphics
         	.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D
         };
 
-        Resource::InitResource(Device::device->GetDevice(), desc, descriptorProps);
+        Resource::initResource(Device::device->getDevice(), desc, descriptorProps);
 
         const UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource(), 0, 1);
 
@@ -46,7 +45,7 @@ namespace engine::graphics
         uploadDesc.flags = ResourceFlags::NONE;
         uploadDesc.heapType = D3D12_HEAP_TYPE_UPLOAD;
         uploadDesc.createState = ResourceState::GENERIC_READ_STATE;
-        textureUploadHeap.InitResource(Device::device->GetDevice(), uploadDesc, DescriptorProperties(DescriptorFlags::None));
+        textureUploadHeap.initResource(Device::device->getDevice(), uploadDesc, DescriptorProperties(DescriptorFlags::None));
 
         D3D12_SUBRESOURCE_DATA textureData = {};
         textureData.pData = imData.data;
@@ -55,7 +54,7 @@ namespace engine::graphics
         textureData.SlicePitch = textureData.RowPitch * imData.height;
 
         UpdateSubresources(commandList, resource(), textureUploadHeap, 0, 0, 1, &textureData);
-        Resource::Transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
+        Resource::transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
         m_name = s;
     }
 

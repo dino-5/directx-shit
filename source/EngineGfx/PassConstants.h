@@ -23,8 +23,8 @@ struct  PointLight
     void OnImGui()
     {
         util::ImGuiSettings::Begin("Light");
-        Pos.OnImGui("Position");
-        Color.OnImGui("Color", 0, 1);
+        Pos.onImGui("Position");
+        Color.onImGui("Color", 0, 1);
         util::ImGuiSettings::End();
     }
 };
@@ -35,11 +35,11 @@ struct  SpotLight
     math::Vector4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
     math::Vector4 Dir= { 0.0f, 3.0f,-2.0f, 1.0f }; 
     float angle = 0;
-    void OnImGui()
+    void onImGui()
     {
         util::ImGuiSettings::Begin("Light");
-        Pos.OnImGui("Position");
-        Color.OnImGui("Color", 0, 1);
+        Pos.onImGui("Position");
+        Color.onImGui("Color", 0, 1);
         util::ImGuiSettings::End();
     }
 };

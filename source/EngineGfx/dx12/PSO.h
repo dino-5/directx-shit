@@ -2,7 +2,6 @@
 #define PSO_H
 
 #include<d3d12.h>
-#include "EngineCommon/include/common.h"
 #include <d3d12.h>
 #include "EngineGfx/dx12/d3dx12.h"
 #include <string>
@@ -10,6 +9,7 @@
 #include <unordered_map>
 #include "PipelineStates.h"
 #include "RootSignature.h"
+#include "EngineCommon/util/Util.h"
 
 struct IDxcCompiler3;
 using DxCompiler = IDxcCompiler3;
@@ -59,9 +59,9 @@ namespace engine::graphics
 		std::wstring pixelShader;
 		RootSignature* rootSignature = nullptr;
 
-		void SetVS(std::wstring name) { vertexShader = name;  }
-		void SetPS(std::wstring name) { pixelShader= name;  }
-		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
+		void setVS(std::wstring name) { vertexShader = name;  }
+		void setPS(std::wstring name) { pixelShader= name;  }
+		void setRootSignature(RootSignature& r) { rootSignature = &r;  }
 	};
 
 	class PSO;
@@ -69,11 +69,11 @@ namespace engine::graphics
 	{
 	public:
 		RenderState()=default;
-		PSO* Compile(std::wstring name);
-		void SetBlendState       (BlendState blend=BlendState());
-		void SetDepthStencilState(DepthStencilState ds =DepthStencilState());
-		void SetRasterizerState  (RasterizerState raster = RasterizerState());
-		void SetShaderInputGroup (ShaderInputGroup&);
+		PSO* compile(std::wstring name);
+		void setBlendState       (BlendState blend=BlendState());
+		void setDepthStencilState(DepthStencilState ds =DepthStencilState());
+		void setRasterizerState  (RasterizerState raster = RasterizerState());
+		void setShaderInputGroup (ShaderInputGroup&);
 
 	public:
 		BlendState        m_blend;
@@ -88,7 +88,7 @@ namespace engine::graphics
 		PSO()=default;
 		operator ID3D12PipelineState* ()
 		{
-			return m_pso.Get();
+			return m_pso;
 		}
 
 		// Warning: pointer can have dangling memory after adding new element
@@ -100,14 +100,18 @@ namespace engine::graphics
 		static D3D12_SHADER_BYTECODE GetShader(std::wstring name);
 		static inline std::vector<TableEntry<PSO>> allPSO;
 
-		void Reset() { m_pso.Reset(); }
+		void reset() {
+			if(m_pso)
+                m_pso->Release();
+			m_pso = nullptr;
+		}
 
 
 	private:
 		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
 
 	public:
-		ComPtr<ID3D12PipelineState> m_pso;
+		ID3D12PipelineState* m_pso;
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};
 
 		DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -121,8 +125,8 @@ namespace engine::graphics
 		std::wstring computeShader;
 		RootSignature* rootSignature;
 
-		void SetCS(std::wstring name) { computeShader= name;  }
-		void SetRootSignature(RootSignature& r) { rootSignature = &r;  }
+		void setCS(std::wstring name) { computeShader= name;  }
+		void setRootSignature(RootSignature& r) { rootSignature = &r;  }
 	};
 
 
@@ -133,10 +137,10 @@ namespace engine::graphics
 			ComputePSO(ComputeShaderInputGroup shaderGroup);
 			operator ID3D12PipelineState* ()
 			{
-				return m_pso.Get();
+				return m_pso;
 			}
 		private:
-			ComPtr<ID3D12PipelineState> m_pso=nullptr;
+			ID3D12PipelineState* m_pso=nullptr;
 	};
 
 	void PopulateShaders();

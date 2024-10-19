@@ -3,4 +3,5 @@
 
 namespace engine::config
 {
+    GlobalState g_state;
 }

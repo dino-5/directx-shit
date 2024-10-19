@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include "EngineCommon/include/types.h"
-#include "EngineCommon/include/common.h"
 
 #undef TRANSPARENT
 enum class BlendOP
@@ -160,8 +159,8 @@ public:
 		return m_desc;
 	}
 	DepthStencilState(DepthState, StencilState);
-	void SetDepthState(DepthState state);
-	void SetStencilState(StencilState state);
+	void setDepthState(DepthState state);
+	void setStencilState(StencilState state);
 
 public:
 	D3D12_DEPTH_STENCIL_DESC m_desc;

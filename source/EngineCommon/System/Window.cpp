@@ -14,15 +14,15 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 LRESULT CALLBACK
 MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    return WindowApp::App->MsgProc(hwnd, msg, wParam, lParam);
+    return WindowApp::App->msgProc(hwnd, msg, wParam, lParam);
 }
 
 
-LRESULT WindowApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT WindowApp::msgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
         return 0;
-	return ProcessInput(hwnd, msg, wParam, lParam);
+	return processInput(hwnd, msg, wParam, lParam);
 }
 
 
@@ -53,7 +53,7 @@ Window::Window(int w, int h, std::string name) :
 	width(w), height(h), windowName(name)
 {}
 
-bool Window::Initialize()
+bool Window::initialize()
 {
 	auto wc = CreateWindowClass(windowName);
 	RECT R = { 0, 0, width, height};
@@ -79,15 +79,15 @@ WindowApp::WindowApp(int width, int height, std::string name) :
 	App = this;
 }
 
-bool WindowApp::Initialize()
+bool WindowApp::initialize()
 {
-	Window::Initialize();
+	Window::initialize();
 	return true;
 }
 
-void WindowApp::Run()
+void WindowApp::run()
 {
-	// TODO : make timer 
+	// TODO : integrate timer from test project 
 	MSG msg = { };
 	while (msg.message !=WM_QUIT)
 	{
@@ -99,12 +99,12 @@ void WindowApp::Run()
 		}
 		else
 		{
-			Update();
-			Draw();
+			update();
+			draw();
 		}
 		auto end = std::chrono::system_clock::now();
 		std::chrono::duration<double> time_elapsed = end - start;
-		util::PrintInfo("frame rate is {}", 1.0 / time_elapsed.count());
+		util::printInfo("frame rate is {}", 1.0 / time_elapsed.count());
 	}
-	Destroy();
+	destroy();
 }

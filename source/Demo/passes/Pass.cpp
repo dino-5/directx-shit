@@ -5,16 +5,16 @@
 
 using namespace engine;
 
-void Pass::SetPSO(std::wstring name)
+void Pass::setPSO(std::wstring name)
 {
 	m_pso = graphics::PSO::GetPSO(name);
 }
 
-void Pass::SetRootSignature(graphics::RootSignatureType type)
+void Pass::setRootSignature(graphics::RootSignatureType type)
 {
 	m_rootSignature = graphics::RootSignature::GetRootSignature(type);
 }
 
-void Pass::SetPipeline(ID3D12GraphicsCommandList* cmdList)
+void Pass::setPipeline(ID3D12GraphicsCommandList* cmdList)
 {
 }

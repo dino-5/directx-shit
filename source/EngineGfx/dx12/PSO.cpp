@@ -4,6 +4,7 @@
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/System/Filesystem.h"
+#include "EngineCommon/System/config.h"
 #include <dxcapi.h>
 #include "d3d12shader.h"
 #include <format>
@@ -54,29 +55,29 @@ namespace engine::graphics
         return &(allPSO.back().second);
     }
 
-    void RenderState::SetBlendState(BlendState blendState)
+    void RenderState::setBlendState(BlendState blendState)
     {
         m_blend = blendState;
     }
 
-    void RenderState::SetDepthStencilState(DepthStencilState ds)
+    void RenderState::setDepthStencilState(DepthStencilState ds)
     {
         m_ds = ds;
     }
 
-    void RenderState::SetRasterizerState(RasterizerState rast)
+    void RenderState::setRasterizerState(RasterizerState rast)
     {
         m_rast = rast;
     }
 
-    void RenderState::SetShaderInputGroup(ShaderInputGroup& shader)
+    void RenderState::setShaderInputGroup(ShaderInputGroup& shader)
     {
         m_shader = shader;
     }
 
-    PSO* RenderState::Compile(std::wstring name)
+    PSO* RenderState::compile(std::wstring name)
     {
-        return PSO::CreatePSO(name, Device::device->GetDevice(), m_shader, m_blend, m_ds, m_rast);
+        return PSO::CreatePSO(name, Device::device->getDevice(), m_shader, m_blend, m_ds, m_rast);
     }
 
     std::wstring GetShaderTypeString(ShaderType type)
@@ -122,7 +123,8 @@ namespace engine::graphics
             sourceBlob->GetEncoding(&fl, &sourceBuffer.Encoding);
             std::wstring type = GetShaderTypeString(info.type);
             
-            system::Filepath pdbPath(std::filesystem::absolute(g_shaderDir / L"pdb" / system::Filepath(info.path).wfilename()));
+            auto path = config::g_state.shaderDir / L"pdb" / system::Filepath(info.path);
+            system::Filepath pdbPath(std::filesystem::absolute(path.getPath()));
             std::wstring pdbPathWstr = pdbPath.wstr() + info.entryPoint + L".pdb";
             std::vector<const wchar_t*> args= 
             {
@@ -150,7 +152,7 @@ namespace engine::graphics
                     result->GetErrorBuffer(&errorBuffer);
                     char* str = new char[errorBuffer->GetBufferSize()];
                     std::memcpy(str, errorBuffer->GetBufferPointer(), errorBuffer->GetBufferSize());
-                    engine::util::PrintError("{}",std::string(str));
+                    engine::util::printError("{}",std::string(str));
                     delete[] str;
                 }
             }
@@ -192,7 +194,7 @@ namespace engine::graphics
         desc.CS = PSO::GetShader(shaderGroup.computeShader);
         desc.pRootSignature = *shaderGroup.rootSignature;
 
-        ThrowIfFailed(Device::device->GetDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
+        ThrowIfFailed(Device::device->getDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
     }
 
     void PopulateShaders()
@@ -224,7 +226,7 @@ namespace engine::graphics
 			info.type = ShaderType::PIXEL;
 			ShaderManager::CreateShader(info);
         }
-        engine::util::PrintInfo("successfuly loaded shaders");
+        engine::util::printInfo("successfuly loaded shaders");
     }
 
     void PopulatePSO(ID3D12Device* dev)
@@ -237,10 +239,10 @@ namespace engine::graphics
         DepthState depthState;
         depthState.depthFunc = ComparisonFunc::LE; 
         DepthStencilState depthStencilState(depthState, StencilState());
-        state.SetDepthStencilState(depthStencilState);
-        state.SetShaderInputGroup(shaderIG);
-        state.SetRasterizerState(RasterizerState(CullMode::NONE, true));
-        state.Compile(L"default");
-        engine::util::PrintInfo("successfuly created pso");
+        state.setDepthStencilState(depthStencilState);
+        state.setShaderInputGroup(shaderIG);
+        state.setRasterizerState(RasterizerState(CullMode::NONE, true));
+        state.compile(L"default");
+        engine::util::printInfo("successfuly created pso");
     }
 };

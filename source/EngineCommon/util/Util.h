@@ -19,6 +19,8 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
+#include <source_location>
+#include <format>
 #include "EngineGfx/dx12/d3dx12.h"
 #include "MathHelper.h"
 #include <minwinbase.h>
@@ -42,6 +44,13 @@ namespace engine::util
     {
         std::wstring wstr(wchar);
         return std::string(wstr.begin(), wstr.end());
+    }
+
+    inline std::string GetFormattedPath(const std::source_location& location, const std::string_view& name = "")
+    {
+        if(name.length() == 0)
+            return std::format("{}::{}", location.function_name(), location.line());
+        return std::format("{}::{}::{}", location.function_name(), location.line(), name);
     }
 
     inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
@@ -82,21 +91,6 @@ namespace engine::util
         return (byteSize + 255) & ~255;
     }
 
-    class DxException
-    {
-    public:
-        DxException() = default;
-        DxException(HRESULT hr, const std::string& functionName, const std::string& filename, int lineNumber);
-
-        std::string ToString()const;
-
-        HRESULT ErrorCode = S_OK;
-        std::string FunctionName;
-        std::string Filename;
-        int LineNumber = -1;
-    };
-
-
     template<typename T>
     inline T* FindElement(std::vector<TableEntry<T>>& vector, std::wstring name)
     {
@@ -109,7 +103,6 @@ namespace engine::util
         return nullptr;
     }
     
-
 #ifndef ReleaseCom
 #define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif

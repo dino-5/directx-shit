@@ -19,14 +19,14 @@ namespace engine::graphics
 	{
 	public:
 		Model() = default;
-		void Init(system::Filepath path, RenderContext& context);
+		void init(system::Filepath path, RenderContext& context);
 		//Mesh GetMesh() { return m_mesh; }
-		void DrawModel(ID3D12GraphicsCommandList* cmdList);
+		void drawModel(ID3D12GraphicsCommandList* cmdList);
 
 	private:
-		void LoadTextures();
-		void ProcessNode(uint index);
-		void ProcessMesh(uint index);
+		void loadTextures();
+		void processNode(uint index);
+		void processMesh(uint index);
 
 	public:
 		Geometry<Vertex> m_geometry;

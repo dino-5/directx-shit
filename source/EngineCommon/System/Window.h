@@ -1,10 +1,8 @@
 #pragma once
-#include "EngineCommon/include/common.h"
 #include "EngineCommon/include/defines.h"
 #include <string>
-#include "Handlers.h"
 #include <memory>
-
+#include <windows.h>
 
 class Window
 {
@@ -14,13 +12,13 @@ public:
 
 	static WNDCLASSEX CreateWindowClass(const std::string& );
 
-	virtual bool Initialize();
-	void SetWindowHandler(HWND handler) { m_windowHandler = handler; }
-	void SetWidth(int w) { width = w; }
-	int GetWidth() { return width; }
-	void SetHeight(int h) { height = h; }
-	int GetHeight() { return height; }
-	HWND GetWindowHandle() const { return m_windowHandler; }
+	virtual bool initialize();
+	void setWindowHandler(HWND handler) { m_windowHandler = handler; }
+	void setWidth(int w) { width = w; }
+	int getWidth() { return width; }
+	void setHeight(int h) { height = h; }
+	int getHeight() { return height; }
+	HWND getWindowHandle() const { return m_windowHandler; }
 private:
 	HWND m_windowHandler;
 	int width;
@@ -31,21 +29,21 @@ private:
 class WindowApp : public Window
 {
 public:
-	LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	LRESULT msgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	WindowApp(int width, int height, std::string name);
 	WindowApp() = default;
 	virtual ~WindowApp() {}
-	bool Initialize()override;
+	bool initialize()override;
 	SHIT_ENGINE_NON_COPYABLE(WindowApp);
 
 	static inline WindowApp* App = nullptr;
 
-	void Run();
+	void run();
 
 protected:
-	virtual void OnResize() =0;
-	virtual void Update() = 0;
-	virtual void Draw() = 0;
-	virtual void Destroy() = 0;
-    virtual LRESULT ProcessInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) = 0;
+	virtual void onResize() =0;
+	virtual void update() = 0;
+	virtual void draw() = 0;
+	virtual void destroy() = 0;
+    virtual LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) = 0;
 };

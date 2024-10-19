@@ -14,22 +14,21 @@ namespace engine::graphics
 		PopulateDescriptorHeaps();
 	}
 
-	void RenderContext::Initialize(SwapChainSettings set)
+	void RenderContext::initialize(SwapChainSettings set)
 	{
 		LogScope("RenderContext");
-		m_device.Initialize();
-		engine::util::PrintInfo("device initialized");
-		m_graphicsQueue.Init(m_device.GetDevice(), {});
-		engine::util::PrintInfo("queue initialized");
-		m_graphicsCommandList.Initialize(m_device);
-		engine::util::PrintInfo("list initialized");
-		m_device.CreateFence(&m_fence);
-		u32 value = m_fence->GetCompletedValue();
+		m_device.initialize();
+		engine::util::printInfo("device initialized");
+		m_graphicsQueue.init(m_device.getDevice(), {});
+		engine::util::printInfo("queue initialized");
+		m_graphicsCommandList.initialize(m_device);
+		engine::util::printInfo("list initialized");
+		m_device.createFence(&m_fence);
 
 		DescriptorHeapManager::CreateRTVHeap(engine::config::NumFrames);
 		DescriptorHeapManager::CreateDSVHeap(1);
-		engine::util::PrintInfo("heaps created");
-		LoadPipeline(m_device.GetDevice());
+		engine::util::printInfo("heaps created");
+		LoadPipeline(m_device.getDevice());
 		{
 
 			// Create an event handle to use for frame synchronization.
@@ -39,12 +38,12 @@ namespace engine::graphics
 			}
 
 		}
-		ResetSwapChain(set);
+		resetSwapChain(set);
 
-		m_camera.Initialize(math::Vector3(), math::Vector3({0.f, 0.f, 1.f}));
+		m_camera.initialize(math::Vector3(), math::Vector3({0.f, 0.f, 1.f}));
 	}
 
-	void RenderContext::SetupViewport(SwapChainSettings& set)
+	void RenderContext::setupViewport(SwapChainSettings& set)
 	{
 		m_viewport.TopLeftX = 0;
 		m_viewport.TopLeftY = 0;
@@ -56,11 +55,11 @@ namespace engine::graphics
 		m_scissorRect= { 0, 0, set.width, set.height};
 	}
 
-	void RenderContext::ResetSwapChain(SwapChainSettings set)
+	void RenderContext::resetSwapChain(SwapChainSettings set)
 	{
-		if (m_graphicsQueue.GetQueue() != nullptr)
-			m_swapChain.Init(set, m_device.GetFactory(), m_graphicsQueue.GetQueue());
-		SetupViewport(set);
+		if (m_graphicsQueue.getQueue() != nullptr)
+			m_swapChain.init(set, m_device.getFactory(), m_graphicsQueue.getQueue());
+		setupViewport(set);
 
 		D3D12_CLEAR_VALUE optClear;
 		optClear.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -75,10 +74,10 @@ namespace engine::graphics
 		desc.format = DXGI_FORMAT_R24G8_TYPELESS;
 		desc.width = set.width;
 		desc.height = set.height;
-		m_dsvBuffer.InitResource(Device::device->GetDevice(), desc, DescriptorProperties(DescriptorFlags::DepthStencil), &optClear);
+		m_dsvBuffer.initResource(Device::device->getDevice(), desc, DescriptorProperties(DescriptorFlags::DepthStencil), &optClear);
 	}
 
-	void RenderContext::FlushCommandQueue()
+	void RenderContext::flushCommandQueue()
 	{
 		u64 value = m_fence->GetCompletedValue();
 		m_swapChain.m_fence[m_currentFrame] = ++m_currentFence;
@@ -95,24 +94,24 @@ namespace engine::graphics
 		m_currentFrame = (m_currentFrame + 1) % (engine::config::NumFrames);
 	}
 
-	void RenderContext::NextFrame()
+	void RenderContext::nextFrame()
 	{
-		FlushCommandQueue();
+		flushCommandQueue();
 	}
 
-	void RenderContext::ResetCommandAllocator()
+	void RenderContext::resetCommandAllocator()
 	{
-		m_graphicsCommandList.Reset(0);
+		m_graphicsCommandList.reset(0);
 
 	}
 
-	void RenderContext::StartFrame()
+	void RenderContext::startFrame()
 	{
-		m_graphicsCommandList.Reset(m_currentFrame);
+		m_graphicsCommandList.reset(m_currentFrame);
 		m_graphicsCommandList->RSSetViewports(1, &m_viewport);
 		m_graphicsCommandList->RSSetScissorRects(1, &m_scissorRect);
-		m_currentFrame = m_swapChain.ChangeState(m_graphicsCommandList.GetList(), ResourceState::RENDER_TARGET);
-		auto rtvHandle = m_swapChain.GetView(m_currentFrame);
+		m_currentFrame = m_swapChain.changeState(m_graphicsCommandList.getList(), ResourceState::RENDER_TARGET);
+		auto rtvHandle = m_swapChain.getView(m_currentFrame);
 		auto dsvHandle = m_dsvBuffer.dsv;
 		const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 		m_graphicsCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
@@ -120,16 +119,16 @@ namespace engine::graphics
 		m_graphicsCommandList->OMSetRenderTargets(1, &rtvHandle.HandleCPU, true, &dsvHandle.HandleCPU);
 	}
 
-	void RenderContext::EndFrame()
+	void RenderContext::endFrame()
 	{
-		m_swapChain.ChangeState(m_graphicsCommandList.GetList(), ResourceState::PRESENT);
+		m_swapChain.changeState(m_graphicsCommandList.getList(), ResourceState::PRESENT);
 		ThrowIfFailed(m_graphicsCommandList->Close());
-		ID3D12CommandList* ppCommandLists[] = { m_graphicsCommandList.GetList()};
+		ID3D12CommandList* ppCommandLists[] = { m_graphicsCommandList.getList()};
 		m_graphicsQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 		// Present the frame.
 		m_swapChain->Present(0, 0);
-		FlushCommandQueue();
-		ThrowIfFailed(m_device.GetDevice()->GetDeviceRemovedReason());
+		flushCommandQueue();
+		ThrowIfFailed(m_device.getDevice()->GetDeviceRemovedReason());
 	}
 
 };

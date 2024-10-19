@@ -5,8 +5,7 @@
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/util/CommandLine.h"
 
-
-void Device::GetHardwareAdapter(
+void Device::getHardwareAdapter(
     IDXGIAdapter1** ppAdapter,
     bool requestHighPerformanceAdapter)
 {
@@ -34,10 +33,10 @@ void Device::GetHardwareAdapter(
                    if (!SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0,
                                  __uuidof(ID3D12Device), reinterpret_cast<void**>(&m_device))))
                    {
-                        engine::util::PrintError("can't create D3D12 device");
+                        engine::util::printError("can't create D3D12 device");
                         return false;
                    }
-                   engine::util::PrintInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
+                   engine::util::printInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
                    return true;
                }
                return false;
@@ -53,7 +52,7 @@ void Device::GetHardwareAdapter(
                    {
                         return false;
                    }
-                   engine::util::PrintInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
+                   engine::util::printInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
                    return true;
             };
             selector = adapterSelector;
@@ -71,7 +70,7 @@ void Device::GetHardwareAdapter(
 
             if (listDevices)
             {
-               engine::util::PrintInfo("[{}] : {}", i, engine::util::to_string(desc.Description));
+               engine::util::printInfo("[{}] : {}", i, engine::util::to_string(desc.Description));
                if (!deviceSelected)
                {
                     deviceSelected = selector(i);
@@ -88,7 +87,7 @@ void Device::GetHardwareAdapter(
     *ppAdapter = adapter;
 }
 
-void Device::Initialize()
+void Device::initialize()
 {
     UINT dxgiFactoryFlags = 0;
     LogScope("Device::Initialize");
@@ -107,18 +106,18 @@ void Device::Initialize()
     ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
     {
         IDXGIAdapter1* adapter;
-        GetHardwareAdapter(&adapter);
+        getHardwareAdapter(&adapter);
     }
     device = this;
-    engine::util::PrintInfo("device initialized");
+    engine::util::printInfo("device initialized");
 }
 
-void Device::CreateCommandAllocator(ID3D12CommandAllocator* &alloc)
+void Device::createCommandAllocator(ID3D12CommandAllocator* &alloc)
 {
     ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)));
 }
 
-void Device::CreateCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator)
+void Device::createCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator)
 {
 	ThrowIfFailed(m_device->CreateCommandList(
 		0,
@@ -129,9 +128,8 @@ void Device::CreateCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAl
     ThrowIfFailed(list->Close());
 }
 
-void Device::CreateFence(ID3D12Fence** fence)
+void Device::createFence(ID3D12Fence** fence)
 {
 	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
         __uuidof(**fence), reinterpret_cast<void**>(fence)));
-    u32 value = (*fence)->GetCompletedValue();
 }
