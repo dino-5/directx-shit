@@ -20,6 +20,7 @@ public:
 	std::string str() { return util::to_string(m_path); }
 	std::wstring wstr() { return m_path.c_str(); }
 	std::wstring wfilename() { return m_path.filename(); }
+	std::string filename() { return util::to_string(m_path.filename()); }
 	Filepath parent() const { return Filepath(m_path.parent_path()) ; }
 	Filepath operator/(const std::string& name)
 	{

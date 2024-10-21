@@ -20,12 +20,6 @@ struct ConstandBufferData
 	math::Matrix4 perspective;
 };
 
-struct BindlessSP
-{
-	u32 constantBufferIndex;
-	u32 textureIndex;
-};
-
 class graphics::Mesh;
 
 class SimplePass : public Pass
@@ -37,7 +31,6 @@ public:
 	void draw(ID3D12GraphicsCommandList*, u32 nt)override;
 
 private:
-	BindlessSP m_rootIndexData;
 	ConstandBufferData m_data;
 	graphics::Texture m_texture;
 	graphics::TextureHandle m_textureNew;

@@ -157,21 +157,22 @@ namespace engine::graphics
             auto textureSpan = getSpan2(texture);
 
             for (int i = 0; i < count; i++)
+            {
                 m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], textureSpan[i] });
+            }
 
             auto indicesAccessor = getAccessor(primitive.indices);
             u32 indexCount = indicesAccessor.accessor.count;
             i32 stride = indicesAccessor.byteStride();
+
             // todo adapt indexData to stride size
             const u16* indexData = reinterpret_cast<u16*>(indicesAccessor.getData());
-            const u32 index_remap[] = {
-                0, 2, 1
-            };
+            m_geometry.indices.reserve(indexCount);
             for (int i = 0; i < indexCount; i+=3)
             {
-                m_geometry.indices.push_back(indexData[i+index_remap[0]]);
-                m_geometry.indices.push_back(indexData[i+index_remap[1]]);
-                m_geometry.indices.push_back(indexData[i+index_remap[2]]);
+                m_geometry.indices.push_back(indexData[i+0]);
+                m_geometry.indices.push_back(indexData[i+1]);
+                m_geometry.indices.push_back(indexData[i+2]);
             }
 
             auto& material = m_model->materials[primitive.material != -1 ? primitive.material : 0];

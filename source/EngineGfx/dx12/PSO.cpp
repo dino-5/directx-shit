@@ -123,7 +123,7 @@ namespace engine::graphics
             sourceBlob->GetEncoding(&fl, &sourceBuffer.Encoding);
             std::wstring type = GetShaderTypeString(info.type);
             
-            auto path = config::g_state.shaderDir / L"pdb" / system::Filepath(info.path);
+            auto path = config::g_state.shaderDir / L"pdb" / system::Filepath(info.path).filename();
             system::Filepath pdbPath(std::filesystem::absolute(path.getPath()));
             std::wstring pdbPathWstr = pdbPath.wstr() + info.entryPoint + L".pdb";
             std::vector<const wchar_t*> args= 
@@ -241,7 +241,7 @@ namespace engine::graphics
         DepthStencilState depthStencilState(depthState, StencilState());
         state.setDepthStencilState(depthStencilState);
         state.setShaderInputGroup(shaderIG);
-        state.setRasterizerState(RasterizerState(CullMode::NONE, true));
+        state.setRasterizerState(RasterizerState(CullMode::BACK, false));
         state.compile(L"default");
         engine::util::printInfo("successfuly created pso");
     }

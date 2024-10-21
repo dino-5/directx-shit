@@ -64,9 +64,9 @@ namespace engine::graphics
 	{
 		D3D12_STATIC_SAMPLER_DESC sampler = {};
 		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 		sampler.MipLODBias = 0;
 		sampler.MaxAnisotropy = 0;
 		sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
@@ -169,7 +169,7 @@ namespace engine::graphics
         {
 			DescriptorRange range1(DescriptorRangeType::SRV, 1);
 			RootParameters parameters;
-			parameters.push_back(RootParameter::CreateDescriptor(0, 10, RootParameterType::CBV, ShaderVisibility::ALL));
+			parameters.push_back(RootParameter::CreateConstants(32, 0, 0));
 			parameters.push_back(RootParameter::CreateTable(1, range1));
 			RootSignature::addEntry(ROOT_SIG_VERTEX, RootSignature(device, parameters,
 				RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX |

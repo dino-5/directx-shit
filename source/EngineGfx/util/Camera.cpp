@@ -30,8 +30,8 @@ void Camera::update()
     // TODO: move input handling in client specific implementation
 
     // TODO: frame independent movement https://gamedev.stackexchange.com/questions/9515/frame-independent-movement
-	float velocity = .5f;
-	float rotationVelocity = 2.f;
+	float velocity = 2.f;
+	float rotationVelocity = 5.f;
 
     auto inputManager = system::InputManager::GetInputManager();
 

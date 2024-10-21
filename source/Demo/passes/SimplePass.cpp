@@ -26,10 +26,6 @@ void SimplePass::initialize(graphics::RenderContext& context)
     m_data.view = camera.getViewMatrix();
     m_constantBuffer.init(context, &m_data, 1);
 
-    m_rootIndexData.constantBufferIndex = m_constantBuffer.getDescriptorHeapIndex();
-    m_rootIndexData.textureIndex = m_texture.getDescriptorHeapIndex();
-    m_rootStructure.init(context, &m_rootIndexData, 1);
-
     context.getCamera().addChangeCallback([this, &camera]()
         {
             this->m_data.view = camera.getViewMatrix();
@@ -46,7 +42,7 @@ void SimplePass::draw(ID3D12GraphicsCommandList* commandList, u32 frameNumber)
 	commandList->SetPipelineState( *m_pso );
 
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    commandList->SetGraphicsRootConstantBufferView(0, m_rootStructure->GetGPUVirtualAddress());
+    commandList->SetGraphicsRoot32BitConstants(0, 32, &m_data, 0);
     m_model.drawModel(commandList);
 }
 
