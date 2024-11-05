@@ -7,6 +7,14 @@
 
 namespace engine::graphics
 {
+
+    u32 DescriptorGPU::getDescriptorIndex() {
+        u64 heapStartPtr = DescriptorHeapManager::CurrentSRVHeap.getHeap()
+            ->GetGPUDescriptorHandleForHeapStart().ptr;
+        u32 descSize = DescriptorHeapManager::CurrentSRVHeap.getDescriptorSize();
+        return static_cast<u32>((HandleGPU.ptr - heapStartPtr)/descSize); 
+    }
+
 	DescriptorHeap::DescriptorHeap(ID3D12Device* device, UINT numDesc, DescriptorHeapType type)
 	{
 		init(device,numDesc, type);

@@ -12,6 +12,7 @@ namespace engine::graphics
 	{
 	public:
 		CommandList() = default;
+		CommandList(Device& dev) { initialize(dev); }
 		void initialize(Device& dev)
 		{
 			for (uint i = 0; i < config::NumFrames; i++)
@@ -22,10 +23,11 @@ namespace engine::graphics
 		ID3D12GraphicsCommandList* getList() { return m_list; }
 		ID3D12GraphicsCommandList** getListAddress() { return &m_list; }
 		ID3D12GraphicsCommandList* operator->() { return m_list; }
-		void reset(uint i)
+		ID3D12GraphicsCommandList* reset(uint i)
 		{
 			m_alloc[i]->Reset();
 			m_list->Reset(m_alloc[i], nullptr);
+			return m_list;
 		}
 
 	private:

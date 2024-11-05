@@ -5,6 +5,8 @@
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/util/CommandLine.h"
 
+using namespace engine::graphics;
+
 void Device::getHardwareAdapter(
     IDXGIAdapter1** ppAdapter,
     bool requestHighPerformanceAdapter)

@@ -7,22 +7,43 @@
 
 namespace engine::graphics
 {
-
 	enum class DescriptorHeapType
 	{
 		CBV_SRV_UAV = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		SAMPLER     = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-		RTV         = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		DSV         = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,	
+		SAMPLER = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
+		RTV = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		DSV = D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 
+		Count = 4
 	};
 
 	using ViewID = u32;
 	class Resource;
+	struct DescriptorGPU
+	{
+		uint32_t HeapIndex;
+		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU;
+		D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU;
+
+		operator bool() const { return HandleCPU.ptr != 0; }
+		u32 getDescriptorIndex();
+		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
+		operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return HandleGPU; }
+	};
+
+	struct DescriptorCPU
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU;
+
+		operator bool() const { return HandleCPU.ptr != 0; }
+		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
+	};
 
 	class DescriptorHeap
 	{
 	public:
 		friend class DescriptorHeapManager;
+		DescriptorHeap() = default;
+		DescriptorHeap(ID3D12Device* device, UINT numDesc, DescriptorHeapType type);
 		void init(ID3D12Device* device, UINT numDesc, DescriptorHeapType type);
 
 		void createCBV(ID3D12Device* device, Resource& res, D3D12_CONSTANT_BUFFER_VIEW_DESC& desc);
@@ -48,8 +69,6 @@ namespace engine::graphics
 		}
 
 	private:
-		DescriptorHeap(ID3D12Device* device, UINT numDesc, DescriptorHeapType type);
-		DescriptorHeap() = default;
 
 		ComPtr<ID3D12DescriptorHeap> m_heap;
 		u32 heapSize;
@@ -68,32 +87,6 @@ namespace engine::graphics
 		static inline DescriptorHeap CurrentDSVHeap;
 	};
 
-	struct DescriptorSRV
-	{
-		uint32_t HeapIndex;
-		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU;
-		D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU;
-
-		operator bool() const { return HandleCPU.ptr != 0; }
-		u32 getDescriptorIndex() {
-			u64 heapStartPtr = DescriptorHeapManager::CurrentSRVHeap.getHeap()
-				->GetGPUDescriptorHandleForHeapStart().ptr;
-			u32 descSize = DescriptorHeapManager::CurrentSRVHeap.getDescriptorSize();
-            return static_cast<u32>((HandleGPU.ptr - heapStartPtr)/descSize); 
-        }
-		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
-		operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return HandleGPU; }
-	};
-	using DescriptorUAV = DescriptorSRV;
-	using DescriptorSampler = DescriptorSRV;
-	struct DescriptorRTV
-	{
-		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU;
-
-		operator bool() const { return HandleCPU.ptr != 0; }
-		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
-	};
-	using DescriptorDSV = DescriptorRTV;
 	void PopulateDescriptorHeaps();
 
 };

@@ -79,8 +79,12 @@ namespace engine::graphics
 		return sampler;
 	}
 
-	RootSignature::RootSignature(ID3D12Device* device, RootParameters& parameters, 
-				RootSignatureFlags flags)
+	RootSignature::RootSignature(ID3D12Device* device, RootParameters& parameters, RootSignatureFlags flags)
+	{
+		init(device, parameters, flags);
+	}
+
+	void RootSignature::init(ID3D12Device* device, RootParameters& parameters, RootSignatureFlags flags)
 	{
 		auto sampler = GetSampler();
 		auto rootArguments = GetParameters(parameters);

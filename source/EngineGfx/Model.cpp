@@ -30,10 +30,10 @@ bool locLoadModel(tinygltf::Model* model, const std::string& path)
 
 namespace engine::graphics
 {
-    void Model::init(system::Filepath path, graphics::RenderContext& context)
+    void Model::init(system::Filepath path, graphics::GfxContext& context)
     {
+        m_context = &context;
         m_directory.init(path.getPath().remove_filename());
-        m_renderContext = &context;
         m_model = std::make_unique<tinygltf::Model>();
         bool success= locLoadModel(m_model.get(), path.str());
 
@@ -42,6 +42,40 @@ namespace engine::graphics
             util::printError("failed to load model {}", path.str());
             return;
         }
+
+        u64 vertexCount = 0;
+        u64 indexCount = 0;
+        for (auto& mesh : m_model->meshes)
+        {
+            for (auto& primitive : mesh.primitives)
+            {
+                indexCount += primitive.indices;
+                int positionIndex, texIndex, normalIndex;
+                for (auto& [attrName, attrIndex] : primitive.attributes)
+                {
+                    if (attrName == "POSITION")
+                    {
+                        auto accessor = getAccessor(attrIndex);
+                        vertexCount += accessor.accessor.count;
+                        break;
+                    }
+                    else if (attrName == "NORMAL")
+                    {
+                        auto accessor = getAccessor(attrIndex);
+                        vertexCount += accessor.accessor.count;
+                        break;
+                    }
+                    else if (attrName == "TEXCOORD_0")
+                    {
+                        auto accessor = getAccessor(attrIndex);
+                        vertexCount += accessor.accessor.count;
+                        break;
+                    }
+                }
+            }
+        }
+        m_geometry.vertices.reserve(vertexCount);
+        m_geometry.indices.reserve(indexCount);
 
         loadTextures();
         
@@ -54,6 +88,16 @@ namespace engine::graphics
             }
         }
         m_mesh.init(context, m_geometry);
+
+        std::vector<SubmeshData> data;
+        data.reserve(m_textures.size());
+        for (auto& tex : m_textures)
+        {
+            data.push_back({ tex.getDescriptorHeapIndex() });
+        }
+        m_constBuffer.init(context, data.data(), data.size());
+
+        m_context = nullptr;
     }
 
     void Model::loadTextures()
@@ -66,8 +110,7 @@ namespace engine::graphics
                 util::printError("no uri is provided for an image");
                 return;
             }
-            m_textures.push_back(Texture(ImageData(m_directory/image.uri),
-                m_renderContext->getDevice().native(), m_renderContext->getList().getList()));
+            m_textures.push_back(Texture(ImageData(m_directory/image.uri), m_context->device, m_context->cmdList));
         }
 
     }
@@ -78,7 +121,7 @@ namespace engine::graphics
         if (node.children.size())
             for (auto& nodeIndex : node.children)
             {
-                processNode(index);
+                processNode(nodeIndex);
             }
         if (node.mesh != -1)
             processMesh(node.mesh);
@@ -87,36 +130,6 @@ namespace engine::graphics
 
     void Model::processMesh(uint index)
     {
-        struct AccessorData
-        {
-            tinygltf::Accessor accessor;
-            tinygltf::BufferView view;
-            tinygltf::Buffer buffer;
-
-            int byteStride() { return accessor.ByteStride(view); }
-            unsigned char* getData() { return buffer.data.data() + view.byteOffset + accessor.byteOffset; }
-        };
-
-        auto getBufferView = [this](int index) -> auto& {
-            return this->m_model->bufferViews[index];
-        };
-
-        auto getBuffer= [this](int index) -> auto& {
-            return this->m_model->buffers[index];
-        };
-        auto getAccessor = [this, &getBufferView, &getBuffer](int index) -> auto {
-            auto accessor = this->m_model->accessors[index];
-            auto& bufferView = getBufferView(accessor.bufferView);
-            auto& buffer = getBuffer(bufferView.buffer);
-            return AccessorData{ accessor, bufferView, buffer };
-        };
-
-        auto checkAccessor = [](const AccessorData& obj, int componentType, int type) -> bool {
-            return obj.view.byteStride &&
-                obj.accessor.componentType == componentType &&
-                obj.accessor.type == type;
-        };
-
         auto& mesh = m_model->meshes[index];
         for (auto& primitive : mesh.primitives)
         {
@@ -163,11 +176,9 @@ namespace engine::graphics
 
             auto indicesAccessor = getAccessor(primitive.indices);
             u32 indexCount = indicesAccessor.accessor.count;
-            i32 stride = indicesAccessor.byteStride();
 
             // todo adapt indexData to stride size
             const u16* indexData = reinterpret_cast<u16*>(indicesAccessor.getData());
-            m_geometry.indices.reserve(indexCount);
             for (int i = 0; i < indexCount; i+=3)
             {
                 m_geometry.indices.push_back(indexData[i+0]);

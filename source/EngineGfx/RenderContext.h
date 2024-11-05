@@ -21,11 +21,11 @@ namespace engine::graphics
 		int height;
 	};
 
-	class RenderContext
+	class RenderContext1
 	{
 	public:
-		RenderContext() = default;
-		SHIT_ENGINE_NON_COPYABLE(RenderContext);
+		RenderContext1() = default;
+		SHIT_ENGINE_NON_COPYABLE(RenderContext1);
 		void initialize(SwapChainSettings set);
 		void resetSwapChain(SwapChainSettings set);
 		void setupViewport(SwapChainSettings& set);

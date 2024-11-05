@@ -13,31 +13,44 @@
 class Texture;
 class DescriptorHeap;
 
-class Device
-{
-public:
-	static inline Device* device = nullptr;
-	void initialize();
-	SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12Device, Device, m_device);
-	SHIT_ENGINE_GET_D3D12COMPONENT(IDXGIFactory4, Factory, m_factory);
+namespace engine::graphics {
 
-	void createCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator);
-	void createCommandAllocator(ID3D12CommandAllocator* &);
-	void createFence(ID3D12Fence**);
+	class Device
+	{
+	public:
+		static inline Device* device = nullptr;
+		Device() { initialize(); }
+		void initialize();
+		SHIT_ENGINE_GET_D3D12COMPONENT(IDXGIFactory4, Factory, m_factory);
+		SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12Device, Device, m_device);
 
-	void reset() { m_factory->Release(); m_device->Release(); }
+		void createCommandList(ID3D12GraphicsCommandList*& list, ID3D12CommandAllocator*& allocator);
+		void createCommandAllocator(ID3D12CommandAllocator*&);
+		void createFence(ID3D12Fence**);
 
-	ID3D12Device* native() { return m_device; }
+		void reset() { 
+			m_factory->Release(); m_factory = nullptr;
+			m_device->Release(); m_device = nullptr;
+		}
 
-private:
-		
-	void getHardwareAdapter(
-		IDXGIAdapter1** ppAdapter,
-		bool requestHighPerformanceAdapter=true);
+		ID3D12Device* native() { return m_device; }
 
-private:
-	IDXGIFactory4* m_factory = nullptr;
-	ID3D12Device* m_device   = nullptr;
+	private:
+
+		void getHardwareAdapter(
+			IDXGIAdapter1** ppAdapter,
+			bool requestHighPerformanceAdapter = true);
+
+	private:
+		IDXGIFactory4* m_factory = nullptr;
+		ID3D12Device* m_device = nullptr;
+	};
+
+	struct GfxContext
+	{
+		ID3D12Device* device = nullptr;
+		ID3D12GraphicsCommandList* cmdList= nullptr;
+	};
 };
 
 #endif

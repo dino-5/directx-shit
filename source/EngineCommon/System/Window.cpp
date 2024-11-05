@@ -77,6 +77,7 @@ WindowApp::WindowApp(int width, int height, std::string name) :
 	Window(width, height, name)
 {
 	App = this;
+	initialize();
 }
 
 bool WindowApp::initialize()

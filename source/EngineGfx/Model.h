@@ -7,7 +7,6 @@
 #include <memory>
 #include "EngineGfx/Mesh.h"
 #include "EngineGfx/Texture.h"
-#include "EngineCommon/util/GeometryGenerator.h"
 #include "EngineCommon/System/Filesystem.h"
 #include "EngineCommon/math/Matrix.h"
 #include "third_party/tiny_gltf_loader/tiny_gltf.h"
@@ -15,11 +14,15 @@
 namespace engine::graphics
 {
 	class RenderContext;
+    struct SubmeshData
+    {
+        u32 textureIndex;
+    };
 	class Model
 	{
 	public:
 		Model() = default;
-		void init(system::Filepath path, RenderContext& context);
+		void init(system::Filepath path, GfxContext& context);
 		//Mesh GetMesh() { return m_mesh; }
 		void drawModel(ID3D12GraphicsCommandList* cmdList);
 
@@ -28,17 +31,44 @@ namespace engine::graphics
 		void processNode(uint index);
 		void processMesh(uint index);
 
+        struct AccessorData
+        {
+            tinygltf::Accessor accessor;
+            tinygltf::BufferView view;
+            tinygltf::Buffer buffer;
+
+            int byteStride() { return accessor.ByteStride(view); }
+            unsigned char* getData() { return buffer.data.data() + view.byteOffset + accessor.byteOffset; }
+        };
+
+        auto getBufferView(int index) -> auto& {
+            return m_model->bufferViews[index];
+        };
+
+        auto getBuffer(int index) -> auto& {
+            return m_model->buffers[index];
+        };
+        auto getAccessor(int index) -> auto {
+            auto accessor = m_model->accessors[index];
+            auto& bufferView = getBufferView(accessor.bufferView);
+            auto& buffer = getBuffer(bufferView.buffer);
+            return AccessorData{ accessor, bufferView, buffer };
+        };
+
+        auto checkAccessor (const AccessorData& obj, int componentType, int type) -> bool {
+            return obj.view.byteStride &&
+                obj.accessor.componentType == componentType &&
+                obj.accessor.type == type;
+        };
+
+
 	public:
 		Geometry<Vertex> m_geometry;
 		Mesh m_mesh;
 		std::vector<Submesh> m_submeshes;
-
-        ConstantBuffer m_constantBuffer;
-		RenderContext* m_renderContext = nullptr;
-
-		Buffer m_vertexBuffer;
-		Buffer m_indexBuffer;
 		std::vector<Texture> m_textures;
+        ConstantBuffer m_constBuffer;
+        GfxContext* m_context = nullptr;
 
 		system::Filepath m_directory;
         std::unique_ptr<tinygltf::Model> m_model;

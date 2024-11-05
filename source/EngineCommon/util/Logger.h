@@ -71,7 +71,6 @@ namespace engine::util
 		}
 		std::string m_name;
 	};
-#define LogScope engine::util::ScopeInfo _objectScope
 #define LogScope(name) engine::util::ScopeInfo _objectScope(name)
 };
 

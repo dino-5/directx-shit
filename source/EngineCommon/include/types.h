@@ -1,8 +1,9 @@
 #pragma once
-#include<wrl/client.h>
+#include <wrl/client.h>
 #include <utility>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 template<typename T>
 using ComPtr = Microsoft::WRL::ComPtr <T>;
@@ -22,6 +23,9 @@ using f32 = float;
 
 template<typename T>
 using TableEntry = std::pair<std::wstring, T>;
+
+template<typename T>
+using Table = std::vector<TableEntry<T>>;
 
 template<typename Enum>
 constexpr u32 castEnum(Enum value)

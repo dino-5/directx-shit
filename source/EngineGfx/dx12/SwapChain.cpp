@@ -36,14 +36,13 @@ namespace engine::graphics
 			queue.Get(),
 			&sd,
 			&m_swapChain));
-		onResize();
 	}
 
+	// call only when descriptor sets are already created
 	void SwapChain::onResize()
 	{
 		for (int i = 0; i < engine::config::NumFrames; ++i)
-			m_swapChainBuffer[i].reset();
-
+			m_resources[i].reset();
 
 		ThrowIfFailed(m_swapChain->ResizeBuffers(
 			engine::config::NumFrames,
@@ -55,8 +54,8 @@ namespace engine::graphics
 
 		for (UINT i = 0; i < engine::config::NumFrames; i++)
 		{
-			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_swapChainBuffer[i].getResourceAddress())));
-			m_swapChainBuffer[i].createViews(Device::device->getDevice(), 
+			ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_resources[i].getResourceAddress())));
+			m_resources[i].createViews(Device::device->getDevice(), 
 				DescriptorProperties(DescriptorFlags::RenderTarget));
 		}
 	}

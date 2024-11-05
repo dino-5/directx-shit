@@ -17,24 +17,28 @@
 namespace engine::graphics
 {
 
-    D3D12_SHADER_BYTECODE PSO::GetShader(std::wstring name)
+    D3D12_SHADER_BYTECODE getShader(DxBlob* blob)
     {
-        auto shader = ShaderManager::GetShader(name);
         D3D12_SHADER_BYTECODE ret
         {
-            reinterpret_cast<BYTE*>(shader->GetBufferPointer()),
-            shader->GetBufferSize()
+            reinterpret_cast<BYTE*>(blob->GetBufferPointer()),
+            blob->GetBufferSize()
         };
         return ret;
     }
 
+    D3D12_SHADER_BYTECODE GetShader(std::wstring name)
+    {
+        auto shader = ShaderManager::GetShader(name);
+        return getShader(shader);
+    }
+
     PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
     {
-        auto desc = *util::FindElement(ShaderManager::allDescriptions, shader.vertexShader);
-        m_psoDesc.InputLayout = D3D12_INPUT_LAYOUT_DESC{desc.data(), static_cast<u32>(desc.size())};
+        m_psoDesc.InputLayout = shader.desc;
         m_psoDesc.pRootSignature = *shader.rootSignature;
-        m_psoDesc.VS = GetShader(shader.vertexShader);
-        m_psoDesc.PS = GetShader(shader.pixelShader);
+        m_psoDesc.VS = shader.vertexShader;
+        m_psoDesc.PS = shader.pixelShader;
         m_psoDesc.RasterizerState = rasterState;
         m_psoDesc.BlendState = blendState;
         m_psoDesc.DepthStencilState = dsState;
@@ -75,6 +79,11 @@ namespace engine::graphics
         m_shader = shader;
     }
 
+    PSO PSO::CreatePSO(const RenderState& state)
+    {
+        return PSO(Device::device->getDevice(), state.m_shader, state.m_blend, state.m_ds, state.m_rast);
+    }
+
     PSO* RenderState::compile(std::wstring name)
     {
         return PSO::CreatePSO(name, Device::device->getDevice(), m_shader, m_blend, m_ds, m_rast);
@@ -95,9 +104,14 @@ namespace engine::graphics
         }
     }
 
+    ShaderInfo::~ShaderInfo()
+    {
+        auto obj = ShaderManager::CreateShader(*this);
+        onDestoy(obj);
+    }
+
     namespace ShaderManager
     {
-
 		std::vector< TableEntry< DxBlob*>> allShaders;
 		std::vector< TableEntry<std::vector<D3D12_INPUT_ELEMENT_DESC> >> allDescriptions;
 		DxCompiler* s_compiler = nullptr;
@@ -110,7 +124,8 @@ namespace engine::graphics
             s_utils->CreateDefaultIncludeHandler(&s_includer);
         }
 
-		void CreateShader(ShaderInfo info)
+
+		TableEntry< DxBlob*> CreateShader(const ShaderInfo& info)
 		{
             UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 
@@ -155,12 +170,12 @@ namespace engine::graphics
                     engine::util::printError("{}",std::string(str));
                     delete[] str;
                 }
+                return { L"", nullptr };
             }
             else
             {
                 DxBlob* blob;
                 result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&blob), nullptr);
-                allShaders.push_back({ info.shaderName, blob});
 
                 std::vector<std::byte> pdbData;
                 DxBlob* pdbBlob;
@@ -172,6 +187,7 @@ namespace engine::graphics
                 std::ofstream file(pdbPathWstr.data(), std::ios::binary | std::ios::trunc);
                 file.write(reinterpret_cast<const char*>(pdbData.data()), pdbData.size());
                 file.close();
+                return { info.shaderName, blob};
             }
 
 		}
@@ -191,7 +207,7 @@ namespace engine::graphics
     ComputePSO::ComputePSO(ComputeShaderInputGroup shaderGroup)
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
-        desc.CS = PSO::GetShader(shaderGroup.computeShader);
+        desc.CS = GetShader(shaderGroup.computeShader);
         desc.pRootSignature = *shaderGroup.rootSignature;
 
         ThrowIfFailed(Device::device->getDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
@@ -202,29 +218,33 @@ namespace engine::graphics
         LogScope("Shaders");
         ShaderManager::InitializeCompiler();
         ShaderManager::allShaders.reserve(10);
+
+        std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        };
+        ShaderManager::allDescriptions.push_back({ L"VS_Basic", desc });
+
+        auto deleter = [](TableEntry<DxBlob*>& tableEntry)
         {
-            ShaderInfo info;
+            if(tableEntry.second != nullptr)
+                ShaderManager::allShaders.push_back(tableEntry);
+        };
+        {
+            ShaderInfo info(deleter);
             info.entryPoint = L"VS_Basic";
             info.path = L"Shaders/basic_shader.hlsl";
             info.shaderName = L"VS_Basic";
             info.type = ShaderType::VERTEX;
-            ShaderManager::CreateShader(info);
 
-            std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
-                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-                {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-                {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-            };
-            ShaderManager::allDescriptions.push_back({ info.shaderName, desc });
         }
-
         {
-			ShaderInfo info;
+            ShaderInfo info(deleter);
 			info.entryPoint = L"PS_Basic";
 			info.path = L"Shaders/basic_shader.hlsl";
 			info.shaderName = L"PS_Basic";
 			info.type = ShaderType::PIXEL;
-			ShaderManager::CreateShader(info);
         }
         engine::util::printInfo("successfuly loaded shaders");
     }
@@ -233,7 +253,9 @@ namespace engine::graphics
     {
         LogScope("PSO");
         PSO::allPSO.reserve(0);
-        ShaderInputGroup shaderIG{ L"VS_Basic", L"PS_Basic",
+        auto descElements = *util::FindElement(ShaderManager::allDescriptions, L"VS_Basic");
+        ShaderInputGroup shaderIG{ {descElements.data(), descElements.size()}, 
+            GetShader(L"VS_Basic"), GetShader(L"PS_Basic"),
             RootSignature::GetRootSignature(RootSignatureType::ROOT_SIG_VERTEX) };
         RenderState state;
         DepthState depthState;

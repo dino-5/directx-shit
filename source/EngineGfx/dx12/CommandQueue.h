@@ -6,7 +6,6 @@ namespace engine::graphics
 {
 
 	struct CommandQueueDesc
-
 	{
 		D3D12_COMMAND_LIST_TYPE  type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	};
@@ -15,12 +14,12 @@ namespace engine::graphics
 	{
 	public:
 		CommandQueue() = default;
-		CommandQueue(ID3D12Device* device, CommandQueueDesc desc)
+		CommandQueue(ID3D12Device* device, CommandQueueDesc desc = CommandQueueDesc())
 		{
 			init(device, desc);
 		}
 
-		void init(ID3D12Device* device, CommandQueueDesc desc)
+		void init(ID3D12Device* device, CommandQueueDesc desc = CommandQueueDesc())
 		{
 			D3D12_COMMAND_QUEUE_DESC descQ{
 				.Type = desc.type,

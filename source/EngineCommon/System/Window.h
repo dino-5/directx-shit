@@ -15,9 +15,9 @@ public:
 	virtual bool initialize();
 	void setWindowHandler(HWND handler) { m_windowHandler = handler; }
 	void setWidth(int w) { width = w; }
-	int getWidth() { return width; }
+	int getWidth() const { return width; }
 	void setHeight(int h) { height = h; }
-	int getHeight() { return height; }
+	int getHeight() const { return height; }
 	HWND getWindowHandle() const { return m_windowHandler; }
 private:
 	HWND m_windowHandler;
@@ -26,8 +26,7 @@ private:
 	std::string windowName;
 };
 
-class WindowApp : public Window
-{
+class WindowApp : public Window {
 public:
 	LRESULT msgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	WindowApp(int width, int height, std::string name);
@@ -45,5 +44,5 @@ protected:
 	virtual void update() = 0;
 	virtual void draw() = 0;
 	virtual void destroy() = 0;
-    virtual LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) = 0;
-};
+	virtual LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) { return DefWindowProc(hwnd, msg, wParam, lParam); }
+}; 

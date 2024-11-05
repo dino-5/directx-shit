@@ -14,9 +14,9 @@ namespace engine::graphics
 		PopulateDescriptorHeaps();
 	}
 
-	void RenderContext::initialize(SwapChainSettings set)
+	void RenderContext1::initialize(SwapChainSettings set)
 	{
-		LogScope("RenderContext");
+		LogScope("RenderContext1");
 		m_device.initialize();
 		engine::util::printInfo("device initialized");
 		m_graphicsQueue.init(m_device.getDevice(), {});
@@ -43,7 +43,7 @@ namespace engine::graphics
 		m_camera.initialize(math::Vector3(), math::Vector3({0.f, 0.f, 1.f}));
 	}
 
-	void RenderContext::setupViewport(SwapChainSettings& set)
+	void RenderContext1::setupViewport(SwapChainSettings& set)
 	{
 		m_viewport.TopLeftX = 0;
 		m_viewport.TopLeftY = 0;
@@ -55,7 +55,7 @@ namespace engine::graphics
 		m_scissorRect= { 0, 0, set.width, set.height};
 	}
 
-	void RenderContext::resetSwapChain(SwapChainSettings set)
+	void RenderContext1::resetSwapChain(SwapChainSettings set)
 	{
 		if (m_graphicsQueue.getQueue() != nullptr)
 			m_swapChain.init(set, m_device.getFactory(), m_graphicsQueue.getQueue());
@@ -76,7 +76,7 @@ namespace engine::graphics
 		m_dsvBuffer.initResource(Device::device->getDevice(), desc, DescriptorProperties(DescriptorFlags::DepthStencil), &optClear);
 	}
 
-	void RenderContext::flushCommandQueue()
+	void RenderContext1::flushCommandQueue()
 	{
 		u64 value = m_fence->GetCompletedValue();
 		m_swapChain.m_fence[m_currentFrame] = ++m_currentFence;
@@ -93,18 +93,18 @@ namespace engine::graphics
 		m_currentFrame = (m_currentFrame + 1) % (engine::config::NumFrames);
 	}
 
-	void RenderContext::nextFrame()
+	void RenderContext1::nextFrame()
 	{
 		flushCommandQueue();
 	}
 
-	void RenderContext::resetCommandAllocator()
+	void RenderContext1::resetCommandAllocator()
 	{
 		m_graphicsCommandList.reset(0);
 
 	}
 
-	void RenderContext::startFrame()
+	void RenderContext1::startFrame()
 	{
 		m_graphicsCommandList.reset(m_currentFrame);
 		m_graphicsCommandList->RSSetViewports(1, &m_viewport);
@@ -118,7 +118,7 @@ namespace engine::graphics
 		m_graphicsCommandList->OMSetRenderTargets(1, &rtvHandle.HandleCPU, true, &dsvHandle.HandleCPU);
 	}
 
-	void RenderContext::endFrame()
+	void RenderContext1::endFrame()
 	{
 		m_swapChain.changeState(m_graphicsCommandList.getList(), ResourceState::PRESENT);
 		ThrowIfFailed(m_graphicsCommandList->Close());

@@ -3,16 +3,64 @@
 #include "EngineCommon/util/CommandLine.h"
 
 using namespace std;
+using namespace gfx;
 using namespace DirectX;
 
 
-BaseDemo::BaseDemo(int width, int height, std::string name):
-	WindowApp(width, height, name)
+BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
+	WindowApp(width, height, name),
+	m_cmdList(m_device),
+	m_cmdQueue(m_device.native()),
+	m_swapChain(getCurrentWindowSettings(), m_device.getFactory(), m_cmdQueue.getQueue())
 {
 	m_inputManager = &system::InputManager::GetInputManager();
+	m_device.createFence(&m_fence);
+
+	DescriptorHeapManager::CreateDSVHeap(10);
+	DescriptorHeapManager::CreateRTVHeap(10);
+	DescriptorHeapManager::CreateSRVHeap(200);
+	
+	m_swapChain.onResize();
+    m_viewPort.TopLeftX = 0;
+    m_viewPort.TopLeftY = 0;
+    m_viewPort.Width = width;
+    m_viewPort.Height = height;
+    m_viewPort.MaxDepth = 1.0;
+    m_viewPort.MinDepth = .0;
+
+    m_scissorRect = { 0, 0, static_cast<long>(width), static_cast<long>(height) };
+
+	DescriptorProperties viewProps{
+		.descriptor = DescriptorFlags::DepthStencil,
+		.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+		.bufferStride = 0,
+		.numElements = 0
+	};
+	ResourceDescription desc{
+			.format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+			.width= width,
+			.height = height,
+			.depthOrArraySize = 1,
+			.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+			.flags = ResourceFlags::DEPTH_STENCIL,
+			.createState = ResourceState::DEPTH_WRITE ,
+			.heapType = D3D12_HEAP_TYPE_DEFAULT,
+            .name = "depthStencil"
+   };
+
+    D3D12_CLEAR_VALUE val;
+    val.DepthStencil = { 1.0f ,0 };
+    val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
+
+    m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (m_fenceEvent == nullptr)
+    {
+        ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+    }
 }
 
-engine::graphics::SwapChainSettings BaseDemo::getCurrentWindowSettings()
+SwapChainSettings BaseDemo::getCurrentWindowSettings()
 {
 	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle()};
 }
@@ -20,52 +68,147 @@ engine::graphics::SwapChainSettings BaseDemo::getCurrentWindowSettings()
 
 bool BaseDemo::initialize()
 {
-	cmdLine = &CommandLine::GetCommandLine();
 	LogScope("BaseDemo");
-	WindowApp::initialize();
-	m_renderContext.initialize(getCurrentWindowSettings());
-	initializePasses();
-	m_renderContext.flushCommandQueue();
+
+    //root signature
+    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateDescriptor(1, 10) };
+    auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+    m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+
+    // shaders
+    ShaderManager::InitializeCompiler();
+    auto createShader = [this](TableEntry<DxBlob*>& entry)
+    {
+        if (entry.second != nullptr)
+            this->m_shaders.push_back(entry);
+    };
+    {
+        ShaderInfo info(createShader);
+        info.entryPoint = L"VS_Basic";
+        info.path = L"Shaders/basic_shader.hlsl";
+        info.shaderName = L"VS_Basic";
+        info.type = ShaderType::VERTEX;
+    }
+    {
+        ShaderInfo info(createShader);
+        info.entryPoint = L"PS_Basic";
+        info.path = L"Shaders/basic_shader.hlsl";
+        info.shaderName = L"PS_Basic";
+        info.type = ShaderType::PIXEL;
+    }
+
+    std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    };
+    ShaderInputGroup shaderIG;
+    shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
+    shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_Basic"));
+    shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_Basic"));
+    shaderIG.rootSignature = &m_rootSignature;
+
+    RenderState state;
+    state.m_shader = shaderIG;
+
+    m_pso = PSO::CreatePSO(state);
+    GfxContext context;
+    context.cmdList = m_cmdList.reset(0);
+    context.device = m_device.getDevice();
+
+    // setup data 
+
+    ConstandBufferData data;
+    data.perspective = math::PerspectiveProjection(90, m_swapChain.getAspectRatio(), .1f, 10000.f);
+    data.view = m_camera.getViewMatrix();
+    m_constBuffer.init(context, &data, 1);
+
+    BindlessTable table{ m_constBuffer.getDescriptorHeapIndex() };
+    m_bindlessTable.init(context, &table, 1);
+
+    m_model.init(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
+
+    m_camera.addChangeCallback([this]()
+    {
+        ConstandBufferData data;
+        data.perspective = math::PerspectiveProjection(90, m_swapChain.getAspectRatio(), .1f, 10000.f);
+        data.view = this->m_camera.getViewMatrix();
+        this->m_constBuffer.update(&data);
+    });
+
+
+    ThrowIfFailed(context.cmdList->Close());
+    ID3D12CommandList* ppCommandLists[] = { context.cmdList};
+    m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    u64 fence = m_fence->GetCompletedValue();
+    m_swapChain.m_fence[0] = ++m_fenceValue;
+    m_cmdQueue->Signal(m_fence, m_fenceValue);
+    m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
+    WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+    fence = m_fence->GetCompletedValue();
+
 	return true;
-}
-
-void BaseDemo::initializePasses()
-{
-	graphics::CommandList& commandList = m_renderContext.getList();
-	commandList.reset(0);
-
-	m_pass.initialize(m_renderContext);
-
-    commandList->Close();
-    ID3D12CommandList* lists[] = { commandList.getList() };
-	u64 value = m_renderContext.getFenceValue();
-    m_renderContext.getQueue()->ExecuteCommandLists(1, lists);
-	value = m_renderContext.getFenceValue();
 }
 
 void BaseDemo::draw()
 {
-	m_renderContext.startFrame();
-	m_pass.draw(m_renderContext.getList().getList(), m_currentFrameIndex);
-	m_renderContext.endFrame();
+    ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
+    cmdList->RSSetViewports(1, &m_viewPort);
+    cmdList->RSSetScissorRects(1, &m_scissorRect);
+    auto renderTarget = m_swapChain.getView(m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET));
+
+    const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+    cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
+    cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+    cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
+
+    cmdList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
+	cmdList->SetGraphicsRootSignature( m_rootSignature );
+	cmdList->SetPipelineState( m_pso );
+
+    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    cmdList->SetGraphicsRootConstantBufferView(0, m_bindlessTable.getAddress());
+
+    auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
+    auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
+    cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+    cmdList->IASetIndexBuffer(&indexBuffer);
+
+    for (auto& submesh : m_model.m_submeshes)
+    {
+        cmdList->SetGraphicsRootConstantBufferView(1, m_model.m_constBuffer.getAddress(submesh.materialIndex));
+        cmdList->DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, submesh.BaseVertexLocation, 0);
+    }
+
+    m_swapChain.changeState(cmdList, ResourceState::PRESENT);
+    ThrowIfFailed(cmdList->Close());
+    ID3D12CommandList* ppCommandLists[] = { cmdList};
+    m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    // Present the frame.
+    m_swapChain->Present(1, 0);
+
+    // sync
+    m_cmdQueue->Signal(m_fence, ++m_fenceValue);
+    m_swapChain.m_fence[m_currentFrameIndex] = m_fenceValue;
+
+	m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
+    if (m_fence->GetCompletedValue() < m_swapChain.m_fence[m_currentFrameIndex])
+    {
+        m_fence->SetEventOnCompletion(m_swapChain.m_fence[m_currentFrameIndex], m_fenceEvent);
+        WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+    }
 }
 
 void BaseDemo::update()
 {
-	m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
-	m_renderContext.update();
+    m_camera.update();
 }
 void BaseDemo::destroy()
 {
-	m_renderContext.reset();
-}
-
-void BaseDemo::onResize()
-{
-
 }
 
 LRESULT BaseDemo::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    return m_inputManager->processInput(hwnd, msg, wParam, lParam);
+    return system::InputManager::GetInputManager().processInput(hwnd, msg, wParam, lParam);
 }

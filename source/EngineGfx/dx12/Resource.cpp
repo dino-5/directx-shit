@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/System/config.h"
+#include "third_party/magic_enum/include/magic_enum.hpp"
 
 namespace engine::graphics
 {
@@ -36,7 +37,7 @@ namespace engine::graphics
 			&resourceDesc,
 			CastEnum(desc.createState),
 			val,
-			IID_PPV_ARGS(&m_resource)));
+			IID_PPV_ARGS(m_resource.GetAddressOf())));
 		if (desc.name)
 		{
             name = util::to_wstring(std::string(desc.name));
@@ -54,13 +55,21 @@ namespace engine::graphics
 	{
 		if (descriptorProps.descriptor == DescriptorFlags::None)
 			return;
+
 		D3D12_RESOURCE_DESC desc = m_resource->GetDesc();
 		DescriptorFlags descriptor = descriptorProps.descriptor;
-		if ((descriptor & DescriptorFlags::RenderTarget) == DescriptorFlags::RenderTarget)
+
+		bool isRenderTarget = (descriptor & DescriptorFlags::RenderTarget) == DescriptorFlags::RenderTarget;
+		bool isDepthStencil = (descriptor & DescriptorFlags::DepthStencil) == DescriptorFlags::DepthStencil;
+		bool isShaderResource = (descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource;
+		bool isUnorderedAccess = (descriptor & DescriptorFlags::UnorderedAccess) == DescriptorFlags::UnorderedAccess;
+		bool isConstantBuffer = (descriptor & DescriptorFlags::ConstantBuffer) == DescriptorFlags::ConstantBuffer;
+
+		if (isRenderTarget)
 		{
 			DescriptorHeapManager::CurrentRTVHeap.createRTV(device, *this);
 		}
-		if ((descriptor & DescriptorFlags::DepthStencil) == DescriptorFlags::DepthStencil)
+		if (isDepthStencil)
 		{
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
@@ -69,9 +78,7 @@ namespace engine::graphics
 			dsvDesc.Texture2D.MipSlice = 0;
 			DescriptorHeapManager::CurrentDSVHeap.createDSV(device, *this, dsvDesc);
 		}
-
-		if ((descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource && 
-			desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
+		if (isShaderResource && desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -80,8 +87,7 @@ namespace engine::graphics
 			srvDesc.Texture2D.MipLevels = 1;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
-		if ((descriptor & DescriptorFlags::ShaderResource) == DescriptorFlags::ShaderResource &&
-			desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+		if (isShaderResource && desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
 		{
             if (descriptorProps.numElements == 0)
                 DebugBreak();
@@ -94,7 +100,7 @@ namespace engine::graphics
 			srvDesc.Buffer.NumElements = descriptorProps.numElements;
 			DescriptorHeapManager::CurrentSRVHeap.createSRV(device, *this, srvDesc);
 		}
-		if ((descriptor & DescriptorFlags::UnorderedAccess) == DescriptorFlags::UnorderedAccess)
+		if (isUnorderedAccess)
 		{
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 			uavDesc.Format = desc.Format;
@@ -102,7 +108,7 @@ namespace engine::graphics
 			uavDesc.Texture2D.MipSlice = 0;
 			DescriptorHeapManager::CurrentSRVHeap.createUAV(device, *this, uavDesc);
 		}
-		if ((descriptor & DescriptorFlags::ConstantBuffer) == DescriptorFlags::ConstantBuffer)
+		if (isConstantBuffer)
 		{
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
 			cbvDesc.BufferLocation = m_resource->GetGPUVirtualAddress();
@@ -116,7 +122,7 @@ namespace engine::graphics
 	{
 		if (state == m_currentState)
 			return;
-		auto transitionDesc = CD3DX12_RESOURCE_BARRIER::Transition(m_resource,
+		auto transitionDesc = CD3DX12_RESOURCE_BARRIER::Transition(m_resource.Get(),
 			CastEnum(m_currentState), CastEnum(state));
 		cmdList->ResourceBarrier(1, &transitionDesc);
 		m_currentState = state;

@@ -43,7 +43,7 @@ namespace engine::graphics
 		DescriptorFlags descriptor{0};
 		D3D12_SRV_DIMENSION viewDimension{};
 		u32 bufferStride{};
-		u32 numElements{};
+		u64 numElements{};
 	};
 
 	//DescriptorProperties descProps{
@@ -87,33 +87,31 @@ namespace engine::graphics
 
 		void reset()
 		{
-			if (m_resource)
-				m_resource->Release();
-			m_resource = nullptr;
+			m_resource.Reset();
 		}
 
 		operator ID3D12Resource* ()
 		{
-			return m_resource;
+			return m_resource.Get();
 		}
 
 		ID3D12Resource* operator->()
 		{
-			return m_resource;
+			return m_resource.Get();
 		}
 
-		ID3D12Resource* resource() { return m_resource; }
-		ID3D12Resource** getResourceAddress() { return &m_resource; }
+		ID3D12Resource* resource() { return m_resource.Get(); }
+		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
 
 		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
 
-		DescriptorDSV dsv;
-		DescriptorRTV rtv;
-		DescriptorSRV srv;
-		DescriptorUAV uav;
+		DescriptorCPU dsv;
+		DescriptorCPU rtv;
+		DescriptorGPU srv;
+		DescriptorGPU uav;
 
 	private:
-		ID3D12Resource* m_resource = nullptr;
+		ComPtr<ID3D12Resource> m_resource = nullptr;
 		ResourceState m_currentState = ResourceState::COMMON;
 		D3D12_SRV_DIMENSION m_viewDimension{};
 		std::wstring name;

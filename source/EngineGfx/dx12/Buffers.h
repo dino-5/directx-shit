@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
-#include "EngineGfx/RenderContext.h"
+#include <vector>
+#include "EngineGfx/dx12/Device.h"
 #include "EngineGfx/dx12/d3dx12.h"
 #include "EngineGfx/dx12/Resource.h"
 #include "EngineGfx/dx12/dx12_includes.hpp"
@@ -44,12 +45,6 @@ namespace engine::graphics
 
         UploadBuffer() = default;
         UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
-        ~UploadBuffer()
-        {
-            //if(auto res= resource())
-            //    res->Unmap(0, nullptr);
-            //m_MappedData = nullptr;
-        }
 
         void CopyData(int elementIndex, const void* data)
         {
@@ -72,31 +67,31 @@ namespace engine::graphics
         CUSTOM
     };
 
+    template<typename T>
+    struct BufferDescription
+    {
+        const T* data = nullptr;
+        u32 elementCount{};
+        std::string_view name;
+        ResourceState state{};
+        BufferType type{};
+    };
+
 	class Buffer : public Resource
 	{
 	public:
 		Buffer() = default;
 
 		template<typename T>
-        Buffer(RenderContext& context, T* data, uint numberOfElements, std::string_view name);
+        Buffer(GfxContext& context, T* data, uint numberOfElements, std::string_view name);
 
 		template<typename T>
-        static Buffer CreateVertexBuffer(RenderContext& context, T* data, uint numberOfElements);
-
+        static Buffer CreateVertexBuffer(GfxContext& context, T* data, uint numberOfElements);
 		template<typename T>
-        void initAsVertexBuffer(RenderContext& context, T* data, uint numberOfElements);
+        static Buffer CreateIndexBuffer(GfxContext& context, T* data, uint numberOfElements);
 
-		template<typename T>
-        static Buffer CreateConstantBuffer(RenderContext& context, T* data, uint numberOfElements);
-
-		template<typename T>
-        void initAsConstantBuffer(RenderContext& context, T* data, uint numberOfElements);
-
-		template<typename T>
-        static Buffer CreateIndexBuffer(RenderContext& context, T* data, uint numberOfElements);
-
-		template<typename T>
-        void initAsIndexBuffer(RenderContext& context, T* data, uint numberOfElements);
+        template<typename T>
+        void init(GfxContext& context, const BufferDescription<T>& desc);
     
 		u32 getDescriptorHeapIndex()
 		{
@@ -106,8 +101,6 @@ namespace engine::graphics
         u32 getElementSize() const { return m_elementSize; }
 
     private:
-        template<typename T>
-        void init(RenderContext& context, T* data, uint numberOfElements, std::string_view name);
         void copyData(const void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state);
 
 	private:
@@ -132,10 +125,11 @@ namespace engine::graphics
     }
 
     template<typename T>
-    void Buffer::init(RenderContext & context, T * data, uint numberOfElements, std::string_view name)
+    void Buffer::init(GfxContext & context, const BufferDescription<T>& bufferDesc)
     {
-        ID3D12Device* device = context.getDevice().getDevice();
-        ID3D12GraphicsCommandList* commandList = context.getList().getList();
+        m_type = bufferDesc.type;
+        m_elementSize = sizeof(T);
+        m_bufferSize = bufferDesc.elementCount* m_elementSize;
         ResourceDescription desc{
                 .format = DXGI_FORMAT_UNKNOWN,
                 .width = m_bufferSize,
@@ -145,7 +139,7 @@ namespace engine::graphics
                 .flags = ResourceFlags::NONE,
                 .createState = ResourceState::COMMON,
                 .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                .name = name.data()
+                .name = bufferDesc.name.data()
         };
 
         // TODO remake this thing
@@ -153,85 +147,36 @@ namespace engine::graphics
             .descriptor = DescriptorFlags::ShaderResource,
             .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
             .bufferStride = sizeof(T),
-            .numElements = numberOfElements
+            .numElements = bufferDesc.elementCount
         };
-        Resource::initResource(device, desc, descriptorProps);
+        Resource::initResource(context.device, desc, descriptorProps);
 
+        if(bufferDesc.data)
+            copyData(bufferDesc.data, context.device, context.cmdList, bufferDesc.state);
     }
 
     template<typename T>
-    Buffer::Buffer(RenderContext& context, T* data, uint numberOfElements, std::string_view name)
+    Buffer::Buffer(GfxContext& context, T* data, uint numberOfElements, std::string_view name)
     {
         m_type = BufferType::CUSTOM;
         init(context, data, numberOfElements, name);
     }
 
     template<typename T>
-    Buffer Buffer::CreateVertexBuffer(RenderContext& context, T* data, uint numberOfElements)
+    Buffer Buffer::CreateVertexBuffer(GfxContext& context, T* data, uint numberOfElements)
     {
         Buffer buffer;
-        buffer.initAsVertexBuffer(context, data, numberOfElements);
+        buffer.init(context, data, numberOfElements, "VertexBuffer", ResourceState::VERTEX_CONSTANT_BUFFER, BufferType::VERTEX);
         return buffer;
     }
 
     template<typename T>
-    void Buffer::initAsVertexBuffer(RenderContext& context, T* data, uint numberOfElements)
-    {
-        m_elementSize = sizeof(T);
-        m_bufferSize = numberOfElements * m_elementSize;
-
-        m_type = BufferType::VERTEX;
-        ID3D12Device* device = context.getDevice().getDevice();
-        ID3D12GraphicsCommandList* commandList = context.getList().getList();
-
-        init(context, data, numberOfElements, "VertexBuffer");
-
-        copyData(data, device, commandList, ResourceState::VERTEX_CONSTANT_BUFFER);
-    }
-
-    template<typename T>
-    Buffer Buffer::CreateConstantBuffer(RenderContext& context, T* data, uint numberOfElements)
+    Buffer Buffer::CreateIndexBuffer(GfxContext& context, T* data, uint numberOfElements)
     {
         Buffer buffer;
-        buffer.initAsVertexBuffer(context, data, numberOfElements);
+        buffer.init(context, data, numberOfElements, "IndexBuffer", ResourceState::INDEX_BUFFER, BufferType::INDEX);
         return buffer;
     }
-
-    template<typename T>
-    void Buffer::initAsConstantBuffer(RenderContext& context, T* data, uint numberOfElements)
-    {
-        m_elementSize = CalcConstantBufferByteSize(sizeof(T)); // do we need make single entry of buffer be
-            // divided by 256 or all all buffer?        
-        m_bufferSize = numberOfElements * m_elementSize;
-
-        m_type = BufferType::CONSTANT;
-        ID3D12Device* device = context.getDevice().getDevice();
-        ID3D12GraphicsCommandList* commandList = context.getList().getList();
-
-        init(context, data, numberOfElements, "ConstantBuffer");
-        CopyData(data, device, commandList, ResourceState::VERTEX_CONSTANT_BUFFER);
-    }
-
-    template<typename T>
-    Buffer Buffer::CreateIndexBuffer(RenderContext& context, T* data, uint numberOfElements)
-    {
-        initAsVertexBuffer(context, data, numberOfElements);
-    }
-
-    template<typename T>
-    void Buffer::initAsIndexBuffer(RenderContext& context, T* data, uint numberOfElements)
-    {
-        m_elementSize = sizeof(T);
-        m_bufferSize = numberOfElements * m_elementSize;
-
-        m_type = BufferType::INDEX;
-        ID3D12Device* device = context.getDevice().getDevice();
-        ID3D12GraphicsCommandList* commandList = context.getList().getList();
-
-        init(context, data, numberOfElements, "IndexBuffer");
-        copyData(data, device, commandList, ResourceState::INDEX_BUFFER);
-    }
-
 
     inline D3D12_INDEX_BUFFER_VIEW GetIndexBufferView(Buffer& buffer) {
         D3D12_INDEX_BUFFER_VIEW view;
@@ -253,16 +198,14 @@ namespace engine::graphics
 	{
 	public:
         ConstantBuffer() = default;
-		template<typename T>
-		void init(RenderContext& context, T* data, uint numberOfElements)
+        template<typename T>
+		void init(GfxContext& context, T* data, u32 elementCount)
 		{
-            ID3D12Device* device = context.getDevice().getDevice();
-            m_structSize =  CalcConstantBufferByteSize(sizeof(T)); // do we need make single entry of buffer be
-            // divided by 256 or all all buffer?  
-			uint bufferSize = m_structSize*numberOfElements;
+            m_structSize = sizeof(T);
+            m_bufferSize = CalcConstantBufferByteSize(m_structSize * elementCount); 
             ResourceDescription desc{
                     .format = DXGI_FORMAT_UNKNOWN,
-                    .width = bufferSize,
+                    .width = m_bufferSize,
                     .height = 1,
                     .depthOrArraySize = 1,
                     .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -275,13 +218,15 @@ namespace engine::graphics
             DescriptorProperties descProps{
                 .descriptor = DescriptorFlags::ConstantBuffer,
                 .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
-                .bufferStride = bufferSize,
-                .numElements = numberOfElements 
+                .bufferStride = m_bufferSize,
+                .numElements = elementCount 
             };
-			Resource::initResource(device, desc, descProps);
+			Resource::initResource(context.device, desc, descProps);
 			CD3DX12_RANGE readRange(0, 0);       
             ThrowIfFailed(resource()->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
-            update(data);
+            memcpy(m_buffer, data, sizeof(T) * elementCount);
+
+            // TODO : maybe transition to the constant state
 		}
 
 		D3D12_GPU_VIRTUAL_ADDRESS getAddress(u32 element=0) 		{
@@ -292,13 +237,16 @@ namespace engine::graphics
 			return srv.getDescriptorIndex();
 		}
 
-		void update(const void* data,uint numberOfElement = 0)
+        template<typename T>
+		void update(T* data, uint elementNumber = 0)
 		{
-			memcpy(&m_buffer[numberOfElement * m_structSize], data, m_structSize);
+            memcpy(&m_buffer[elementNumber * m_structSize], data, sizeof(T));
 		}
+
 	private:
 		char* m_buffer=nullptr;
-		uint m_structSize;
+		uint m_bufferSize = 0;
+		uint m_structSize = 0;
 	};
 
 };

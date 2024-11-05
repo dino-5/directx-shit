@@ -1,11 +1,12 @@
 #ifndef PSO_H
 #define PSO_H
 
-#include<d3d12.h>
+#include <d3d12.h>
 #include <d3d12.h>
 #include "EngineGfx/dx12/d3dx12.h"
 #include <string>
 #include <vector>
+#include <functional>
 #include <unordered_map>
 #include "PipelineStates.h"
 #include "RootSignature.h"
@@ -22,6 +23,7 @@ using DxIncludeHandler = IDxcIncludeHandler;
 
 namespace engine::graphics
 {
+	D3D12_SHADER_BYTECODE getShader(DxBlob* blob);
 
 	enum class ShaderType
 	{
@@ -33,11 +35,15 @@ namespace engine::graphics
 
 	struct ShaderInfo
 	{
-		std::wstring shaderName;
-		std::wstring path;
-		std::wstring entryPoint;
-		D3D12_INPUT_LAYOUT_DESC desc;
-		ShaderType  type;
+		ShaderInfo() = default;
+		ShaderInfo(std::function<void(TableEntry<DxBlob*>&)> deleter) : onDestoy(deleter) {}
+		std::function<void(TableEntry<DxBlob*>&)> onDestoy;
+		std::wstring shaderName{};
+		std::wstring path{};
+		std::wstring entryPoint{};
+		D3D12_INPUT_LAYOUT_DESC desc{};
+		ShaderType  type{};
+		~ShaderInfo();
 	};
 
 	namespace ShaderManager
@@ -48,26 +54,22 @@ namespace engine::graphics
 		extern DxUtils* s_utils;
 		extern DxIncludeHandler* s_includer;
         void InitializeCompiler();
-		void CreateShader(ShaderInfo info);
+		TableEntry< DxBlob*> CreateShader(const ShaderInfo& info);
 		DxBlob* GetShader(std::wstring name);
 		void Clear();
 	};
 
 	struct ShaderInputGroup
 	{
-		std::wstring vertexShader;
-		std::wstring pixelShader;
+		D3D12_INPUT_LAYOUT_DESC desc;
+		D3D12_SHADER_BYTECODE vertexShader;
+		D3D12_SHADER_BYTECODE pixelShader;
 		RootSignature* rootSignature = nullptr;
-
-		void setVS(std::wstring name) { vertexShader = name;  }
-		void setPS(std::wstring name) { pixelShader= name;  }
-		void setRootSignature(RootSignature& r) { rootSignature = &r;  }
 	};
 
 	class PSO;
-	class RenderState
+	struct RenderState
 	{
-	public:
 		RenderState()=default;
 		PSO* compile(std::wstring name);
 		void setBlendState       (BlendState blend=BlendState());
@@ -75,13 +77,13 @@ namespace engine::graphics
 		void setRasterizerState  (RasterizerState raster = RasterizerState());
 		void setShaderInputGroup (ShaderInputGroup&);
 
-	public:
 		BlendState        m_blend;
 		DepthStencilState m_ds;
 		RasterizerState   m_rast;
 		ShaderInputGroup  m_shader;
 	};
 
+    D3D12_SHADER_BYTECODE GetShader(std::wstring name);
 	class PSO
 	{
 	public:
@@ -92,23 +94,20 @@ namespace engine::graphics
 		}
 
 		// Warning: pointer can have dangling memory after adding new element
+		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+		static PSO CreatePSO(const RenderState& state);
 		static PSO* CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
 		static PSO* GetPSO(std::wstring name)
 		{
 			return util::FindElement(allPSO, name);
 		}
-		static D3D12_SHADER_BYTECODE GetShader(std::wstring name);
-		static inline std::vector<TableEntry<PSO>> allPSO;
+		static inline Table<PSO> allPSO;
 
 		void reset() {
 			if(m_pso)
                 m_pso->Release();
 			m_pso = nullptr;
 		}
-
-
-	private:
-		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
 
 	public:
 		ID3D12PipelineState* m_pso;

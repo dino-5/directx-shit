@@ -32,7 +32,7 @@ namespace engine::graphics
 		void reset() {
 			m_swapChain->Release();
 			for (int i = 0; i < engine::config::NumFrames; i++)
-				m_swapChainBuffer[i].reset();
+				m_resources[i].reset();
 		}
 
 		u32 changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
@@ -40,18 +40,19 @@ namespace engine::graphics
 			IDXGISwapChain3* swapChain;
 			m_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
 			u32 index = swapChain->GetCurrentBackBufferIndex();
-			m_swapChainBuffer[index].transition(cmdList, state);
+			m_resources[index].transition(cmdList, state);
 			swapChain->QueryInterface(IID_PPV_ARGS(&m_swapChain));
 			return index;
 		}
 
-		DescriptorRTV getView(uint index) { return m_swapChainBuffer[index].rtv; }
+		DescriptorCPU getView(uint index) { return m_resources[index].rtv; }
 
 		uint m_fence[engine::config::NumFrames] = {};
 		SwapChainSettings m_currentSettings;
+
+		Resource m_resources[engine::config::NumFrames] = {};
 	private:
 		uint m_currentBuffer = 0;
 		IDXGISwapChain* m_swapChain = nullptr;
-		Resource m_swapChainBuffer[engine::config::NumFrames] = {};
 	};
 };
