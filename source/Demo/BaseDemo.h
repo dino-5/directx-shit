@@ -26,12 +26,23 @@ struct DemoSettings
 	graphics::SwapChainSettings m_settings; 
 };
 
+struct Light
+{
+	math::Vector3 position;
+};
+
+struct ObjectData
+{
+	uint materialIndex;
+};
+
 namespace gfx = engine::graphics;
 
 struct BindlessTable
 {
 	u32 cbIndex;
 	u32 submeshDataArray;
+	uint lightArrayIndex;
 };
 
 struct ConstandBufferData
@@ -79,6 +90,7 @@ private:
 	// resources
 	gfx::Model m_model;
 	gfx::Buffer m_buffer;
+	gfx::BufferObject<Light> m_lightBuffer;
 	gfx::PSO m_pso;
 	gfx::RootSignature m_rootSignature;
 	Table<DxBlob*> m_shaders;

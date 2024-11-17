@@ -104,6 +104,7 @@ namespace engine::graphics
 		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
 
 		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
+		ResourceState getCurrentState() const { return m_currentState; }
 
 		DescriptorCPU dsv;
 		DescriptorCPU rtv;

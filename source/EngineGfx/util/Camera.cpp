@@ -30,12 +30,12 @@ void Camera::update()
     // TODO: move input handling in client specific implementation
 
     // TODO: frame independent movement https://gamedev.stackexchange.com/questions/9515/frame-independent-movement
-	float velocity = 2.f;
-	float rotationVelocity = 5.f;
+    float velocity = 2.f;
+    float rotationVelocity = 5.f;
 
     auto inputManager = system::InputManager::GetInputManager();
 
-    if(inputManager.getKeyState(system::Key::D).isPressed())
+    if (inputManager.getKeyState(system::Key::D).isPressed())
         translate(graphics::MovementDirection::SideDirection, velocity);
 
     if(inputManager.getKeyState(system::Key::W).isPressed())
@@ -62,8 +62,12 @@ void Camera::update()
     if(inputManager.getKeyState(system::Key::R).isPressed())
         reset();
 
-    updateViewMatrix();
-    processUpdate();
+    if (m_needUpdate)
+    {
+        updateViewMatrix();
+        processUpdate();
+        m_needUpdate = false;
+    }
 }
 
 void Camera::processUpdate()
@@ -78,12 +82,14 @@ void Camera::reset()
     m_viewDir  = {0.f, 0.f, 1.f};
     m_rightDir = {1.f, 0.f, 0.f};
     m_upDir    = {0.f, 1.f, 0.f};
+    m_needUpdate = true;
 }
 
 void Camera::translate(MovementDirection direction, float velocity)
 {
     auto offset = static_cast<math::Vector3*>(&m_viewDir)[(u8)direction] * velocity;
     m_position = m_position + offset;
+    m_needUpdate = true;
 }
 
 /*
@@ -104,4 +110,5 @@ void Camera::rotate(float vertical, float horizontal)
     m_rightDir.normalizeSelf();
     m_upDir = (rotationMatrixX * math::Vector4(m_upDir, { 1.f }));
     m_upDir.normalizeSelf();
+    m_needUpdate = true;
 }

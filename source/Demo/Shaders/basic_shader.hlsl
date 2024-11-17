@@ -8,6 +8,7 @@ struct Vertex
 struct PS_Input
 {
 	float4 pos: SV_POSITION;
+	float3 worldPos: POSITION;
     float3 normal : NORMAL;
     float2 uv : UV;
 };
@@ -28,12 +29,18 @@ struct Material
     int normalTexture;
 };
 
+struct Light
+{
+	float3 position;
+};
+
 // ==============================
 // Structures for constant buffers
 struct PassBindlessResourcess
 {
     uint passCBIndex;
     uint materialArrayIndex;
+    uint lightArrayIndex;
 };
 
 struct ObjectBindlessResources
@@ -56,6 +63,7 @@ PS_Input VS_Basic(Vertex vertex)
     pos = mul(passCB.viewMatrix, pos);
     pos = mul(passCB.perspective, pos);
     ret.pos = pos;
+    ret.worldPos = vertex.pos;
     ret.normal = vertex.normal;
     ret.uv = vertex.uv;
 
@@ -74,7 +82,7 @@ float4 PS_Basic(PS_Input input): SV_Target
     float3 normal = 0;
 
     Texture2D colorTexture = ResourceDescriptorHeap[material.colorTexture];
-    res = colorTexture.Sample(textureSampler, input.uv);
+    float4 color = colorTexture.Sample(textureSampler, input.uv);
 
     if(material.normalTexture ==-1)
     {
@@ -84,7 +92,13 @@ float4 PS_Basic(PS_Input input): SV_Target
     {
         Texture2D normalTexture = ResourceDescriptorHeap[material.normalTexture];
         normal = normalTexture.Sample(textureSampler, input.uv);
+        // remove it later !!!!!!!!!!!!!
+        normal = input.normal;
     }
+    StructuredBuffer<Light> lightArray = ResourceDescriptorHeap[passTable.lightArrayIndex];
+    Light light = lightArray[0];
+    float angle = max(dot(normalize(light.position - input.worldPos), normalize(normal)), 0);
+    res = color * (0.2 + angle);
 
     return res;
 }

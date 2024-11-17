@@ -61,6 +61,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
     {
         ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
+    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
@@ -74,7 +75,7 @@ bool BaseDemo::initialize()
 
     ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
     //root signature
-    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(1, 1, 10) };
+    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(2, 1, 10) };
     auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
     m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
 
@@ -125,9 +126,15 @@ bool BaseDemo::initialize()
     data.view = m_camera.getViewMatrix();
     m_constBuffer.init(context, &data, 1);
 
+    m_lightBuffer.data.push_back(Light{ math::Vector3{1.f, 1.f, 1.f} });
+    m_lightBuffer.desc.state = ResourceState::GENERIC_READ_STATE;
+    m_lightBuffer.desc.type = BufferType::CUSTOM;
+    m_lightBuffer.create(context);
+
     m_model.init(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
 
-    BindlessTable table{ m_constBuffer.getDescriptorHeapIndex(), m_model.m_materialBuffer.getDescriptorHeapIndex() };
+    BindlessTable table{ m_constBuffer.getDescriptorHeapIndex(), m_model.m_materialBuffer.getDescriptorHeapIndex(),
+                         m_lightBuffer.buffer.getDescriptorHeapIndex()};
     m_bindlessTable.init(context, &table, 1);
 
     m_camera.addChangeCallback([this](const Camera* camera)
@@ -176,17 +183,26 @@ void BaseDemo::draw()
     cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
     cmdList->IASetIndexBuffer(&indexBuffer);
 
+    ObjectData data;
+
     for (auto& submesh : m_model.m_submeshes)
     {
-        cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
+        data.materialIndex = submesh.materialIndex;
+        cmdList->SetGraphicsRoot32BitConstants(1, 2, &data, 0);
         submesh.draw(cmdList);
     }
 
     ImGuiSettings::StartFrame();
     {
-        static float f = 0.0f;
-        ImGuiSettings::Begin("Hello, world!");
-        ImGuiSettings::SliderFloat("float", &f, 0.0f, 1.0f); 
+        static math::Vector3 lightPos;
+        ImGuiSettings::Begin("Settings");
+        if (m_lightBuffer.data[0].position.onImGui("light position", -1000, 1000))
+        {
+            GfxContext context;
+            context.cmdList = m_cmdList.reset(0);
+            context.device = m_device.getDevice();
+            m_lightBuffer.update(context);
+        }
         ImGuiSettings::End();
     }
     ImGuiSettings::EndFrame(cmdList);

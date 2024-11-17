@@ -42,6 +42,7 @@ namespace engine::graphics
 		math::Matrix4 m_viewMatrix;
 		math::Matrix4 m_rotationMatrix;
 		std::vector<CallbackSign> m_callbacks;
+		bool m_needUpdate = false;
 	};
 
 };

@@ -36,9 +36,12 @@ namespace engine::util
         ImGui::NewFrame();
     }
 
-    void ImGuiSettings::EndFrame()
+    void ImGuiSettings::EndFrame(ID3D12GraphicsCommandList* cmdList)
     {
         ImGui::Render();
+        auto heap = GetDescriptorHeap();
+        cmdList->SetDescriptorHeaps(1, &heap);
+        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
     }
 
 
