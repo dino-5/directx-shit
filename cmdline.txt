@@ -1,2 +1,3 @@
 -adapter 1
 -list_adapter 1
+-enable_profiler 1

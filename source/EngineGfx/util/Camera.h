@@ -21,11 +21,12 @@ namespace engine::graphics
 	class Camera
 	{
 	public:
+		using CallbackSign = std::function<void(const Camera* camera)>;
 		Camera() = default;
 		void initialize(math::Vector3 pos, math::Vector3 viewDirection);
-		math::Matrix4 getViewMatrix() { return m_viewMatrix; }
+		math::Matrix4 getViewMatrix() const { return m_viewMatrix; }
 		void translate(MovementDirection direction, float velocity);
-		void addChangeCallback(std::function<void()> ptr) { m_callbacks.push_back(ptr); }
+		void addChangeCallback(CallbackSign ptr) { m_callbacks.push_back(ptr); }
 		void rotate(float vertical, float horizontal);
 		void updateViewMatrix();
 		void update();
@@ -40,7 +41,7 @@ namespace engine::graphics
 
 		math::Matrix4 m_viewMatrix;
 		math::Matrix4 m_rotationMatrix;
-		std::vector<std::function<void()>> m_callbacks;
+		std::vector<CallbackSign> m_callbacks;
 	};
 
 };

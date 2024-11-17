@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/util/Logger.h"
+#include "EngineCommon/util/Timer.h"
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 #include "EngineGfx/dx12/Device.h"
@@ -92,6 +93,7 @@ void WindowApp::run()
 	MSG msg = { };
 	while (msg.message !=WM_QUIT)
 	{
+		util::Timer timer("main loop", true);
 		auto start = std::chrono::system_clock::now();
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 		{
@@ -103,9 +105,6 @@ void WindowApp::run()
 			update();
 			draw();
 		}
-		auto end = std::chrono::system_clock::now();
-		std::chrono::duration<double> time_elapsed = end - start;
-		util::printInfo("frame rate is {}", 1.0 / time_elapsed.count());
 	}
 	destroy();
 }

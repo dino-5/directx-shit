@@ -47,14 +47,13 @@ namespace engine::graphics
 			name = std::to_wstring(resIndex++);
 		}
         m_resource->SetName(name.c_str());
-		createViews(device, descriptorDesc);
+		if (!(descriptorDesc.descriptor == DescriptorFlags::None))
+            createViews(device, descriptorDesc);
         util::printInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
 	}
 
 	void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptorProps)
 	{
-		if (descriptorProps.descriptor == DescriptorFlags::None)
-			return;
 
 		D3D12_RESOURCE_DESC desc = m_resource->GetDesc();
 		DescriptorFlags descriptor = descriptorProps.descriptor;

@@ -69,7 +69,7 @@ void Camera::update()
 void Camera::processUpdate()
 {
     for (auto& callback : m_callbacks)
-        callback();
+        callback(this);
 }
 
 void Camera::reset()

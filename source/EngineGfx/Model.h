@@ -13,11 +13,12 @@
 
 namespace engine::graphics
 {
-	class RenderContext;
     struct SubmeshData
     {
-        u32 textureIndex;
+        i32 colorTextureIndex;
+        i32 normalTextureIndex;
     };
+
 	class Model
 	{
 	public:
@@ -25,6 +26,14 @@ namespace engine::graphics
 		void init(system::Filepath path, GfxContext& context);
 		//Mesh GetMesh() { return m_mesh; }
 		void drawModel(ID3D12GraphicsCommandList* cmdList);
+        void reset()
+        {
+            m_mesh.reset();
+            m_materialBuffer.reset();
+            for (auto& texture : m_textures)
+                texture.reset();
+
+        }
 
 	private:
 		void loadTextures();
@@ -67,7 +76,8 @@ namespace engine::graphics
 		Mesh m_mesh;
 		std::vector<Submesh> m_submeshes;
 		std::vector<Texture> m_textures;
-        ConstantBuffer m_constBuffer;
+        Buffer m_materialBuffer;
+        Buffer m_objectBuffer;
         GfxContext* m_context = nullptr;
 
 		system::Filepath m_directory;

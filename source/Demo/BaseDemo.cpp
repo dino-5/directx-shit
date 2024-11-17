@@ -71,7 +71,7 @@ bool BaseDemo::initialize()
 	LogScope("BaseDemo");
 
     //root signature
-    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateDescriptor(1, 10) };
+    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(1, 1, 10) };
     auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
     m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
 
@@ -117,25 +117,23 @@ bool BaseDemo::initialize()
     context.device = m_device.getDevice();
 
     // setup data 
-
     ConstandBufferData data;
     data.perspective = math::PerspectiveProjection(90, m_swapChain.getAspectRatio(), .1f, 10000.f);
     data.view = m_camera.getViewMatrix();
     m_constBuffer.init(context, &data, 1);
 
-    BindlessTable table{ m_constBuffer.getDescriptorHeapIndex() };
-    m_bindlessTable.init(context, &table, 1);
-
     m_model.init(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
 
-    m_camera.addChangeCallback([this]()
+    BindlessTable table{ m_constBuffer.getDescriptorHeapIndex(), m_model.m_materialBuffer.getDescriptorHeapIndex() };
+    m_bindlessTable.init(context, &table, 1);
+
+    m_camera.addChangeCallback([this](const Camera* camera)
     {
         ConstandBufferData data;
         data.perspective = math::PerspectiveProjection(90, m_swapChain.getAspectRatio(), .1f, 10000.f);
-        data.view = this->m_camera.getViewMatrix();
+        data.view = camera->getViewMatrix();
         this->m_constBuffer.update(&data);
     });
-
 
     ThrowIfFailed(context.cmdList->Close());
     ID3D12CommandList* ppCommandLists[] = { context.cmdList};
@@ -177,35 +175,46 @@ void BaseDemo::draw()
 
     for (auto& submesh : m_model.m_submeshes)
     {
-        cmdList->SetGraphicsRootConstantBufferView(1, m_model.m_constBuffer.getAddress(submesh.materialIndex));
-        cmdList->DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, submesh.BaseVertexLocation, 0);
+        cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
+        submesh.draw(cmdList);
     }
 
     m_swapChain.changeState(cmdList, ResourceState::PRESENT);
     ThrowIfFailed(cmdList->Close());
     ID3D12CommandList* ppCommandLists[] = { cmdList};
     m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-    // Present the frame.
     m_swapChain->Present(1, 0);
 
     // sync
     m_cmdQueue->Signal(m_fence, ++m_fenceValue);
     m_swapChain.m_fence[m_currentFrameIndex] = m_fenceValue;
 
-	m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
-    if (m_fence->GetCompletedValue() < m_swapChain.m_fence[m_currentFrameIndex])
+}
+
+void BaseDemo::waitForFrame(u32 index)
+{
+    if (m_fence->GetCompletedValue() < m_swapChain.m_fence[index])
     {
-        m_fence->SetEventOnCompletion(m_swapChain.m_fence[m_currentFrameIndex], m_fenceEvent);
+        m_fence->SetEventOnCompletion(m_swapChain.m_fence[index], m_fenceEvent);
         WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
     }
 }
 
 void BaseDemo::update()
 {
+    m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
+    waitForFrame(m_currentFrameIndex);
+
     m_camera.update();
 }
 void BaseDemo::destroy()
 {
+    for (int i = 0; i < config::NumFrames; ++i)
+        waitForFrame(i);
+    m_model.reset();
+    m_buffer.reset();
+    m_constBuffer.reset();
+    m_bindlessTable.reset();
 }
 
 LRESULT BaseDemo::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)

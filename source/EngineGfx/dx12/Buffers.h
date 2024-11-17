@@ -199,10 +199,11 @@ namespace engine::graphics
 	public:
         ConstantBuffer() = default;
         template<typename T>
-		void init(GfxContext& context, T* data, u32 elementCount)
+		void init(GfxContext& context, T* data, u32 elementCount, bool createDescriptors = true)
 		{
             m_structSize = sizeof(T);
-            m_bufferSize = CalcConstantBufferByteSize(m_structSize * elementCount); 
+            m_elementSize = CalcConstantBufferByteSize(m_structSize);
+            m_bufferSize = m_elementSize * elementCount; 
             ResourceDescription desc{
                     .format = DXGI_FORMAT_UNKNOWN,
                     .width = m_bufferSize,
@@ -216,21 +217,28 @@ namespace engine::graphics
             };
 
             DescriptorProperties descProps{
-                .descriptor = DescriptorFlags::ConstantBuffer,
-                .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
+                .descriptor = createDescriptors ? DescriptorFlags::ConstantBuffer : DescriptorFlags::None,
+                .viewDimension = {},
                 .bufferStride = m_bufferSize,
                 .numElements = elementCount 
             };
 			Resource::initResource(context.device, desc, descProps);
 			CD3DX12_RANGE readRange(0, 0);       
             ThrowIfFailed(resource()->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
-            memcpy(m_buffer, data, sizeof(T) * elementCount);
+
+            if(sizeof(T) * elementCount == m_bufferSize)
+                memcpy(m_buffer, data, sizeof(T) * elementCount);
+            else
+            {
+                for(int i = 0; i < elementCount; ++i)
+                    memcpy(m_buffer + i * m_elementSize, &data[i], sizeof(T));
+            }
 
             // TODO : maybe transition to the constant state
 		}
 
 		D3D12_GPU_VIRTUAL_ADDRESS getAddress(u32 element=0) 		{
-			return resource()->GetGPUVirtualAddress() + m_structSize * element;
+			return resource()->GetGPUVirtualAddress() + m_elementSize * element;
 		}
 		u32 getDescriptorHeapIndex()
 		{
@@ -240,13 +248,14 @@ namespace engine::graphics
         template<typename T>
 		void update(T* data, uint elementNumber = 0)
 		{
-            memcpy(&m_buffer[elementNumber * m_structSize], data, sizeof(T));
+            memcpy(&m_buffer[elementNumber * m_elementSize], data, sizeof(T));
 		}
 
 	private:
 		char* m_buffer=nullptr;
 		uint m_bufferSize = 0;
 		uint m_structSize = 0;
+        uint m_elementSize = 0;
 	};
 
 };

@@ -114,6 +114,12 @@ namespace engine::graphics
             }
 		}
 
+		void reset()
+		{
+			m_vertexBuffer.reset();
+			m_indexBuffer.reset();
+		}
+
 	public:
 
 		std::string Name;

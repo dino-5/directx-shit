@@ -11,6 +11,7 @@ enum class CommandLineOption : u8
 {
     ADAPTER,
     LIST_ADAPTER,
+    ENABLE_PROFILER,
     COUNT
 };
 
@@ -22,7 +23,8 @@ constexpr const size_t cmdArgsSize = static_cast<size_t>(CommandLineOption::COUN
 const std::string commandLineStr[cmdArgsSize] =
 {
     "adapter",
-    "list_adapter"
+    "list_adapter",
+    "enable_profiler"
 };
 
 class CommandLine

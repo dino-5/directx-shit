@@ -8,23 +8,37 @@ struct Vertex
 struct PS_Input
 {
 	float4 pos: SV_POSITION;
+    float3 normal : NORMAL;
     float2 uv : UV;
 };
 
+// ==============================
+// Pass structures 
 struct General 
 {
     float4x4 viewMatrix;
     float4x4 perspective;
 };
 
+// ==============================
+// Object structures 
+struct Material
+{
+    int colorTexture;
+    int normalTexture;
+};
+
+// ==============================
+// Structures for constant buffers
 struct PassBindlessResourcess
 {
     uint passCBIndex;
+    uint materialArrayIndex;
 };
 
 struct ObjectBindlessResources
 {
-    uint textureIndex;
+    uint materialIndex;
 };
 
 ConstantBuffer<PassBindlessResourcess> passTable : register(b0, space10);
@@ -42,6 +56,7 @@ PS_Input VS_Basic(Vertex vertex)
     pos = mul(passCB.viewMatrix, pos);
     pos = mul(passCB.perspective, pos);
     ret.pos = pos;
+    ret.normal = vertex.normal;
     ret.uv = vertex.uv;
 
     return ret;
@@ -49,7 +64,27 @@ PS_Input VS_Basic(Vertex vertex)
 
 float4 PS_Basic(PS_Input input): SV_Target
 {
-    Texture2D texture = ResourceDescriptorHeap[objectTable.textureIndex];
-    float4 res = texture.Sample(textureSampler, input.uv);
+    uint objDataIndx = objectTable.materialIndex;
+
+    // get material of an object
+    StructuredBuffer<Material> materialArray = ResourceDescriptorHeap[passTable.materialArrayIndex];
+    Material material = materialArray[objDataIndx];
+
+    float4 res = 0;
+    float3 normal = 0;
+
+    Texture2D colorTexture = ResourceDescriptorHeap[material.colorTexture];
+    res = colorTexture.Sample(textureSampler, input.uv);
+
+    if(material.normalTexture ==-1)
+    {
+        normal = input.normal;
+    }
+    else
+    {
+        Texture2D normalTexture = ResourceDescriptorHeap[material.normalTexture];
+        normal = normalTexture.Sample(textureSampler, input.uv);
+    }
+
     return res;
 }

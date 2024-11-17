@@ -33,6 +33,7 @@ namespace gfx = engine::graphics;
 struct BindlessTable
 {
 	u32 cbIndex;
+	u32 submeshDataArray;
 };
 
 struct ConstandBufferData
@@ -47,6 +48,8 @@ public:
 	BaseDemo(u32 width, u32 height, std::string name);
 	bool initialize()override;
 	SHIT_ENGINE_SINGLETONE(BaseDemo);
+
+	void waitForFrame(u32 index);
 
 protected:
 	void onResize()override {}

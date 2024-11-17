@@ -89,13 +89,26 @@ namespace engine::graphics
         }
         m_mesh.init(context, m_geometry);
 
-        std::vector<SubmeshData> data;
-        data.reserve(m_textures.size());
-        for (auto& tex : m_textures)
+        std::vector<SubmeshData> materialData;
+        materialData.reserve(m_textures.size());
+        for (auto& material: m_model->materials)
         {
-            data.push_back({ tex.getDescriptorHeapIndex() });
+            i32 cIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+            i32 nIndex = material.normalTexture.index;
+            i32 colorTexture = m_textures[cIndex].getDescriptorHeapIndex();
+            i32 normalTexture = nIndex >= 0 ? m_textures[nIndex].getDescriptorHeapIndex() : -1;
+            
+            materialData.push_back({ colorTexture, normalTexture });
         }
-        m_constBuffer.init(context, data.data(), data.size());
+
+        BufferDescription<SubmeshData> desc;
+        desc.data = materialData.data();
+        desc.elementCount = materialData.size();
+        desc.name = "model submesh data";
+        desc.state = ResourceState::PIXEL_SHADER_RESOURCE;
+        desc.type = BufferType::CUSTOM;
+
+        m_materialBuffer.init(context, desc);
 
         m_context = nullptr;
     }
@@ -186,10 +199,10 @@ namespace engine::graphics
                 m_geometry.indices.push_back(indexData[i+2]);
             }
 
-            auto& material = m_model->materials[primitive.material != -1 ? primitive.material : 0];
-            
-            m_submeshes.push_back(m_geometry.getSubmesh(
-                material.pbrMetallicRoughness.baseColorTexture.index));
+            //auto& material = m_model->materials[primitive.material != -1 ? primitive.material : 0];
+
+            u32 materialIndex = primitive.material != -1 ? primitive.material : 0;
+            m_submeshes.push_back(m_geometry.getSubmesh(materialIndex));
         }
     }
 

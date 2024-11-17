@@ -95,9 +95,9 @@ namespace engine::system
     private:
         InputManager()=default;
 
-        virtual void onMouseDown(WPARAM btnState, int x, int y) {}
-        virtual void onMouseUp(WPARAM btnState, int x, int y){}
-        virtual void onMouseMove(WPARAM btnState, int x, int y){}
+        virtual void onMouseDown(WPARAM /*btnState*/, int /*x*/, int /*y*/) {}
+        virtual void onMouseUp(WPARAM /*btnState*/, int /*x*/, int /*y*/){}
+        virtual void onMouseMove(WPARAM /*btnState*/, int /*x*/, int /*y*/){}
         virtual void onKeyDown(Key key);
         virtual void onKeyUp(Key key);
         std::array<std::vector<CallbackInfo>, KeyCount> m_callbacks;

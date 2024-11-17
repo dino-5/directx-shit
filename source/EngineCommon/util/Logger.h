@@ -15,7 +15,7 @@ namespace engine::util
          LoggerVariable(infoEnabled)
          LoggerVariable(errorsEnabled)
     };
-    // TODO move this to the one global state object
+    // TODO move this to the one global state object and unite Common and Gfx parts in single dll
     extern LoggerState g_loggerState;
 
     // ANSI escape code for red text
@@ -35,13 +35,13 @@ namespace engine::util
     };
 #define SET_RED_COLOR() ColorSetter _(redColor)
 
-	extern std::vector<std::string> log_info;
+	extern u32 log_info;
 
     template<typename... Args>
     void printInfo(std::format_string<Args...> fmt, Args&&... args)
     {
         if(g_loggerState.infoEnabled)
-            std::cout<< std::string(log_info.size(), '\t') <<
+            std::cout<< std::string(log_info, '\t') <<
                      std::format(fmt, std::forward<Args>(args)...) << '\n';
     }
     template<typename... Args>
@@ -50,7 +50,7 @@ namespace engine::util
         if (g_loggerState.errorsEnabled)
         {
             SET_RED_COLOR();
-            std::cout << std::string(log_info.size(), '\t') <<
+            std::cout << std::string(log_info, '\t') <<
                       std::format(fmt, std::forward<Args>(args)...) << '\n';
         }
     }
@@ -61,13 +61,13 @@ namespace engine::util
 		ScopeInfo(const std::string_view& name = "", const std::source_location& location = std::source_location::current()) :
             m_name(GetFormattedPath(location, name))
 		{
-			std::cout << std::string( log_info.size(), '\t')<< ' ' << m_name << " started\n";
-			log_info.push_back(m_name);
+			std::cout << std::string( log_info, '\t')<< ' ' << m_name << " started\n";
+			log_info++;
 		}
 		~ScopeInfo()
 		{
-			log_info.pop_back();
-			std::cout << std::string( log_info.size(), '\t') << ' ' << m_name << " ended\n";
+			log_info--;
+			std::cout << std::string( log_info, '\t') << ' ' << m_name << " ended\n";
 		}
 		std::string m_name;
 	};
