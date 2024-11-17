@@ -1,11 +1,14 @@
 #include "BaseDemo.h"
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/util/CommandLine.h"
+#include "EngineCommon/util/ImGuiSettings.h"
+#include "third_party/imgui/imgui.h"
+#include "third_party/imgui/backends/imgui_impl_dx12.h"
 
 using namespace std;
 using namespace gfx;
+using namespace util;
 using namespace DirectX;
-
 
 BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 	WindowApp(width, height, name),
@@ -65,11 +68,11 @@ SwapChainSettings BaseDemo::getCurrentWindowSettings()
 	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle()};
 }
 
-
 bool BaseDemo::initialize()
 {
 	LogScope("BaseDemo");
 
+    ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
     //root signature
     RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(1, 1, 10) };
     auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
@@ -178,6 +181,15 @@ void BaseDemo::draw()
         cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
         submesh.draw(cmdList);
     }
+
+    ImGuiSettings::StartFrame();
+    {
+        static float f = 0.0f;
+        ImGuiSettings::Begin("Hello, world!");
+        ImGuiSettings::SliderFloat("float", &f, 0.0f, 1.0f); 
+        ImGuiSettings::End();
+    }
+    ImGuiSettings::EndFrame(cmdList);
 
     m_swapChain.changeState(cmdList, ResourceState::PRESENT);
     ThrowIfFailed(cmdList->Close());

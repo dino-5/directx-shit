@@ -2,8 +2,6 @@
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 #include "third_party/imgui/backends/imgui_impl_win32.h"
-#include "third_party/imgui/backends/imgui_impl_win32.h"
-#include "third_party/imgui/backends/imgui_impl_dx12.h"
 
 namespace engine::util
 {
@@ -44,9 +42,9 @@ namespace engine::util
     }
 
 
-    void ImGuiSettings::Begin(std::string name)
+    void ImGuiSettings::Begin(std::string_view name)
     {
-        ImGui::Begin(name.c_str());
+        ImGui::Begin(name.data());
     }
 
     void ImGuiSettings::End()
@@ -54,23 +52,33 @@ namespace engine::util
         ImGui::End();
     }
 
-    bool ImGuiSettings::SliderFloat2(std::string name, float* ptr, float min, float max)
+    bool ImGuiSettings::SliderFloat2(std::string_view name, float* ptr, float min, float max)
     {
-        return ImGui::SliderFloat2(name.c_str(), ptr, min, max);
+        return ImGui::SliderFloat2(name.data(), ptr, min, max);
     }
 
-    bool ImGuiSettings::SliderFloat3(std::string name, float* ptr, float min, float max)
+    bool ImGuiSettings::SliderFloat3(std::string_view name, float* ptr, float min, float max)
     {
-        return ImGui::SliderFloat3(name.c_str(), ptr, min, max);
+        return ImGui::SliderFloat3(name.data(), ptr, min, max);
     }
 
-    bool ImGuiSettings::SliderFloat4(std::string name, float* ptr, float min, float max)
+    bool ImGuiSettings::SliderFloat4(std::string_view name, float* ptr, float min, float max)
     {
-        return ImGui::SliderFloat4(name.c_str(), ptr, min, max);
+        return ImGui::SliderFloat4(name.data(), ptr, min, max);
     }
 
-    bool ImGuiSettings::SliderFloat(std::string name, float* ptr, float min, float max)
+    bool ImGuiSettings::ColorEdit3(std::string_view label, float* col)
     {
-        return ImGui::SliderFloat(name.c_str(), ptr, min, max);
+        return ImGui::ColorEdit3(label.data(), col);
+    }
+
+    bool ImGuiSettings::Button(std::string_view label)
+    {
+        return ImGui::Button(label.data());
+    }
+
+    bool ImGuiSettings::SliderFloat(std::string_view name, float* ptr, float min, float max)
+    {
+        return ImGui::SliderFloat(name.data(), ptr, min, max);
     }
 };

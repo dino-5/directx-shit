@@ -4,8 +4,6 @@
 #include "EngineCommon/include/defines.h"
 #include "EngineCommon/System/Window.h"
 #include "EngineCommon/System/InputManager.h"
-#include "third_party/imgui/imgui.h"
-#include "third_party/imgui/backends/imgui_impl_dx12.h"
 
 #include "EngineGfx/dx12/Device.h"
 #include "EngineGfx/dx12/SwapChain.h"
