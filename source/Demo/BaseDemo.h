@@ -56,6 +56,7 @@ class BaseDemo : public WindowApp
 public:
 	BaseDemo(u32 width, u32 height, std::string name);
 	bool initialize()override;
+	void compileShaders();
 	SHIT_ENGINE_SINGLETONE(BaseDemo);
 
 	void waitForFrame(u32 index);

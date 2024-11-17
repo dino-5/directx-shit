@@ -2,7 +2,7 @@
 
 namespace engine::util {
 
-    bool s_profilingEnabled = true;
+    bool s_profilingEnabled = false;
 
     decltype(clock::now()) g_programStartTime;
 }

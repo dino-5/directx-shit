@@ -92,8 +92,6 @@ float4 PS_Basic(PS_Input input): SV_Target
     {
         Texture2D normalTexture = ResourceDescriptorHeap[material.normalTexture];
         normal = normalTexture.Sample(textureSampler, input.uv);
-        // remove it later !!!!!!!!!!!!!
-        normal = input.normal;
     }
     StructuredBuffer<Light> lightArray = ResourceDescriptorHeap[passTable.lightArrayIndex];
     Light light = lightArray[0];

@@ -18,6 +18,7 @@ namespace engine::system
         E = 69,
         R = 82,
         F = 70,
+        C = 67,
         N1 = 49,
         N2 = 50,
         N3 = 51,

@@ -54,6 +54,11 @@ namespace engine::graphics
 		extern DxUtils* s_utils;
 		extern DxIncludeHandler* s_includer;
         void InitializeCompiler();
+		inline void Reset()
+		{
+			allShaders.clear();
+			allDescriptions.clear();
+		}
 		TableEntry< DxBlob*> CreateShader(const ShaderInfo& info);
 		DxBlob* GetShader(std::wstring name);
 		void Clear();

@@ -62,6 +62,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
         ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
     m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
+
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
@@ -69,18 +70,10 @@ SwapChainSettings BaseDemo::getCurrentWindowSettings()
 	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle()};
 }
 
-bool BaseDemo::initialize()
+void BaseDemo::compileShaders()
 {
-	LogScope("BaseDemo");
-
-    ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
-    //root signature
-    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(2, 1, 10) };
-    auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-    m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
-
     // shaders
-    ShaderManager::InitializeCompiler();
+    m_shaders.clear();
     auto createShader = [this](TableEntry<DxBlob*>& entry)
     {
         if (entry.second != nullptr)
@@ -114,8 +107,23 @@ bool BaseDemo::initialize()
 
     RenderState state;
     state.m_shader = shaderIG;
-
     m_pso = PSO::CreatePSO(state);
+}
+
+bool BaseDemo::initialize()
+{
+	LogScope("BaseDemo");
+
+    ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
+
+    //root signature
+    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(2, 1, 10) };
+    auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+    m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+
+    ShaderManager::InitializeCompiler();
+    compileShaders();
+
     GfxContext context;
     context.cmdList = m_cmdList.reset(0);
     context.device = m_device.getDevice();
@@ -234,6 +242,9 @@ void BaseDemo::update()
     waitForFrame(m_currentFrameIndex);
 
     m_camera.update();
+
+    if (m_inputManager->getKeyState(system::Key::C).isPressed())
+        compileShaders();
 }
 void BaseDemo::destroy()
 {
