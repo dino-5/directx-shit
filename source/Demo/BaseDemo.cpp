@@ -82,32 +82,66 @@ void BaseDemo::compileShaders()
     {
         ShaderInfo info(createShader);
         info.entryPoint = L"VS_Basic";
-        info.path = L"Shaders/basic_shader.hlsl";
-        info.shaderName = L"VS_Basic";
+        info.path = L"Shaders/lighting.hlsl";
+        info.shaderName = L"VS_Color";
         info.type = ShaderType::VERTEX;
     }
     {
         ShaderInfo info(createShader);
         info.entryPoint = L"PS_Basic";
-        info.path = L"Shaders/basic_shader.hlsl";
-        info.shaderName = L"PS_Basic";
+        info.path = L"Shaders/lighting.hlsl";
+        info.shaderName = L"PS_Color";
+        info.type = ShaderType::PIXEL;
+    }
+    {
+        ShaderInfo info(createShader);
+        info.entryPoint = L"VSMain";
+        info.path = L"Shaders/visualizeLight.hlsl";
+        info.shaderName = L"VS_lightVisualize";
+        info.type = ShaderType::VERTEX;
+    }
+    {
+        ShaderInfo info(createShader);
+        info.entryPoint = L"PSMain";
+        info.path = L"Shaders/visualizeLight.hlsl";
+        info.shaderName = L"PS_lightVisualize";
         info.type = ShaderType::PIXEL;
     }
 
-    std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-    };
-    ShaderInputGroup shaderIG;
-    shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
-    shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_Basic"));
-    shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_Basic"));
-    shaderIG.rootSignature = &m_rootSignature;
+    {
+        std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        };
+        ShaderInputGroup shaderIG;
+        shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
+        shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_Color"));
+        shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_Color"));
+        shaderIG.rootSignature = &m_rootSignature;
 
-    RenderState state;
-    state.m_shader = shaderIG;
-    m_pso = PSO::CreatePSO(state);
+        RenderState state;
+        state.m_shader = shaderIG;
+        m_pso = PSO::CreatePSO(state);
+    }
+
+    {
+        std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        };
+        ShaderInputGroup shaderIG;
+        shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
+        shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_lightVisualize"));
+        shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_lightVisualize"));
+        shaderIG.rootSignature = &m_rsLightVisualize;
+
+        RenderState state;
+        state.setRasterizerState(RasterizerState(CullMode::FRONT, true));
+        state.m_shader = shaderIG;
+        m_lightVisualizePso = PSO::CreatePSO(state);
+    }
+
 }
 
 bool BaseDemo::initialize()
@@ -117,9 +151,17 @@ bool BaseDemo::initialize()
     ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
 
     //root signature
-    RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(2, 1, 10) };
-    auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-    m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+    {
+        RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(2, 1, 10) };
+        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+        m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+    }
+    {
+        RootParameters parameters = { RootParameter::CreateDescriptor(0), 
+            RootParameter::CreateDescriptor(0, 0, RootParameterType::SRV)};
+        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+        m_rsLightVisualize.init(m_device.getDevice(), parameters, rootSignFlags);
+    }
 
     ShaderManager::InitializeCompiler();
     compileShaders();
@@ -139,7 +181,8 @@ bool BaseDemo::initialize()
     m_lightBuffer.desc.type = BufferType::CUSTOM;
     m_lightBuffer.create(context);
 
-    m_model.init(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
+    m_model.initGLTF(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
+    m_lightCube.initDSH(config::g_state.homeDir/ "textures/models/cube.dsh", context);
 
     BindlessTable table{ m_constBuffer.getDescriptorHeapIndex(), m_model.m_materialBuffer.getDescriptorHeapIndex(),
                          m_lightBuffer.buffer.getDescriptorHeapIndex()};
@@ -170,34 +213,54 @@ bool BaseDemo::initialize()
 void BaseDemo::draw()
 {
     ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
-    cmdList->RSSetViewports(1, &m_viewPort);
-    cmdList->RSSetScissorRects(1, &m_scissorRect);
-    auto renderTarget = m_swapChain.getView(m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET));
-
-    const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-    cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
-    cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-    cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
-
-    cmdList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
-	cmdList->SetGraphicsRootSignature( m_rootSignature );
-	cmdList->SetPipelineState( m_pso );
-
-    cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    cmdList->SetGraphicsRootConstantBufferView(0, m_bindlessTable.getAddress());
-
-    auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
-    auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
-    cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-    cmdList->IASetIndexBuffer(&indexBuffer);
-
-    ObjectData data;
-
-    for (auto& submesh : m_model.m_submeshes)
     {
-        data.materialIndex = submesh.materialIndex;
-        cmdList->SetGraphicsRoot32BitConstants(1, 2, &data, 0);
-        submesh.draw(cmdList);
+        auto renderTarget = m_swapChain.getView(m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET));
+        cmdList->RSSetViewports(1, &m_viewPort);
+        cmdList->RSSetScissorRects(1, &m_scissorRect);
+
+        const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+        cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
+        cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
+
+        cmdList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
+        cmdList->SetGraphicsRootSignature(m_rootSignature);
+        cmdList->SetPipelineState(m_pso);
+
+        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        cmdList->SetGraphicsRootConstantBufferView(0, m_bindlessTable.getAddress());
+
+        auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
+        auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
+        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+        cmdList->IASetIndexBuffer(&indexBuffer);
+
+        ObjectData data;
+
+        for (auto& submesh : m_model.m_submeshes)
+        {
+            data.materialIndex = submesh.materialIndex;
+            cmdList->SetGraphicsRoot32BitConstants(1, 2, &data, 0);
+            submesh.draw(cmdList);
+        }
+    }
+
+    //draw light cube
+    {
+        cmdList->SetGraphicsRootSignature( m_rsLightVisualize );
+        cmdList->SetPipelineState( m_lightVisualizePso );
+        cmdList->SetGraphicsRootConstantBufferView(0, m_constBuffer.getAddress());
+        cmdList->SetGraphicsRootShaderResourceView(1, m_lightBuffer.buffer.getGPUAdress());
+
+        auto vertexBuffer = GetVertexBufferView(m_lightCube.m_mesh.m_vertexBuffer);
+        auto indexBuffer = GetIndexBufferView(m_lightCube.m_mesh.m_indexBuffer);
+        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+        cmdList->IASetIndexBuffer(&indexBuffer);
+
+        for (auto& submesh : m_lightCube.m_submeshes)
+        {
+            submesh.draw(cmdList);
+        }
     }
 
     ImGuiSettings::StartFrame();
@@ -207,7 +270,7 @@ void BaseDemo::draw()
         if (m_lightBuffer.data[0].position.onImGui("light position", -1000, 1000))
         {
             GfxContext context;
-            context.cmdList = m_cmdList.reset(0);
+            context.cmdList = cmdList;
             context.device = m_device.getDevice();
             m_lightBuffer.update(context);
         }

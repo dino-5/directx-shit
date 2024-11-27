@@ -1,8 +1,6 @@
 
     inline void Buffer::copyData(const void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state)
     {
-        m_uploadBuffer.init(device, 1, m_bufferSize, false);
-
         D3D12_SUBRESOURCE_DATA subresData = {};
         subresData.pData = data;
         subresData.RowPitch = m_bufferSize;
@@ -40,6 +38,7 @@
         };
         Resource::initResource(context.device, desc, descriptorProps);
 
+        m_uploadBuffer.init(context.device, 1, m_bufferSize, false);
         if(bufferDesc.data)
             copyData(bufferDesc.data, context.device, context.cmdList, bufferDesc.state);
     }

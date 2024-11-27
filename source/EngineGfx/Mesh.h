@@ -19,8 +19,8 @@ namespace engine::graphics
 		u32 IndexCount = 0;
 		u32 StartIndexLocation = 0;
 		u32 BaseVertexLocation = 0;
-		u32 materialIndex = 0;
-		Submesh(u32 indexCount, u32 startIndex, u32 baseVertexLoc, u32 matIndex) : IndexCount(indexCount), StartIndexLocation(startIndex),
+		i32 materialIndex = 0;
+		Submesh(u32 indexCount, u32 startIndex, u32 baseVertexLoc, i32 matIndex) : IndexCount(indexCount), StartIndexLocation(startIndex),
 			BaseVertexLocation(baseVertexLoc), materialIndex(matIndex) {}
 		Submesh() = default;
 
@@ -31,6 +31,7 @@ namespace engine::graphics
 	{
 		math::Vector3 position;
 		math::Vector3 normal;
+		math::Vector4 tangent;
 		math::Vector2 uv;
 	};
 
@@ -41,7 +42,7 @@ namespace engine::graphics
         std::vector<u32> indices;
         u32 lastIndexLocation=0;
         u32 lastVertexOffset=0;
-        Submesh getSubmesh(u32 index)
+        Submesh getSubmesh(i32 index)
         {
             Submesh result;
             result.IndexCount = indices.size() - lastIndexLocation;

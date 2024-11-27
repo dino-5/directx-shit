@@ -87,18 +87,24 @@ private:
     HANDLE m_fenceEvent;
 	D3D12_VIEWPORT m_viewPort{};
 	D3D12_RECT m_scissorRect{};
+	system::InputManager* m_inputManager;
+	Table<DxBlob*> m_shaders;
 
 	// resources
-	gfx::Model m_model;
+	gfx::Camera m_camera;
+
 	gfx::Buffer m_buffer;
 	gfx::BufferObject<Light> m_lightBuffer;
-	gfx::PSO m_pso;
-	gfx::RootSignature m_rootSignature;
-	Table<DxBlob*> m_shaders;
-	gfx::Camera m_camera;
 	gfx::ConstantBuffer m_constBuffer;
 	gfx::ConstantBuffer m_bindlessTable;
 
-	system::InputManager* m_inputManager;
+	gfx::PSO m_pso;
+	gfx::RootSignature m_rootSignature;
+	gfx::Model m_model;
+
+	gfx::PSO m_lightVisualizePso;
+	gfx::RootSignature m_rsLightVisualize;
+	gfx::Model m_lightCube;
+	math::Vector3 m_lightCubePosition;
 };
 

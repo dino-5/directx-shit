@@ -2,6 +2,7 @@ struct Vertex
 {
     float3 pos    : POSITION;
     float3 normal : NORMAL;
+    float4 tangent: TANGENT;
     float2 uv     : UV;
 };
 
@@ -10,6 +11,7 @@ struct PS_Input
 	float4 pos: SV_POSITION;
 	float3 worldPos: POSITION;
     float3 normal : NORMAL;
+    float4 tangent: TANGENT;
     float2 uv : UV;
 };
 
@@ -64,7 +66,8 @@ PS_Input VS_Basic(Vertex vertex)
     pos = mul(passCB.perspective, pos);
     ret.pos = pos;
     ret.worldPos = vertex.pos;
-    ret.normal = vertex.normal;
+    ret.normal = normalize(vertex.normal);
+    ret.tangent = normalize(vertex.tangent);
     ret.uv = vertex.uv;
 
     return ret;
@@ -91,12 +94,17 @@ float4 PS_Basic(PS_Input input): SV_Target
     else
     {
         Texture2D normalTexture = ResourceDescriptorHeap[material.normalTexture];
-        normal = normalTexture.Sample(textureSampler, input.uv);
+        float3 n = normalTexture.Sample(textureSampler, input.uv);
+        float3x3 NormalTransform = transpose(float3x3(input.tangent.xyz, cross(input.tangent.xyz, input.normal), input.normal));
+        normal = mul(NormalTransform, n);
     }
+    normal = normalize(normal);
+
     StructuredBuffer<Light> lightArray = ResourceDescriptorHeap[passTable.lightArrayIndex];
     Light light = lightArray[0];
-    float angle = max(dot(normalize(light.position - input.worldPos), normalize(normal)), 0);
+    float angle = max(dot(normalize(light.position - input.worldPos), normal), 0);
     res = color * (0.2 + angle);
 
     return res;
+    return float4(normal, 1.f);
 }

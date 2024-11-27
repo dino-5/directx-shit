@@ -1,5 +1,5 @@
 #include "Demo/BaseDemo.h"
-#include "EngineCommon/math/Vector.h"
+#include "EngineCommon/util/DSHLoader.h"
 
 using namespace engine::config;
 
@@ -17,24 +17,13 @@ int main()
         g_state.shaderDir = g_state.demoDir / "Shaders";
     }
 
-    //{
-        uint width = 1200;
-        uint height = 800;
-        std::string name = "DX12 Demo";
-    //}
+    uint width = 1200;
+    uint height = 800;
+    std::string name = "DX12 Demo";
 
+    BaseDemo theApp(width, height, name);
+    if(!theApp.initialize())
+        return 0;
 
-    //try
-    //{
-        BaseDemo theApp(width, height, name);
-        if(!theApp.initialize())
-            return 0;
-
-        theApp.run();
-    //}
-    //catch(engine::util::DxException& e)
-    //{
-    //    MessageBox(nullptr, e.ToString().c_str(), "HR Failed", MB_OK);
-    //    return 0;
-    //}
+    theApp.run();
 }

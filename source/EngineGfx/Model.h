@@ -5,6 +5,7 @@
 #include <iostream>
 #include <utility>
 #include <memory>
+#include <variant>
 #include "EngineGfx/Mesh.h"
 #include "EngineGfx/Texture.h"
 #include "EngineCommon/System/Filesystem.h"
@@ -19,12 +20,15 @@ namespace engine::graphics
         i32 normalTextureIndex;
     };
 
+    using GeometryGLTF = Geometry<Vertex>;
+    using GeometryDSH = Geometry<math::Vector3>;
+
 	class Model
 	{
 	public:
 		Model() = default;
-		void init(system::Filepath path, GfxContext& context);
-		//Mesh GetMesh() { return m_mesh; }
+		void initGLTF(system::Filepath path, GfxContext& context);
+        void initDSH(system::Filepath path, GfxContext& context);
 		void drawModel(ID3D12GraphicsCommandList* cmdList);
         void reset()
         {
@@ -72,7 +76,7 @@ namespace engine::graphics
 
 
 	public:
-		Geometry<Vertex> m_geometry;
+		std::variant<GeometryGLTF, GeometryDSH> m_geometry;
 		Mesh m_mesh;
 		std::vector<Submesh> m_submeshes;
 		std::vector<Texture> m_textures;
@@ -82,7 +86,5 @@ namespace engine::graphics
 
 		system::Filepath m_directory;
         std::unique_ptr<tinygltf::Model> m_model;
-
-
 	};
 };

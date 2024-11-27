@@ -3,8 +3,9 @@
 #include "EngineGfx/Texture.h"
 #include "EngineGfx/dx12/Device.h"
 #include "EngineCommon/util/Logger.h"
-#include "EngineCommon//math/Vector.h"
-#include "EngineCommon//math/Matrix.h"
+#include "EngineCommon/util/DSHLoader.h"
+#include "EngineCommon/math/Vector.h"
+#include "EngineCommon/math/Matrix.h"
 
 #include <span>
 
@@ -30,9 +31,26 @@ bool locLoadModel(tinygltf::Model* model, const std::string& path)
 
 namespace engine::graphics
 {
-    void Model::init(system::Filepath path, graphics::GfxContext& context)
+    void Model::initDSH(system::Filepath path, GfxContext& context)
+    {
+        DSH_Data data = loadDSH(path);
+        m_geometry.emplace<GeometryDSH>();
+        auto& geometry = std::get<GeometryDSH>(m_geometry);
+        float* vertices = data.vertexData.data();
+        for (int i = 0; i < data.vertexData.size(); i+=3) // we support only vector3 for our format for now
+        {
+            geometry.vertices.push_back({ vertices[i], vertices[i + 1], vertices[i + 2] });
+        }
+        geometry.indices = data.indices;
+        m_submeshes.push_back(geometry.getSubmesh(-1));
+
+        m_mesh.init(context, geometry);
+    }
+
+    void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
     {
         m_context = &context;
+        auto& geometry = std::get<GeometryGLTF>(m_geometry);
         m_directory.init(path.getPath().remove_filename());
         m_model = std::make_unique<tinygltf::Model>();
         bool success= locLoadModel(m_model.get(), path.str());
@@ -74,8 +92,8 @@ namespace engine::graphics
                 }
             }
         }
-        m_geometry.vertices.reserve(vertexCount);
-        m_geometry.indices.reserve(indexCount);
+        geometry.vertices.reserve(vertexCount);
+        geometry.indices.reserve(indexCount);
 
         loadTextures();
         
@@ -87,7 +105,7 @@ namespace engine::graphics
                     processNode(nodeIndex);
             }
         }
-        m_mesh.init(context, m_geometry);
+        m_mesh.init(context, geometry);
 
         std::vector<SubmeshData> materialData;
         materialData.reserve(m_textures.size());
@@ -143,10 +161,11 @@ namespace engine::graphics
 
     void Model::processMesh(uint index)
     {
+        auto& geometry = std::get<GeometryGLTF>(m_geometry);
         auto& mesh = m_model->meshes[index];
         for (auto& primitive : mesh.primitives)
         {
-            int positionIndex, texIndex, normalIndex;
+            int positionIndex, texIndex, normalIndex, tangentIndex;
             for (auto& [attrName, attrIndex] : primitive.attributes)
             {
                 if (attrName == "POSITION")
@@ -155,24 +174,32 @@ namespace engine::graphics
                 }
                 else if (attrName == "NORMAL")
                 {
-                    normalIndex= attrIndex;
+                    normalIndex = attrIndex;
                 }
                 else if (attrName == "TEXCOORD_0")
                 {
-                    texIndex= attrIndex;
+                    texIndex = attrIndex;
+                }
+                else if (attrName == "TANGENT")
+                {
+                    tangentIndex = attrIndex;
                 }
             }
 
             auto position = getAccessor(positionIndex);
             auto normal = getAccessor(normalIndex);
             auto texture = getAccessor(texIndex);
+            auto tangent = getAccessor(tangentIndex ? tangentIndex : 0);
 
             assert(checkAccessor(position, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3));
             assert(checkAccessor(normal, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3));
             assert(checkAccessor(texture, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC2));
+            assert(checkAccessor(tangent, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC4));
 
             assert(position.accessor.count == normal.accessor.count && normal.accessor.count == texture.accessor.count);
             u32 count = position.accessor.count;
+            auto getSpan4 = [count](AccessorData& accessor) -> auto {
+                return std::span<math::Vector4>(reinterpret_cast<math::Vector4*>(accessor.getData()), count); };
             auto getSpan3 = [count](AccessorData& accessor) -> auto {
                 return std::span<math::Vector3>(reinterpret_cast<math::Vector3*>(accessor.getData()), count); };
             auto getSpan2 = [count](AccessorData& accessor) -> auto {
@@ -181,10 +208,11 @@ namespace engine::graphics
             auto positionSpan = getSpan3(position);
             auto normalSpan = getSpan3(normal);
             auto textureSpan = getSpan2(texture);
+            auto tangentSpan = getSpan2(texture);
 
             for (int i = 0; i < count; i++)
             {
-                m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], textureSpan[i] });
+                geometry.vertices.push_back({ positionSpan[i], normalSpan[i], textureSpan[i], tangentSpan[i]});
             }
 
             auto indicesAccessor = getAccessor(primitive.indices);
@@ -194,15 +222,13 @@ namespace engine::graphics
             const u16* indexData = reinterpret_cast<u16*>(indicesAccessor.getData());
             for (int i = 0; i < indexCount; i+=3)
             {
-                m_geometry.indices.push_back(indexData[i+0]);
-                m_geometry.indices.push_back(indexData[i+1]);
-                m_geometry.indices.push_back(indexData[i+2]);
+                geometry.indices.push_back(indexData[i+0]);
+                geometry.indices.push_back(indexData[i+1]);
+                geometry.indices.push_back(indexData[i+2]);
             }
 
-            //auto& material = m_model->materials[primitive.material != -1 ? primitive.material : 0];
-
-            u32 materialIndex = primitive.material != -1 ? primitive.material : 0;
-            m_submeshes.push_back(m_geometry.getSubmesh(materialIndex));
+            //u32 materialIndex = primitive.material != -1 ? primitive.material : 0;
+            m_submeshes.push_back(geometry.getSubmesh(primitive.material));
         }
     }
 
@@ -215,7 +241,8 @@ namespace engine::graphics
 
         for (auto& submesh : m_submeshes)
         {
-            cmdList->SetGraphicsRootDescriptorTable(1, m_textures[submesh.materialIndex].srv.HandleGPU);
+            if(submesh.materialIndex!=-1)
+                cmdList->SetGraphicsRootDescriptorTable(1, m_textures[submesh.materialIndex].srv.HandleGPU);
             cmdList->DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, submesh.BaseVertexLocation, 0);
         }
     }

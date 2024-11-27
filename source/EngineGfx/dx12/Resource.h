@@ -102,6 +102,7 @@ namespace engine::graphics
 
 		ID3D12Resource* resource() { return m_resource.Get(); }
 		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
+        D3D12_GPU_VIRTUAL_ADDRESS getGPUAdress() const { return m_resource->GetGPUVirtualAddress(); }
 
 		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
 		ResourceState getCurrentState() const { return m_currentState; }
