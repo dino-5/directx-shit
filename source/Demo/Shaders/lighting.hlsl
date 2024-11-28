@@ -73,7 +73,14 @@ PS_Input VS_Basic(Vertex vertex)
     return ret;
 }
 
-float4 PS_Basic(PS_Input input): SV_Target
+struct PS_Result
+{
+    float4 position : SV_Target0;
+    float4 albedo: SV_Target1;
+    float4 normal: SV_Target2;
+};
+
+PS_Result PS_Basic(PS_Input input): SV_Target
 {
     uint objDataIndx = objectTable.materialIndex;
 
@@ -100,11 +107,15 @@ float4 PS_Basic(PS_Input input): SV_Target
     }
     normal = normalize(normal);
 
+    PS_Result result;
+    result.position = float4(input.worldPos, 0.f);
+    result.albedo = color;
+    result.normal = float4(normal, 0.f);
+    return result;
+
     StructuredBuffer<Light> lightArray = ResourceDescriptorHeap[passTable.lightArrayIndex];
     Light light = lightArray[0];
     float angle = max(dot(normalize(light.position - input.worldPos), normal), 0);
     res = color * (0.2 + angle);
 
-    return res;
-    return float4(normal, 1.f);
 }

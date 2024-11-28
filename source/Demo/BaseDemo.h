@@ -98,13 +98,23 @@ private:
 	gfx::ConstantBuffer m_constBuffer;
 	gfx::ConstantBuffer m_bindlessTable;
 
+	// deferred rendering - geometry pass
 	gfx::PSO m_pso;
 	gfx::RootSignature m_rootSignature;
 	gfx::Model m_model;
+
+	// deferred rendering - lighting pass
+	gfx::PSO m_lightingPSO;
+	gfx::RootSignature m_lightingRS;
 
 	gfx::PSO m_lightVisualizePso;
 	gfx::RootSignature m_rsLightVisualize;
 	gfx::Model m_lightCube;
 	math::Vector3 m_lightCubePosition;
+
+	//deferred rendering
+	gfx::Resource m_positionRT[config::NumFrames];
+	gfx::Resource m_albedoRT[config::NumFrames];
+	gfx::Resource m_normalRT[config::NumFrames];
 };
 

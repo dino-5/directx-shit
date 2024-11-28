@@ -2,7 +2,7 @@
 #define PSO_H
 
 #include <d3d12.h>
-#include <d3d12.h>
+#include <dxgiformat.h>
 #include "EngineGfx/dx12/d3dx12.h"
 #include <string>
 #include <vector>
@@ -66,7 +66,7 @@ namespace engine::graphics
 
 	struct ShaderInputGroup
 	{
-		D3D12_INPUT_LAYOUT_DESC desc;
+		D3D12_INPUT_LAYOUT_DESC desc = { nullptr, 0 };
 		D3D12_SHADER_BYTECODE vertexShader;
 		D3D12_SHADER_BYTECODE pixelShader;
 		RootSignature* rootSignature = nullptr;
@@ -86,6 +86,7 @@ namespace engine::graphics
 		DepthStencilState m_ds;
 		RasterizerState   m_rast;
 		ShaderInputGroup  m_shader;
+		std::vector<DXGI_FORMAT> renderTargets = {};
 	};
 
     D3D12_SHADER_BYTECODE GetShader(std::wstring name);
@@ -99,9 +100,11 @@ namespace engine::graphics
 		}
 
 		// Warning: pointer can have dangling memory after adding new element
-		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , 
+			RasterizerState rasterState, std::vector<DXGI_FORMAT> renderTargets = {});
 		static PSO CreatePSO(const RenderState& state);
-		static PSO* CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , RasterizerState rasterState);
+		static PSO* CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , 
+			RasterizerState rasterState, std::vector<DXGI_FORMAT> renderTargets = {});
 		static PSO* GetPSO(std::wstring name)
 		{
 			return util::FindElement(allPSO, name);

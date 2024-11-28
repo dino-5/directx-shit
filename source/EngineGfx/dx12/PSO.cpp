@@ -33,7 +33,8 @@ namespace engine::graphics
         return getShader(shader);
     }
 
-    PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
+    PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, 
+        RasterizerState rasterState, const std::vector<DXGI_FORMAT> renderTargets)
     {
         m_psoDesc.InputLayout = shader.desc;
         m_psoDesc.pRootSignature = *shader.rootSignature;
@@ -44,18 +45,29 @@ namespace engine::graphics
         m_psoDesc.DepthStencilState = dsState;
         m_psoDesc.SampleMask = UINT_MAX;
         m_psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-        m_psoDesc.NumRenderTargets = 1;
-        m_psoDesc.RTVFormats[0] = backBufferFormat;
+        if (renderTargets.size() >= 1)
+        {
+            m_psoDesc.NumRenderTargets = renderTargets.size();
+            uint index = 0;
+            for(auto& format : renderTargets)
+                m_psoDesc.RTVFormats[index++] = format;
+        }
+        else
+        {
+            m_psoDesc.NumRenderTargets = 1;
+            m_psoDesc.RTVFormats[0] = backBufferFormat;
+        }
         m_psoDesc.SampleDesc.Count =  1;
         m_psoDesc.SampleDesc.Quality = 0;
         m_psoDesc.DSVFormat = dsvBufferFormat;
         ThrowIfFailed(device->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
     }
 
-    PSO* PSO::CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, RasterizerState rasterState)
+    PSO* PSO::CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState,
+        RasterizerState rasterState, const std::vector<DXGI_FORMAT> renderTargets)
     {
         if (GetPSO(name) == nullptr)
-            allPSO.push_back({ name, PSO(device, shader, blendState, dsState, rasterState) });
+            allPSO.push_back({ name, PSO(device, shader, blendState, dsState, rasterState, renderTargets) });
         return &(allPSO.back().second);
     }
 
@@ -81,7 +93,7 @@ namespace engine::graphics
 
     PSO PSO::CreatePSO(const RenderState& state)
     {
-        return PSO(Device::device->getDevice(), state.m_shader, state.m_blend, state.m_ds, state.m_rast);
+        return PSO(Device::device->getDevice(), state.m_shader, state.m_blend, state.m_ds, state.m_rast, state.renderTargets);
     }
 
     PSO* RenderState::compile(std::wstring name)

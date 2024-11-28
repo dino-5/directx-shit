@@ -20,7 +20,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 	m_device.createFence(&m_fence);
 
 	DescriptorHeapManager::CreateDSVHeap(10);
-	DescriptorHeapManager::CreateRTVHeap(10);
+	DescriptorHeapManager::CreateRTVHeap(20);
 	DescriptorHeapManager::CreateSRVHeap(200);
 	
 	m_swapChain.onResize();
@@ -33,36 +33,83 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 
     m_scissorRect = { 0, 0, static_cast<long>(width), static_cast<long>(height) };
 
-	DescriptorProperties viewProps{
-		.descriptor = DescriptorFlags::DepthStencil,
-		.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
-		.bufferStride = 0,
-		.numElements = 0
-	};
-	ResourceDescription desc{
-			.format = DXGI_FORMAT_D24_UNORM_S8_UINT,
-			.width= width,
-			.height = height,
-			.depthOrArraySize = 1,
-			.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-			.flags = ResourceFlags::DEPTH_STENCIL,
-			.createState = ResourceState::DEPTH_WRITE ,
-			.heapType = D3D12_HEAP_TYPE_DEFAULT,
-            .name = "depthStencil"
-   };
+    // depth
+    {
+        DescriptorProperties viewProps{
+            .descriptor = DescriptorFlags::DepthStencil,
+            .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+        };
+        ResourceDescription desc{
+                .format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+                .width= width,
+                .height = height,
+                .depthOrArraySize = 1,
+                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+                .flags = ResourceFlags::DEPTH_STENCIL,
+                .createState = ResourceState::DEPTH_WRITE ,
+                .heapType = D3D12_HEAP_TYPE_DEFAULT,
+                .name = "depthStencil"
+       };
+        D3D12_CLEAR_VALUE val;
+        val.DepthStencil = { 1.0f ,0 };
+        val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
+    }
 
-    D3D12_CLEAR_VALUE val;
-    val.DepthStencil = { 1.0f ,0 };
-    val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
+    for(int i = 0; i < config::NumFrames; ++i)
+    {
+        DescriptorProperties viewProps{
+            .descriptor = DescriptorFlags::RenderTarget |DescriptorFlags::ShaderResource ,
+            .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+        };
+
+        ResourceDescription descPosition{
+                .format = DXGI_FORMAT_R32G32B32A32_FLOAT,
+                .width= width,
+                .height = height,
+                .depthOrArraySize = 1,
+                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+                .flags = ResourceFlags::RENDER_TARGET,
+                .createState = ResourceState::RENDER_TARGET ,
+                .heapType = D3D12_HEAP_TYPE_DEFAULT,
+                .name = "deferred position"
+       };
+        m_positionRT[i].initResource(m_device.getDevice(), descPosition, viewProps, nullptr);
+
+        ResourceDescription descAlbedo{
+                .format = DXGI_FORMAT_R32G32B32A32_FLOAT,
+                .width= width,
+                .height = height,
+                .depthOrArraySize = 1,
+                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+                .flags = ResourceFlags::RENDER_TARGET,
+                .createState = ResourceState::RENDER_TARGET ,
+                .heapType = D3D12_HEAP_TYPE_DEFAULT,
+                .name = "deferred albedo"
+       };
+        m_albedoRT[i].initResource(m_device.getDevice(), descAlbedo, viewProps, nullptr);
+
+        ResourceDescription descNormal{
+                .format = DXGI_FORMAT_R32G32B32A32_FLOAT,
+                .width= width,
+                .height = height,
+                .depthOrArraySize = 1,
+                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+                .flags = ResourceFlags::RENDER_TARGET,
+                .createState = ResourceState::RENDER_TARGET ,
+                .heapType = D3D12_HEAP_TYPE_DEFAULT,
+                .name = "deferred normal"
+       };
+        m_normalRT[i].initResource(m_device.getDevice(), descNormal, viewProps, nullptr);
+    }
 
     m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     if (m_fenceEvent == nullptr)
     {
         ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
-    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
 
+    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
@@ -107,7 +154,23 @@ void BaseDemo::compileShaders()
         info.shaderName = L"PS_lightVisualize";
         info.type = ShaderType::PIXEL;
     }
+    {
+        ShaderInfo info(createShader);
+        info.entryPoint = L"VSMain";
+        info.path = L"Shaders/deferred.hlsl";
+        info.shaderName = L"VS_Deferred";
+        info.type = ShaderType::VERTEX;
+    }
+    {
+        ShaderInfo info(createShader);
+        info.entryPoint = L"PSMain";
+        info.path = L"Shaders/deferred.hlsl";
+        info.shaderName = L"PS_Deferred";
+        info.type = ShaderType::PIXEL;
+    }
 
+    // TODO rename and structure pass elements
+    // deferred geometry pass
     {
         std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
             {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -123,12 +186,31 @@ void BaseDemo::compileShaders()
 
         RenderState state;
         state.m_shader = shaderIG;
+        state.renderTargets = { DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT,DXGI_FORMAT_R32G32B32A32_FLOAT };
         m_pso = PSO::CreatePSO(state);
+    }
+
+    // deferred lighting pass
+    {
+        ShaderInputGroup shaderIG;
+        shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_Deferred"));
+        shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_Deferred"));
+        shaderIG.rootSignature = &m_lightingRS;
+
+        RenderState state;
+        DepthStencilState depth;
+        depth.m_desc.DepthEnable = FALSE;
+        depth.m_desc.StencilEnable = FALSE;
+
+        state.setRasterizerState(RasterizerState(CullMode::FRONT, true));
+        state.setDepthStencilState(depth);
+        state.m_shader = shaderIG;
+        m_lightingPSO = PSO::CreatePSO(state);
     }
 
     {
         std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
-            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
         };
         ShaderInputGroup shaderIG;
         shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
@@ -155,6 +237,11 @@ bool BaseDemo::initialize()
         RootParameters parameters = { RootParameter::CreateDescriptor(0, 10), RootParameter::CreateConstants(2, 1, 10) };
         auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
         m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+    }
+    {
+        RootParameters parameters = { RootParameter::CreateConstants(4, 0, 10)};
+        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+        m_lightingRS.init(m_device.getDevice(), parameters, rootSignFlags);
     }
     {
         RootParameters parameters = { RootParameter::CreateDescriptor(0), 
@@ -213,15 +300,32 @@ bool BaseDemo::initialize()
 void BaseDemo::draw()
 {
     ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
+    auto positionRT = m_positionRT[m_currentFrameIndex];
+    auto albedoRT = m_albedoRT[m_currentFrameIndex];
+    auto normalRT = m_normalRT[m_currentFrameIndex];
+
+    // deferred
     {
-        auto renderTarget = m_swapChain.getView(m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET));
+        positionRT.transition(cmdList, ResourceState::RENDER_TARGET);
+        albedoRT.transition(cmdList, ResourceState::RENDER_TARGET);
+        normalRT.transition(cmdList, ResourceState::RENDER_TARGET);
+
         cmdList->RSSetViewports(1, &m_viewPort);
         cmdList->RSSetScissorRects(1, &m_scissorRect);
 
-        const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-        cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
+        const float clearColor[] = { .0f, .0f, .0f, .0f };
+        cmdList->ClearRenderTargetView(positionRT.rtv.HandleCPU, clearColor, 0, nullptr);
+        cmdList->ClearRenderTargetView(albedoRT.rtv.HandleCPU, clearColor, 0, nullptr);
+        cmdList->ClearRenderTargetView(normalRT.rtv.HandleCPU, clearColor, 0, nullptr);
+
+        constexpr const u32 rtHandlesNumber = 3;
+        D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[rtHandlesNumber] = {
+            positionRT.rtv.HandleCPU, 
+            albedoRT.rtv.HandleCPU, 
+            normalRT.rtv.HandleCPU, 
+        };
         cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
+        cmdList->OMSetRenderTargets(rtHandlesNumber, rtHandles, true, &m_depthStencil.dsv.HandleCPU);
 
         cmdList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
         cmdList->SetGraphicsRootSignature(m_rootSignature);
@@ -245,6 +349,35 @@ void BaseDemo::draw()
         }
     }
 
+    {
+        auto renderTarget = m_swapChain.getView(m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET));
+        positionRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
+        albedoRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
+        normalRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
+
+        const float clearColor[] = { .0f, .0f, .0f, .0f };
+        cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
+        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, nullptr);
+        struct 
+        {
+            int positionIndex;
+            int albedoIndex;
+            int normalIndex;
+            int lightBufferIndex;
+        }deferredTable;
+        deferredTable.positionIndex = positionRT.srv.getDescriptorIndex();
+        deferredTable.albedoIndex = albedoRT.srv.getDescriptorIndex();
+        deferredTable.normalIndex = normalRT.srv.getDescriptorIndex();
+        deferredTable.lightBufferIndex = m_lightBuffer.buffer.getDescriptorHeapIndex();
+
+        cmdList->SetGraphicsRootSignature(m_lightingRS);
+        cmdList->SetPipelineState(m_lightingPSO);
+        cmdList->IASetVertexBuffers(0, 1, nullptr);
+        cmdList->IASetIndexBuffer(nullptr);
+        cmdList->SetGraphicsRoot32BitConstants(0, 4, &deferredTable, 0);
+        cmdList->DrawInstanced(6, 1, 0, 0);
+    }
+
     //draw light cube
     {
         cmdList->SetGraphicsRootSignature( m_rsLightVisualize );
@@ -262,6 +395,8 @@ void BaseDemo::draw()
             submesh.draw(cmdList);
         }
     }
+
+    
 
     ImGuiSettings::StartFrame();
     {
