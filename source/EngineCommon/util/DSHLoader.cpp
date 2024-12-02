@@ -12,19 +12,30 @@ bool isNumber(char ch)
 DSH_Data loadDSH(system::Filepath path)
 {
     std::string data = path.readFile();
-    engine::util::printInfo("{}", data);
     std::istringstream stream(data);
     
     // 9 index is start of number of elements in vertex
     DSH_Data result;
 
-    stream.seekg(9);
+    stream.seekg(6);
+
+    stream >> result.color[0];
+    stream >> result.color[1];
+    stream >> result.color[2];
+
+    u32 verticesStart = data.find("vertices");
+    stream.seekg(verticesStart + 9);
     u32 dim;
     stream >> dim;
     if (dim != 3)
         engine::util::printError("failed to get correct number of dimensions, got {}", dim);
 
-    stream.seekg(data.find('\n'));
+    u32 index = stream.tellg();
+    while (true)
+        if (isNumber(data[++index]))
+            break;
+    stream.seekg(index);
+
     u32 indicesStart = data.find("indices");
     u32 vertexStop = indicesStart;
     while (true)

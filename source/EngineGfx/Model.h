@@ -76,7 +76,7 @@ namespace engine::graphics
 
 
 	public:
-		std::variant<GeometryGLTF, GeometryDSH> m_geometry;
+		GeometryGLTF m_geometry;
 		Mesh m_mesh;
 		std::vector<Submesh> m_submeshes;
 		std::vector<Texture> m_textures;

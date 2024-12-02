@@ -34,23 +34,23 @@ namespace engine::graphics
     void Model::initDSH(system::Filepath path, GfxContext& context)
     {
         DSH_Data data = loadDSH(path);
-        m_geometry.emplace<GeometryDSH>();
-        auto& geometry = std::get<GeometryDSH>(m_geometry);
         float* vertices = data.vertexData.data();
         for (int i = 0; i < data.vertexData.size(); i+=3) // we support only vector3 for our format for now
         {
-            geometry.vertices.push_back({ vertices[i], vertices[i + 1], vertices[i + 2] });
+            m_geometry.vertices.push_back({ { vertices[i], vertices[i + 1], vertices[i + 2] },
+                {vertices[i+3], vertices[i+4], vertices[i+5]},
+                {},
+                {} });
         }
-        geometry.indices = data.indices;
-        m_submeshes.push_back(geometry.getSubmesh(-1));
+        m_geometry.indices = data.indices;
+        m_submeshes.push_back(m_geometry.getSubmesh(-1));
 
-        m_mesh.init(context, geometry);
+        m_mesh.init(context, m_geometry);
     }
 
     void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
     {
         m_context = &context;
-        auto& geometry = std::get<GeometryGLTF>(m_geometry);
         m_directory.init(path.getPath().remove_filename());
         m_model = std::make_unique<tinygltf::Model>();
         bool success= locLoadModel(m_model.get(), path.str());
@@ -92,8 +92,8 @@ namespace engine::graphics
                 }
             }
         }
-        geometry.vertices.reserve(vertexCount);
-        geometry.indices.reserve(indexCount);
+        m_geometry.vertices.reserve(vertexCount);
+        m_geometry.indices.reserve(indexCount);
 
         loadTextures();
         
@@ -105,7 +105,7 @@ namespace engine::graphics
                     processNode(nodeIndex);
             }
         }
-        m_mesh.init(context, geometry);
+        m_mesh.init(context, m_geometry);
 
         std::vector<SubmeshData> materialData;
         materialData.reserve(m_textures.size());
@@ -161,7 +161,6 @@ namespace engine::graphics
 
     void Model::processMesh(uint index)
     {
-        auto& geometry = std::get<GeometryGLTF>(m_geometry);
         auto& mesh = m_model->meshes[index];
         for (auto& primitive : mesh.primitives)
         {
@@ -212,7 +211,7 @@ namespace engine::graphics
 
             for (int i = 0; i < count; i++)
             {
-                geometry.vertices.push_back({ positionSpan[i], normalSpan[i], textureSpan[i], tangentSpan[i]});
+                m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], textureSpan[i], tangentSpan[i]});
             }
 
             auto indicesAccessor = getAccessor(primitive.indices);
@@ -222,13 +221,13 @@ namespace engine::graphics
             const u16* indexData = reinterpret_cast<u16*>(indicesAccessor.getData());
             for (int i = 0; i < indexCount; i+=3)
             {
-                geometry.indices.push_back(indexData[i+0]);
-                geometry.indices.push_back(indexData[i+1]);
-                geometry.indices.push_back(indexData[i+2]);
+                m_geometry.indices.push_back(indexData[i+0]);
+                m_geometry.indices.push_back(indexData[i+1]);
+                m_geometry.indices.push_back(indexData[i+2]);
             }
 
             //u32 materialIndex = primitive.material != -1 ? primitive.material : 0;
-            m_submeshes.push_back(geometry.getSubmesh(primitive.material));
+            m_submeshes.push_back(m_geometry.getSubmesh(primitive.material));
         }
     }
 

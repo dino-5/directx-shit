@@ -40,9 +40,8 @@ namespace gfx = engine::graphics;
 
 struct BindlessTable
 {
-	u32 cbIndex;
-	u32 submeshDataArray;
-	uint lightArrayIndex;
+    u32 passCBIndex;
+    u32 materialArrayIndex;
 };
 
 struct ConstandBufferData
@@ -96,7 +95,6 @@ private:
 	gfx::Buffer m_buffer;
 	gfx::BufferObject<Light> m_lightBuffer;
 	gfx::ConstantBuffer m_constBuffer;
-	gfx::ConstantBuffer m_bindlessTable;
 
 	// deferred rendering - geometry pass
 	gfx::PSO m_pso;
@@ -107,8 +105,9 @@ private:
 	gfx::PSO m_lightingPSO;
 	gfx::RootSignature m_lightingRS;
 
-	gfx::PSO m_lightVisualizePso;
-	gfx::RootSignature m_rsLightVisualize;
+	// visualize light
+	gfx::PSO m_lightBoxPSO;
+	gfx::RootSignature m_lightBoxRS;
 	gfx::Model m_lightCube;
 	math::Vector3 m_lightCubePosition;
 

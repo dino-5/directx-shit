@@ -5,6 +5,7 @@
 
 struct DSH_Data
 {
+    float color[3] = {};
     std::vector<float> vertexData;
     std::vector<u32> indices;
 };

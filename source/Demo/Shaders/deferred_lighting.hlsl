@@ -59,6 +59,6 @@ float4 PSMain(PS_Input input) : SV_Target
     Light light = lightArray[0];
     float angle = max(dot(normalize(light.position - position.xyz), normal.xyz), 0);
     float4 res = albedo* (0.2 + angle);
-    return res;
     return float4(normal.xyz, 1.0f);
+    return res;
 }
