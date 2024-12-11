@@ -100,7 +100,7 @@ PS_Result PS_Basic(PS_Input input): SV_Target
     {
         Texture2D normalTexture = ResourceDescriptorHeap[material.normalTexture];
         float3 n = normalTexture.Sample(textureSampler, input.uv);
-        float3x3 NormalTransform = transpose(float3x3(input.tangent.xyz, cross(input.tangent.xyz, input.normal), input.normal));
+        float3x3 NormalTransform = transpose(float3x3(input.tangent.xyz, cross(input.normal, input.tangent.xyz)*input.tangent.w, input.normal));
         normal = mul(NormalTransform, n);
     }
     normal = normalize(normal);

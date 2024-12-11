@@ -52,13 +52,14 @@ float4 PSMain(PS_Input input) : SV_Target
 
     float4 position = positionT.Sample(textureSampler, uv);
     float4 albedo = albedoT.Sample(textureSampler, uv);
-    float4 normal = normalT.Sample(textureSampler, uv);
+    float3 normal = normalT.Sample(textureSampler, uv).xyz;
 
     StructuredBuffer<Light> lightArray = ResourceDescriptorHeap[cbData.lightBufferIndex];
 
     Light light = lightArray[0];
-    float angle = max(dot(normalize(light.position - position.xyz), normal.xyz), 0);
+    float angle = max(dot(normalize(light.position.xyz - position.xyz), normal), 0);
     float4 res = albedo* (0.2 + angle);
-    return float4(normal.xyz, 1.0f);
     return res;
+    return float4(normal.xyz, 1.0f);
+    return albedo;
 }

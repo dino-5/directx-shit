@@ -207,11 +207,11 @@ namespace engine::graphics
             auto positionSpan = getSpan3(position);
             auto normalSpan = getSpan3(normal);
             auto textureSpan = getSpan2(texture);
-            auto tangentSpan = getSpan2(texture);
+            auto tangentSpan = getSpan4(tangent);
 
             for (int i = 0; i < count; i++)
             {
-                m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], textureSpan[i], tangentSpan[i]});
+                m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], tangentSpan[i], textureSpan[i] });
             }
 
             auto indicesAccessor = getAccessor(primitive.indices);
