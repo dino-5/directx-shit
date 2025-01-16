@@ -2,6 +2,7 @@
 #include "EngineCommon/util/Util.h"
 #include "EngineGfx/dx12/DescriptorHeap.h"
 #include "EngineGfx/dx12/Device.h"
+#define STBI_MALOC ArenaAlloc
 #include "third_party/stb/stb_image.h"
 
 namespace engine::graphics

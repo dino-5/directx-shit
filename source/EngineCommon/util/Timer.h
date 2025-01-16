@@ -37,6 +37,17 @@ namespace engine::util {
             util::printInfo("{} was {} miliseconds", name, time_elapsed.count());
         }
 
+        double getElapsedTime() const
+        {
+            auto now = clock::now();
+            duration time_elapsed = now - m_lastCheck;
+            return time_elapsed.count(); 
+        }
+
+        double getFps() const {
+            return 1 / getElapsedTime();
+        }
+
         ~Timer()
         {
             if (!s_profilingEnabled)

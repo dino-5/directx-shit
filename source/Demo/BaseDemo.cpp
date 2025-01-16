@@ -115,7 +115,13 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
         ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
 
-    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
+    math::ProjectionProps props;
+    props.type = math::ProjectionType::Perspective;
+    props.perspective.fov = 90;
+    props.perspective.aspectRatio = m_swapChain.getAspectRatio();
+    props.perspective.nearZ = 0.1f;
+    props.perspective.farZ = 10000.f;
+    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f }, props);
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
@@ -226,7 +232,7 @@ void BaseDemo::compileShaders()
         shaderIG.rootSignature = &m_lightBoxRS;
 
         RenderState state;
-        state.setRasterizerState(RasterizerState(CullMode::FRONT, true));
+        state.setRasterizerState(RasterizerState(CullMode::NONE, true));
         state.m_shader = shaderIG;
         m_lightBoxPSO = PSO::CreatePSO(state);
     }
@@ -249,7 +255,8 @@ bool BaseDemo::initialize()
     }
     {
         // deferred lighting
-        RootParameters parameters = { RootParameter::CreateConstants(4, 0, 10)};
+        RootParameters parameters = { RootParameter::CreateConstants(4, 0, 10),
+            RootParameter::CreateDescriptor(1, 10)};
         auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
         m_lightingRS.init(m_device.getDevice(), parameters, rootSignFlags);
     }
@@ -270,9 +277,14 @@ bool BaseDemo::initialize()
 
     // setup data 
     ConstandBufferData data;
-    data.perspective = math::PerspectiveProjection(90, m_swapChain.getAspectRatio(), .1f, 10000.f);
+    data.projection = m_camera.getProjectionMatrix();
     data.view = m_camera.getViewMatrix();
     m_constBuffer.init(context, &data, 1);
+
+    LightSettings lightSettings;
+    lightSettings.cameraPosition = m_camera.getPos();
+    lightSettings.viewDirection = m_camera.getDir();
+    m_lightSettingsResource.init(context, &lightSettings, 1);
 
     m_lightBuffer.data.push_back(Light{ math::Vector3{1.f, 1.f, 1.f} });
     m_lightBuffer.desc.state = ResourceState::GENERIC_READ_STATE;
@@ -285,9 +297,14 @@ bool BaseDemo::initialize()
     m_camera.addChangeCallback([this](const Camera* camera)
     {
         ConstandBufferData data;
-        data.perspective = math::PerspectiveProjection(90, m_swapChain.getAspectRatio(), .1f, 10000.f);
+        data.projection = camera->getProjectionMatrix();
         data.view = camera->getViewMatrix();
         this->m_constBuffer.update(&data);
+
+        LightSettings lightSettings;
+        lightSettings.cameraPosition = m_camera.getPos();
+        lightSettings.viewDirection = m_camera.getDir();
+        this->m_lightSettingsResource.update(&lightSettings);
     });
 
     ThrowIfFailed(context.cmdList->Close());
@@ -384,6 +401,7 @@ void BaseDemo::draw()
         cmdList->IASetVertexBuffers(0, 1, nullptr);
         cmdList->IASetIndexBuffer(nullptr);
         cmdList->SetGraphicsRoot32BitConstants(0, 4, &deferredTable, 0);
+        cmdList->SetGraphicsRootConstantBufferView(1, m_lightSettingsResource.getGPUAdress());
         cmdList->DrawInstanced(6, 1, 0, 0);
 
         //draw light cube

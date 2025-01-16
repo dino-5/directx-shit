@@ -173,6 +173,49 @@ Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection, Vector3 upDirecti
 
 // projection matrices
 Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ);
-Matrix4 OrhographicProjection(int l, int r, int b, int t, int n, int f);
+Matrix4 OrhographicProjection(float l, float r, float b, float t, float n, float f);
 
+enum class ProjectionType : u8
+{
+    Perspective,
+    Orthographic
+};
+
+struct PerspectiveProperties
+{
+    float fov /*in degrees*/; 
+    float aspectRatio;
+    float nearZ;
+    float farZ;
+};
+
+struct OrhographicProperties
+{
+    float l;
+    float r;
+    float t;
+    float b;
+    float n;
+    float f;
+};
+
+struct ProjectionProps
+{
+    ProjectionType type;
+    union
+    {
+        PerspectiveProperties perspective;
+        OrhographicProperties orthographic;
+    };
+};
+
+inline Matrix4 GetPerspectiveMatrix(ProjectionProps props)
+{
+	if (props.type == ProjectionType::Orthographic)
+		return OrhographicProjection(props.orthographic.l, props.orthographic.r, props.orthographic.t,
+			props.orthographic.b, props.orthographic.n, props.orthographic.f);
+	return PerspectiveProjection(props.perspective.fov, props.perspective.aspectRatio, props.perspective.nearZ,
+		props.perspective.farZ);
 }
+
+};

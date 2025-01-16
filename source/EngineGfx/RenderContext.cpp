@@ -40,7 +40,7 @@ namespace engine::graphics
 		}
 		resetSwapChain(set);
 
-		m_camera.initialize(math::Vector3(), math::Vector3({0.f, 0.f, 1.f}));
+		//m_camera.initialize(math::Vector3(), math::Vector3({0.f, 0.f, 1.f}));
 	}
 
 	void RenderContext1::setupViewport(SwapChainSettings& set)

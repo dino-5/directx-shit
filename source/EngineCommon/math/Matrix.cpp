@@ -2,14 +2,11 @@
 
 namespace engine::math
 {
-
     /*
         All multiplications are happened with the next order: M*a
         And M is matrix, a is vector. Also as we see in PerspectiveProjection we need to do transpose for matrix because it's
         row-major
     */
-
-
     Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ)
     {
         //positive z direction is assumed
@@ -21,7 +18,6 @@ namespace engine::math
         float b =-nearZ * a;
         float x = d / aspectRatio;
 
-
         Matrix4 matrix{ x, 0,  0, 0,
                         0, d,  0, 0,
                         0, 0,  a, 1,
@@ -29,20 +25,18 @@ namespace engine::math
         return matrix;
     }
 
-    Matrix4 OrhographicProjection(int l, int r, int b, int t, int n, int f)
+    Matrix4 OrhographicProjection(float l, float r, float b, float t, float n, float f)
     {
         Matrix4 matrix;
-        //matrix[0][0] = 2 / (r - l);
-        //matrix[1][1] = 2 / (t - b);
-        //matrix[2][2] =-2 / (f - n);
-        //matrix[0][3] = -(r + l) / (r - l);
-        //matrix[1][3] = -(t + b) / (t - b);
-        //matrix[2][3] = -(f + n) / (f - n);
+        matrix[0][0] = 2 / (r - l);
+        matrix[1][1] = 2 / (t - b);
+        matrix[2][2] =-2 / (f - n);
+        matrix[0][3] = -(r + l) / (r - l);
+        matrix[1][3] = -(t + b) / (t - b);
+        matrix[2][3] = -(f + n) / (f - n);
         matrix.TransposeSelf();
         return matrix;
     }
-
- 
 
     Matrix4 Translate(Vector3 vec)
     {
@@ -105,6 +99,4 @@ namespace engine::math
         res[3][3] = 1;
         return res.Transpose();
     }
-
-
 };

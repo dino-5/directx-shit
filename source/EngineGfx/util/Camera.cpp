@@ -11,17 +11,24 @@ using namespace engine;
 
 using namespace engine::graphics;
 
-void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection)
+void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props)
 {
     m_viewDir = viewDirection;
     m_position = pos;
+    m_projectionProps = props;
     updateViewMatrix();
+    updateProjectionMatrix();
 }
 
 void Camera::updateViewMatrix()
 {
     m_rotationMatrix = math::CreateViewRotationMatrix(m_viewDir, m_upDir, m_rightDir);
     m_viewMatrix = math::Translate(m_position) * m_rotationMatrix;
+}
+
+void Camera::updateProjectionMatrix()
+{
+    m_projectionMatrix = GetPerspectiveMatrix(m_projectionProps);
 }
 
 void Camera::update()
@@ -38,14 +45,20 @@ void Camera::update()
     if (inputManager.getKeyState(system::Key::D).isPressed())
         translate(graphics::MovementDirection::SideDirection, velocity);
 
-    if(inputManager.getKeyState(system::Key::W).isPressed())
-        translate(graphics::MovementDirection::ViewDirection, velocity);
-
     if(inputManager.getKeyState(system::Key::A).isPressed())
         translate(graphics::MovementDirection::SideDirection, -velocity);
 
+    if(inputManager.getKeyState(system::Key::W).isPressed())
+        translate(graphics::MovementDirection::ViewDirection, velocity);
+
     if(inputManager.getKeyState(system::Key::S).isPressed())
         translate(graphics::MovementDirection::ViewDirection, -velocity);
+
+    if(inputManager.getKeyState(system::Key::E).isPressed())
+        translate(graphics::MovementDirection::TopDirection, velocity);
+
+    if(inputManager.getKeyState(system::Key::Q).isPressed())
+        translate(graphics::MovementDirection::TopDirection, -velocity);
 
     if(inputManager.getKeyState(system::Key::UP).isPressed())
         rotate(-rotationVelocity, 0);
@@ -87,7 +100,7 @@ void Camera::reset()
 
 void Camera::translate(MovementDirection direction, float velocity)
 {
-    auto offset = static_cast<math::Vector3*>(&m_viewDir)[(u8)direction] * velocity;
+    auto offset = (&m_viewDir)[(u8)direction] * velocity;
     m_position = m_position + offset;
     m_needUpdate = true;
 }

@@ -89,7 +89,6 @@ bool WindowApp::initialize()
 
 void WindowApp::run()
 {
-	// TODO : integrate timer from test project 
 	MSG msg = { };
 	while (msg.message !=WM_QUIT)
 	{
@@ -105,6 +104,8 @@ void WindowApp::run()
 			update();
 			draw();
 		}
+		std::string title = util::to_string(std::format(L"DX12 Demo fps : {}", timer.getFps()));
+		SetWindowText(getWindowHandle(), title.c_str());
 	}
 	destroy();
 }

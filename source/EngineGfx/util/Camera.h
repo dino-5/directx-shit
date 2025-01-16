@@ -14,7 +14,8 @@ namespace engine::graphics
 	enum class MovementDirection : u8
 	{
 		ViewDirection,
-		SideDirection
+		SideDirection,
+		TopDirection
 	};
 
 	// TODO: make a client camera with all client specific code
@@ -23,12 +24,24 @@ namespace engine::graphics
 	public:
 		using CallbackSign = std::function<void(const Camera* camera)>;
 		Camera() = default;
-		void initialize(math::Vector3 pos, math::Vector3 viewDirection);
+		void initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props);
+
 		math::Matrix4 getViewMatrix() const { return m_viewMatrix; }
-		void translate(MovementDirection direction, float velocity);
+		math::Matrix4 getProjectionMatrix() const { return m_projectionMatrix; }
+		math::Vector3 getPos() const { return m_position; }
+		math::Vector3 getDir() const { return m_viewDir; }
+
 		void addChangeCallback(CallbackSign ptr) { m_callbacks.push_back(ptr); }
+		void translate(MovementDirection direction, float velocity);
 		void rotate(float vertical, float horizontal);
+		void setProjectionProperties(math::ProjectionProps props)
+		{
+			m_projectionProps = props;
+			updateProjectionMatrix();
+		}
+
 		void updateViewMatrix();
+		void updateProjectionMatrix();
 		void update();
 		void reset();
 		void processUpdate();
@@ -41,7 +54,10 @@ namespace engine::graphics
 
 		math::Matrix4 m_viewMatrix;
 		math::Matrix4 m_rotationMatrix;
+		math::Matrix4 m_projectionMatrix;
 		std::vector<CallbackSign> m_callbacks;
+
+		math::ProjectionProps m_projectionProps;
 		bool m_needUpdate = false;
 	};
 
