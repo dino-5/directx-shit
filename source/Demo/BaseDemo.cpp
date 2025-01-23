@@ -241,7 +241,7 @@ void BaseDemo::compileShaders()
 
 bool BaseDemo::initialize()
 {
-	LogScope("BaseDemo");
+    LogScope("BaseDemo");
 
     ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
 

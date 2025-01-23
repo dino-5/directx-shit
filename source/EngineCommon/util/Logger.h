@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 #include <source_location>
-#include "Util.h"
+#include "EngineCommon/include/types.h"
+#include "EngineCommon/util/Util.h"
+#
 
 namespace engine::util
 {
@@ -35,7 +37,7 @@ namespace engine::util
     };
 #define SET_RED_COLOR() ColorSetter _(redColor)
 
-	extern u32 log_info;
+    extern u32 log_info;
 
     template<typename... Args>
     void printInfo(std::format_string<Args...> fmt, Args&&... args)
