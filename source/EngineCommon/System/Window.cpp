@@ -104,7 +104,7 @@ void WindowApp::run()
 			update();
 			draw();
 		}
-		std::string title = util::to_string(std::format(L"DX12 Demo fps : {}", timer.getFps()));
+		std::string title = util::to_string(std::format(L"DX12 Demo fps: {}/{}", int(timer.getFps()), timer.getElapsedTime() ));
 		SetWindowText(getWindowHandle(), title.c_str());
 	}
 	destroy();

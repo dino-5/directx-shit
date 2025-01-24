@@ -1,2 +1,2 @@
 @echo off
-python configure.py
+python .\scripts\configure.py
