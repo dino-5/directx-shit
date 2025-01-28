@@ -1,6 +1,7 @@
 #include "SwapChain.h"
 #include "Device.h"
 #include "EngineCommon/util/Util.h"
+#include <dxgi.h>
 
 namespace engine::graphics
 {
@@ -13,7 +14,7 @@ namespace engine::graphics
 	{
 		m_currentSettings = settings;
 		if(m_swapChain)
-            m_swapChain->Release();
+		    m_swapChain->Release();
 
 		DXGI_SWAP_CHAIN_DESC sd;
 		sd.BufferDesc.Width = m_currentSettings.width;
@@ -30,7 +31,7 @@ namespace engine::graphics
 		sd.OutputWindow = m_currentSettings.window;
 		sd.Windowed = true;
 		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH ;
 
 		ThrowIfFailed(factory->CreateSwapChain(
 			queue.Get(),

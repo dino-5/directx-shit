@@ -37,10 +37,16 @@ namespace engine::graphics
 
 		u32 changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
 		{
+			u32 index = getCurrentIndex();
+			m_resources[index].transition(cmdList, state);
+			return index;
+		}
+
+		u32 getCurrentIndex() 
+		{
 			IDXGISwapChain3* swapChain;
 			m_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain));
 			u32 index = swapChain->GetCurrentBackBufferIndex();
-			m_resources[index].transition(cmdList, state);
 			swapChain->QueryInterface(IID_PPV_ARGS(&m_swapChain));
 			return index;
 		}

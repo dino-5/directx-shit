@@ -1,5 +1,6 @@
 #include "Demo/BaseDemo.h"
 #include "EngineCommon/util/DSHLoader.h"
+#include "EngineCommon/util/CommandLine.h"
 
 using namespace engine::config;
 
@@ -15,6 +16,7 @@ int main()
         g_state.demoDir   = fs::current_path();
         g_state.homeDir   = g_state.demoDir.parent().parent();
         g_state.shaderDir = g_state.demoDir / "Shaders";
+        g_state.profilingEnabled = CommandLine::GetCommandLine().getValue(CommandLineOption::ENABLE_PROFILER);
     }
 
     uint width = 1200;

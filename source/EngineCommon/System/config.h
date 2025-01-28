@@ -4,7 +4,7 @@
 
 namespace engine::config
 {
-	const uint NumFrames = 2;
+    const uint NumFrames = 3;
 
     using namespace system;
     struct GlobalState
@@ -12,6 +12,8 @@ namespace engine::config
         Filepath homeDir;
         Filepath demoDir;
         Filepath shaderDir;
+
+        bool profilingEnabled;
     };
 
     extern GlobalState g_state;

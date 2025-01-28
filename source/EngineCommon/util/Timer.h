@@ -4,14 +4,15 @@
 #include <ctime>
 #include <string_view>
 #include "EngineCommon/util/Logger.h"
+#include "EngineCommon/System/config.h"
 
 namespace engine::util {
 
-    extern bool s_profilingEnabled;
     using clock = std::chrono::system_clock;
-    extern decltype(clock::now()) g_programStartTime;
     using duration = std::chrono::duration<double>;
-    inline float timeFromStart() { return duration(clock::now() - g_programStartTime).count(); }
+    using namespace config;
+
+
     class Timer
     {
     public:
@@ -21,7 +22,7 @@ namespace engine::util {
             m_name ( name),
             m_isFps(fps)
         {
-            if (!s_profilingEnabled)
+            if (!g_state.profilingEnabled)
                 return;
             util::printInfo("{} started", name);
             log_info++;
@@ -29,7 +30,7 @@ namespace engine::util {
 
         void Tick(std::string_view name)
         {
-            if (!s_profilingEnabled)
+            if (!g_state.profilingEnabled)
                 return;
             auto now = clock::now();
             duration time_elapsed = now - m_lastCheck;
@@ -50,7 +51,7 @@ namespace engine::util {
 
         ~Timer()
         {
-            if (!s_profilingEnabled)
+            if (!g_state.profilingEnabled)
                 return;
             log_info--;
             duration time_elapsed = clock::now() - m_start;
@@ -67,4 +68,4 @@ namespace engine::util {
     };
 };
 
-#define TIMER(name) engine::util::Timer _(#name)
+#define TIMER(name) engine::util::Timer _(GET_PATH#name)

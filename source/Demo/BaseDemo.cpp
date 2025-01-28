@@ -2,6 +2,7 @@
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/util/CommandLine.h"
 #include "EngineCommon/util/ImGuiSettings.h"
+#include "EngineCommon/util/Timer.h"
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 
@@ -16,14 +17,14 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 	m_cmdQueue(m_device.native()),
 	m_swapChain(getCurrentWindowSettings(), m_device.getFactory(), m_cmdQueue.getQueue())
 {
-	m_inputManager = &system::InputManager::GetInputManager();
-	m_device.createFence(&m_fence);
+    m_inputManager = &system::InputManager::GetInputManager();
+    m_device.createFence(&m_fence);
 
-	DescriptorHeapManager::CreateDSVHeap(10);
-	DescriptorHeapManager::CreateRTVHeap(20);
-	DescriptorHeapManager::CreateSRVHeap(200);
-	
-	m_swapChain.onResize();
+    DescriptorHeapManager::CreateDSVHeap(10);
+    DescriptorHeapManager::CreateRTVHeap(20);
+    DescriptorHeapManager::CreateSRVHeap(200);
+    
+    m_swapChain.onResize();
     m_viewPort.TopLeftX = 0;
     m_viewPort.TopLeftY = 0;
     m_viewPort.Width = width;
@@ -65,7 +66,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
     for(int i = 0; i < config::NumFrames; ++i)
     {
         DescriptorProperties viewProps{
-            .descriptor = DescriptorFlags::RenderTarget |DescriptorFlags::ShaderResource ,
+            .descriptor = DescriptorFlags::RenderTarget | DescriptorFlags::ShaderResource ,
             .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
         };
 
@@ -126,7 +127,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
 {
-	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle()};
+	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle() };
 }
 
 void BaseDemo::compileShaders()
@@ -323,6 +324,7 @@ bool BaseDemo::initialize()
 
 void BaseDemo::draw()
 {
+    Timer timer("draw");
     ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
     auto& positionRT = m_positionRT[m_currentFrameIndex];
     auto& albedoRT = m_albedoRT[m_currentFrameIndex];
@@ -373,10 +375,13 @@ void BaseDemo::draw()
         }
 
     }
+    timer.Tick("geometry");
 
     // deferred lighting
     {
-        auto renderTarget = m_swapChain.getView(m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET));
+        u32 swapChainBufferIndex = m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET);
+
+        auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
         positionRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
         albedoRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
         normalRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
@@ -422,6 +427,7 @@ void BaseDemo::draw()
             submesh.draw(cmdList);
         }
     }
+    timer.Tick("lighting");
 
     ImGuiSettings::StartFrame();
     {
@@ -438,30 +444,40 @@ void BaseDemo::draw()
     }
     ImGuiSettings::EndFrame(cmdList);
 
-    m_swapChain.changeState(cmdList, ResourceState::PRESENT);
+    timer.Tick("IMGUi End");
+
+
+    u32 index = m_swapChain.changeState(cmdList, ResourceState::PRESENT);
     ThrowIfFailed(cmdList->Close());
     ID3D12CommandList* ppCommandLists[] = { cmdList};
     m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-    m_swapChain->Present(1, 0);
+    m_swapChain->Present(0, 0);
+    timer.Tick("present");
 
     // sync
-    m_cmdQueue->Signal(m_fence, ++m_fenceValue);
-    m_swapChain.m_fence[m_currentFrameIndex] = m_fenceValue;
-
+    m_swapChain.m_fence[m_currentFrameIndex] = ++m_fenceValue;
+    m_cmdQueue->Signal(m_fence, m_fenceValue);
+    timer.Tick("draw end");
 }
 
 void BaseDemo::waitForFrame(u32 index)
 {
-    if (m_fence->GetCompletedValue() < m_swapChain.m_fence[index])
+    Timer timer("wait for frame");
+    u64 fenceValue = m_fence->GetCompletedValue();
+    if (fenceValue < m_swapChain.m_fence[index])
     {
         m_fence->SetEventOnCompletion(m_swapChain.m_fence[index], m_fenceEvent);
+        timer.Tick("before wait");
         WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+        timer.Tick("after wait");
     }
 }
 
 void BaseDemo::update()
 {
-    m_currentFrameIndex = (m_currentFrameIndex + 1) % config::NumFrames;
+    Timer timer("update");
+
+    m_currentFrameIndex = m_swapChain.getCurrentIndex();
     waitForFrame(m_currentFrameIndex);
 
     m_camera.update();

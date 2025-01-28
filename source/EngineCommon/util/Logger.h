@@ -60,18 +60,18 @@ namespace engine::util
 
 	struct ScopeInfo
 	{
-		ScopeInfo(const std::string_view& name = "", const std::source_location& location = std::source_location::current()) :
-            m_name(GetFormattedPath(location, name))
-		{
-			std::cout << std::string( log_info, '\t')<< ' ' << m_name << " started\n";
-			log_info++;
-		}
-		~ScopeInfo()
-		{
-			log_info--;
-			std::cout << std::string( log_info, '\t') << ' ' << m_name << " ended\n";
-		}
-		std::string m_name;
+            ScopeInfo(const std::string_view& name = "", const std::source_location& location = std::source_location::current())
+                : m_name(GetFormattedPath(location, name))
+            {
+                std::cout << std::string( log_info, '\t')<< ' ' << m_name << " started\n";
+                log_info++;
+            }
+            ~ScopeInfo()
+            {
+                log_info--;
+                std::cout << std::string( log_info, '\t') << ' ' << m_name << " ended\n";
+            }
+            std::string m_name;
 	};
 #define LogScope(name) engine::util::ScopeInfo _objectScope(name)
 };

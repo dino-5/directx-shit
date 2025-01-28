@@ -5,7 +5,7 @@
 NAME& operator=(const NAME&)=delete;
 
 
-#define SHIT_ENGINE_SINGLETONE(NAME, DEFAULT) SHIT_ENGINE_NON_COPYABLE(NAME)\
+#define SHIT_ENGINE_SINGLETONE(NAME) SHIT_ENGINE_NON_COPYABLE(NAME)\
 protected:\
 public:\
 static NAME& Get##NAME()\
@@ -14,7 +14,6 @@ static NAME& Get##NAME()\
 	return instance;\
 }\
 private:\
-NAME()DEFAULT;\
 public:
 
 #define SHIT_ENGINE_GET_D3D12COMPONENT(TYPE, NAME, VAR_NAME) TYPE* get##NAME(){ return VAR_NAME; } 

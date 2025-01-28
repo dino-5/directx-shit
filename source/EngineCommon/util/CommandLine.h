@@ -31,6 +31,7 @@ class CommandLine
 {
 public: 
     SHIT_ENGINE_SINGLETONE(CommandLine);
+    CommandLine();
     bool isSet(CommandLineOption option) { return args[castType(option)].has_value(); }
     i32 getValue(CommandLineOption option) {
         if(isSet(option))

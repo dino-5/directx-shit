@@ -58,7 +58,7 @@ bool Window::initialize()
 {
 	auto wc = CreateWindowClass(windowName);
 	RECT R = { 0, 0, width, height};
-    AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
+	AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
 	int w = R.right - R.left;
 	int h = R.bottom - R.top;
 	HINSTANCE inst = GetModuleHandle(nullptr);
