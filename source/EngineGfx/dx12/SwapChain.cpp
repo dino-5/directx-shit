@@ -19,7 +19,7 @@ namespace engine::graphics
 		DXGI_SWAP_CHAIN_DESC sd;
 		sd.BufferDesc.Width = m_currentSettings.width;
 		sd.BufferDesc.Height = m_currentSettings.height;
-		sd.BufferDesc.RefreshRate.Numerator = 60;
+		sd.BufferDesc.RefreshRate.Numerator = 600;
 		sd.BufferDesc.RefreshRate.Denominator = 1;
 		sd.BufferDesc.Format = m_currentSettings.format;
 		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;

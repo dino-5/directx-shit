@@ -26,6 +26,8 @@ public:
 		}
 	}
 
+	Vector(const Vector&& other) : m_data(std::move(other.m_data)){}
+
 	Vector(float value)
 	{
 		for (int i = 0; i < N; i++)
@@ -146,7 +148,7 @@ public:
 		}
 	}
 
-	bool onImGui(const char* name, float min=-10.f, float max=10.f)
+	bool onImGui(std::string_view name, float min=-10.f, float max=10.f)
 	{
 		if constexpr(N != 2)
 			return util::ImGuiSettings::SliderFloat3(name, m_data.data(), min, max);

@@ -28,7 +28,25 @@ struct DemoSettings
 
 struct Light
 {
-	math::Vector3 position;
+	using onLightChangeCallback = std::function<void()>;
+	Light(math::Vector3 vec, std::string name, float range, onLightChangeCallback call);
+	Light(const Light&)=delete;
+	Light(const Light&& other) 
+		: m_position(std::move(other.m_position)),
+		  m_name(std::move(other.m_name)),
+		  m_positionRange(other.m_positionRange),
+		  m_callback(std::move(other.m_callback))
+	{}
+	void onImgui()
+	{
+		if(m_position.onImGui(m_name, -m_positionRange, m_positionRange))
+			m_callback();
+	}
+
+	math::Vector3 m_position;
+	std::string m_name;
+	float m_positionRange;
+	onLightChangeCallback m_callback;
 };
 
 struct ObjectData
@@ -87,14 +105,15 @@ private:
 	gfx::CommandQueue m_cmdQueue;
 	gfx::DescriptorHeap m_descriptorHeaps[static_cast<uint>(gfx::DescriptorHeapType::Count)];
 	gfx::SwapChain m_swapChain;
-    gfx::Resource m_depthStencil;
+	gfx::Resource m_depthStencil;
 	ID3D12Fence* m_fence = nullptr;
 	u64 m_fenceValue = 0;
-    HANDLE m_fenceEvent;
+	HANDLE m_fenceEvent;
 	D3D12_VIEWPORT m_viewPort{};
 	D3D12_RECT m_scissorRect{};
 	system::InputManager* m_inputManager;
 	Table<DxBlob*> m_shaders;
+	graphics::GfxContext m_graphicsContext;
 
 	// resources
 	gfx::Camera m_camera;

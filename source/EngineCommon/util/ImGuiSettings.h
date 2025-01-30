@@ -1,21 +1,15 @@
 #pragma once
 #include <d3d12.h>
+#include <functional>
 #include <string_view>
+#include <vector>
 
 namespace engine::util
 {
 	class ImGuiSettings
 	{
 	public:
-		struct ImGuiElement
-		{
-			const char* name;
-			float** array; // {&di
-			int capacity;
-			float min;
-			float max;
-
-		};
+		using onImguiActionCallback = std::function<void()>;
 	public:
 		ImGuiSettings() = delete;
 		static void Init(HWND hwnd, ID3D12Device*, int numFrames);
@@ -30,6 +24,8 @@ namespace engine::util
 		static bool ColorEdit3(std::string_view label, float* col);
 		static bool Button(std::string_view label);
 
+		static void AddAction(onImguiActionCallback callback);
+
 		static ID3D12DescriptorHeap* GetDescriptorHeap() {
 			return g_pd3dSrvDescHeap;
 		}
@@ -43,6 +39,7 @@ namespace engine::util
 		static inline float clear_color[] = { 0.45f, 0.55f, 0.60f, 1.00f };
 		static inline ID3D12Device* g_pd3dDevice = NULL;
 		static inline ID3D12DescriptorHeap* g_pd3dSrvDescHeap = NULL;
+		static inline std::vector<onImguiActionCallback> s_callbacks;
 
 	};
 };

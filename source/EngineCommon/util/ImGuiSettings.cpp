@@ -44,6 +44,10 @@ namespace engine::util
         ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
     }
 
+    void ImGuiSettings::AddAction(onImguiActionCallback callback)
+    {
+        s_callbacks.push_back(callback);
+    }
 
     void ImGuiSettings::Begin(std::string_view name)
     {

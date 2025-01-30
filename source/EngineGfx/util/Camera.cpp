@@ -28,7 +28,7 @@ void Camera::updateViewMatrix()
 
 void Camera::updateProjectionMatrix()
 {
-    m_projectionMatrix = GetPerspectiveMatrix(m_projectionProps);
+    m_projectionMatrix = GetProjectionMatrix(m_projectionProps);
 }
 
 void Camera::update()

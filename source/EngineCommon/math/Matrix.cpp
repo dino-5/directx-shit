@@ -29,11 +29,11 @@ namespace engine::math
     {
         Matrix4 matrix;
         matrix[0][0] = 2 / (r - l);
-        matrix[1][1] = 2 / (t - b);
-        matrix[2][2] =-2 / (f - n);
+        matrix[1][1] = -2 / (t - b);
+        matrix[2][2] = 2 / (f - n);
         matrix[0][3] = -(r + l) / (r - l);
         matrix[1][3] = -(t + b) / (t - b);
-        matrix[2][3] = -(f + n) / (f - n);
+        matrix[2][3] = -(n) / (f - n);
         matrix.TransposeSelf();
         return matrix;
     }

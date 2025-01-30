@@ -11,6 +11,13 @@ using namespace gfx;
 using namespace util;
 using namespace DirectX;
 
+Light::Light(math::Vector3 vec, std::string name, float range, onLightChangeCallback call)
+    : m_position(vec),
+      m_name(name),
+      m_positionRange(range),
+      m_callback(call)
+{}
+
 BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 	WindowApp(width, height, name),
 	m_cmdList(m_device),
@@ -116,13 +123,24 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
         ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
     }
 
-    math::ProjectionProps props;
-    props.type = math::ProjectionType::Perspective;
-    props.perspective.fov = 90;
-    props.perspective.aspectRatio = m_swapChain.getAspectRatio();
-    props.perspective.nearZ = 0.1f;
-    props.perspective.farZ = 10000.f;
-    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f }, props);
+    math::ProjectionProps perspectiveProps;
+
+    /*perspectiveProps.orthographic.f = 10000.f;*/
+    /*perspectiveProps.orthographic.n = .1f;*/
+    /*perspectiveProps.orthographic.t = 300.f;*/
+    /*perspectiveProps.orthographic.b = .0f;*/
+    /*perspectiveProps.orthographic.r = 300.f;*/
+    /*perspectiveProps.orthographic.l = .0f;*/
+
+    perspectiveProps.perspective.fov = 90;
+    perspectiveProps.perspective.aspectRatio = m_swapChain.getAspectRatio();
+    perspectiveProps.perspective.nearZ = 0.1f;
+    perspectiveProps.perspective.farZ = 10000.f;
+
+    perspectiveProps.type = math::ProjectionType::Orthographic;
+    perspectiveProps.type = math::ProjectionType::Perspective;
+
+    m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f }, perspectiveProps);
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
@@ -287,7 +305,10 @@ bool BaseDemo::initialize()
     lightSettings.viewDirection = m_camera.getDir();
     m_lightSettingsResource.init(context, &lightSettings, 1);
 
-    m_lightBuffer.data.push_back(Light{ math::Vector3{1.f, 1.f, 1.f} });
+    m_lightBuffer.data.push_back(Light( math::Vector3{1.f, 1.f, 1.f}, "light position", 1000, [this]() 
+    {
+        this->m_lightBuffer.update(this->m_graphicsContext);
+    }) );
     m_lightBuffer.desc.state = ResourceState::GENERIC_READ_STATE;
     m_lightBuffer.desc.type = BufferType::CUSTOM;
     m_lightBuffer.create(context);
@@ -324,11 +345,15 @@ bool BaseDemo::initialize()
 
 void BaseDemo::draw()
 {
+
     Timer timer("draw");
     ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
     auto& positionRT = m_positionRT[m_currentFrameIndex];
     auto& albedoRT = m_albedoRT[m_currentFrameIndex];
     auto& normalRT = m_normalRT[m_currentFrameIndex];
+
+    m_graphicsContext.cmdList = cmdList;
+    m_graphicsContext.device = m_device.getDevice();
 
     // deferred
     {
@@ -389,6 +414,7 @@ void BaseDemo::draw()
         const float clearColor[] = { .0f, .0f, .0f, .0f };
         cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
         cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, nullptr);
+
         struct 
         {
             int positionIndex;
@@ -431,45 +457,37 @@ void BaseDemo::draw()
 
     ImGuiSettings::StartFrame();
     {
-        static math::Vector3 lightPos;
         ImGuiSettings::Begin("Settings");
-        if (m_lightBuffer.data[0].position.onImGui("light position", -1000, 1000))
-        {
-            GfxContext context;
-            context.cmdList = cmdList;
-            context.device = m_device.getDevice();
-            m_lightBuffer.update(context);
-        }
+
+        // light UI
+        for(auto& light : m_lightBuffer.data)
+            light.onImgui();
+
         ImGuiSettings::End();
     }
     ImGuiSettings::EndFrame(cmdList);
+    timer.Tick("UI");
 
-    timer.Tick("IMGUi End");
-
-
-    u32 index = m_swapChain.changeState(cmdList, ResourceState::PRESENT);
+    m_swapChain.changeState(cmdList, ResourceState::PRESENT);
     ThrowIfFailed(cmdList->Close());
     ID3D12CommandList* ppCommandLists[] = { cmdList};
     m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    timer.Tick("before present");
     m_swapChain->Present(0, 0);
-    timer.Tick("present");
+    timer.Tick("Present");
 
     // sync
     m_swapChain.m_fence[m_currentFrameIndex] = ++m_fenceValue;
     m_cmdQueue->Signal(m_fence, m_fenceValue);
-    timer.Tick("draw end");
 }
 
 void BaseDemo::waitForFrame(u32 index)
 {
-    Timer timer("wait for frame");
     u64 fenceValue = m_fence->GetCompletedValue();
     if (fenceValue < m_swapChain.m_fence[index])
     {
         m_fence->SetEventOnCompletion(m_swapChain.m_fence[index], m_fenceEvent);
-        timer.Tick("before wait");
         WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
-        timer.Tick("after wait");
     }
 }
 

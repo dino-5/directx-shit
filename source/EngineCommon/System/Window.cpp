@@ -92,7 +92,6 @@ void WindowApp::run()
 	MSG msg = { };
 	while (msg.message !=WM_QUIT)
 	{
-		util::Timer timer("main loop", true);
 		auto start = std::chrono::system_clock::now();
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
 		{
@@ -101,11 +100,12 @@ void WindowApp::run()
 		}
 		else
 		{
+			util::Timer timer("main loop", true);
 			update();
 			draw();
+			std::string title = util::to_string(std::format(L"DX12 Demo fps: {}/{}", int(timer.getFps()), timer.getElapsedTime() ));
+			SetWindowText(getWindowHandle(), title.c_str());
 		}
-		std::string title = util::to_string(std::format(L"DX12 Demo fps: {}/{}", int(timer.getFps()), timer.getElapsedTime() ));
-		SetWindowText(getWindowHandle(), title.c_str());
 	}
 	destroy();
 }

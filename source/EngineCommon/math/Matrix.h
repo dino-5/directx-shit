@@ -209,7 +209,7 @@ struct ProjectionProps
     };
 };
 
-inline Matrix4 GetPerspectiveMatrix(ProjectionProps props)
+inline Matrix4 GetProjectionMatrix(ProjectionProps props)
 {
 	if (props.type == ProjectionType::Orthographic)
 		return OrhographicProjection(props.orthographic.l, props.orthographic.r, props.orthographic.t,
