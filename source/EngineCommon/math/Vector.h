@@ -26,7 +26,7 @@ public:
 		}
 	}
 
-	Vector(const Vector&& other) : m_data(std::move(other.m_data)){}
+	Vector(Vector&& other) : m_data(std::move(other.m_data)){}
 
 	Vector(float value)
 	{
@@ -148,16 +148,9 @@ public:
 		}
 	}
 
-	bool onImGui(std::string_view name, float min=-10.f, float max=10.f)
-	{
-		if constexpr(N != 2)
-			return util::ImGuiSettings::SliderFloat3(name, m_data.data(), min, max);
-		else
-			return util::ImGuiSettings::SliderFloat2(name, m_data.data(), min, max);
-	}
 	float& operator[](int i) { return m_data[i]; }
 	float operator[](int i) const { return m_data[i]; }
-	float* data() { return m_data; }
+	float* data() { return m_data.data(); }
 	uint size() { return N * sizeof(float); }
 	
 private:

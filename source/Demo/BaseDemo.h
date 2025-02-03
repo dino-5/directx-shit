@@ -15,6 +15,7 @@
 #include "EngineGfx/util/Camera.h"
 #include "EngineGfx/Model.h"
 
+class BaseDemo;
 class CommandLine;
 using namespace engine;
 struct IDxcBlob;
@@ -26,27 +27,25 @@ struct DemoSettings
 	graphics::SwapChainSettings m_settings; 
 };
 
+using uiActionCallback = engine::util::UI_Element::uiActionCallback;
 struct Light
 {
-	using onLightChangeCallback = std::function<void()>;
-	Light(math::Vector3 vec, std::string name, float range, onLightChangeCallback call);
+	Light(math::Vector3 vec, std::string name, float range, uiActionCallback callback = defaultCallback);
 	Light(const Light&)=delete;
-	Light(const Light&& other) 
+	Light(Light&& other) 
 		: m_position(std::move(other.m_position)),
 		  m_name(std::move(other.m_name)),
 		  m_positionRange(other.m_positionRange),
-		  m_callback(std::move(other.m_callback))
-	{}
-	void onImgui()
+		  m_uiElement(std::move(other.m_uiElement))
 	{
-		if(m_position.onImGui(m_name, -m_positionRange, m_positionRange))
-			m_callback();
+		m_uiElement.m_ptr = m_position.data();
 	}
 
 	math::Vector3 m_position;
 	std::string m_name;
 	float m_positionRange;
-	onLightChangeCallback m_callback;
+	util::UI_Vector m_uiElement;
+	static void defaultCallback(BaseDemo& demo);
 };
 
 struct ObjectData
@@ -85,15 +84,20 @@ public:
 
 	void waitForFrame(u32 index);
 
+	auto& getLightBuffer() { return m_lightBuffer; }
+
 protected:
 	void onResize()override {}
 	void update()override;
 	void draw()override;
 	void destroy()override;
-    LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)override;
+	LRESULT processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)override;
 
 private:
 	gfx::SwapChainSettings getCurrentWindowSettings();
+
+public:
+	graphics::GfxContext m_graphicsContext;
 
 private:
 	DemoSettings m_currentSettings;
@@ -113,7 +117,6 @@ private:
 	D3D12_RECT m_scissorRect{};
 	system::InputManager* m_inputManager;
 	Table<DxBlob*> m_shaders;
-	graphics::GfxContext m_graphicsContext;
 
 	// resources
 	gfx::Camera m_camera;

@@ -11,12 +11,19 @@ using namespace gfx;
 using namespace util;
 using namespace DirectX;
 
-Light::Light(math::Vector3 vec, std::string name, float range, onLightChangeCallback call)
+Light::Light(math::Vector3 vec, std::string name, float range, uiActionCallback callback)
     : m_position(vec),
       m_name(name),
       m_positionRange(range),
-      m_callback(call)
-{}
+      m_uiElement(3, m_position.data(), m_name, m_positionRange)
+{
+    m_uiElement.m_callback = callback;
+}
+
+void Light::defaultCallback(BaseDemo& demo)
+{
+    demo.getLightBuffer().update(demo.m_graphicsContext);
+}
 
 BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
 	WindowApp(width, height, name),
@@ -63,6 +70,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
         val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
         m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
     }
+
     D3D12_CLEAR_VALUE val;
     val.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     val.Color[0] = 1.f;
@@ -131,13 +139,12 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string name) :
     /*perspectiveProps.orthographic.b = .0f;*/
     /*perspectiveProps.orthographic.r = 300.f;*/
     /*perspectiveProps.orthographic.l = .0f;*/
+    /*perspectiveProps.type = math::ProjectionType::Orthographic;*/
 
     perspectiveProps.perspective.fov = 90;
     perspectiveProps.perspective.aspectRatio = m_swapChain.getAspectRatio();
     perspectiveProps.perspective.nearZ = 0.1f;
     perspectiveProps.perspective.farZ = 10000.f;
-
-    perspectiveProps.type = math::ProjectionType::Orthographic;
     perspectiveProps.type = math::ProjectionType::Perspective;
 
     m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f }, perspectiveProps);
@@ -262,7 +269,7 @@ bool BaseDemo::initialize()
 {
     LogScope("BaseDemo");
 
-    ImGuiSettings::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
+    imgui::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
 
     //root signature
     {
@@ -305,10 +312,7 @@ bool BaseDemo::initialize()
     lightSettings.viewDirection = m_camera.getDir();
     m_lightSettingsResource.init(context, &lightSettings, 1);
 
-    m_lightBuffer.data.push_back(Light( math::Vector3{1.f, 1.f, 1.f}, "light position", 1000, [this]() 
-    {
-        this->m_lightBuffer.update(this->m_graphicsContext);
-    }) );
+    m_lightBuffer.data.push_back(Light( math::Vector3{1.f, 1.f, 1.f}, "light position", 1000));
     m_lightBuffer.desc.state = ResourceState::GENERIC_READ_STATE;
     m_lightBuffer.desc.type = BufferType::CUSTOM;
     m_lightBuffer.create(context);
@@ -333,14 +337,12 @@ bool BaseDemo::initialize()
     ID3D12CommandList* ppCommandLists[] = { context.cmdList};
     m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-    u64 fence = m_fence->GetCompletedValue();
     m_swapChain.m_fence[0] = ++m_fenceValue;
     m_cmdQueue->Signal(m_fence, m_fenceValue);
     m_fence->SetEventOnCompletion(m_fenceValue, m_fenceEvent);
     WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
-    fence = m_fence->GetCompletedValue();
 
-	return true;
+    return true;
 }
 
 void BaseDemo::draw()
@@ -455,17 +457,18 @@ void BaseDemo::draw()
     }
     timer.Tick("lighting");
 
-    ImGuiSettings::StartFrame();
+    imgui::StartFrame();
     {
-        ImGuiSettings::Begin("Settings");
+        imgui::Begin("Settings");
 
         // light UI
-        for(auto& light : m_lightBuffer.data)
-            light.onImgui();
+        auto& uiElements = UI_Element::s_uiElements;
+        for(UI_Element* uiElement: uiElements)
+            uiElement->onUIAction(*this);
 
-        ImGuiSettings::End();
+        imgui::End();
     }
-    ImGuiSettings::EndFrame(cmdList);
+    imgui::EndFrame(cmdList);
     timer.Tick("UI");
 
     m_swapChain.changeState(cmdList, ResourceState::PRESENT);
