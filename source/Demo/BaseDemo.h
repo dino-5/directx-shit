@@ -15,6 +15,8 @@
 #include "EngineGfx/util/Camera.h"
 #include "EngineGfx/Model.h"
 
+#include "third_party/magic_enum/include/magic_enum.hpp"
+
 class BaseDemo;
 class CommandLine;
 using namespace engine;
@@ -28,23 +30,40 @@ struct DemoSettings
 };
 
 using uiActionCallback = engine::util::UI_Element::uiActionCallback;
+enum class LightFlags
+{
+	POINT,
+	DIRECTIONAL,
+	SPOTLIGHT
+};
+using namespace magic_enum::bitwise_operators;
+
 struct Light
 {
 	Light(math::Vector3 vec, std::string name, float range, uiActionCallback callback = defaultCallback);
 	Light(const Light&)=delete;
 	Light(Light&& other) 
-		: m_position(std::move(other.m_position)),
-		  m_name(std::move(other.m_name)),
-		  m_positionRange(other.m_positionRange),
-		  m_uiElement(std::move(other.m_uiElement))
+		:m_position(std::move(other.m_position)),
+		m_name(std::move(other.m_name)),
+		m_positionRange(other.m_positionRange),
+		m_uiElement(std::move(other.m_uiElement))
 	{
 		m_uiElement.m_ptr = m_position.data();
 	}
 
-	math::Vector3 m_position;
-	std::string m_name;
-	float m_positionRange;
-	util::UI_Vector m_uiElement;
+	bool isPoint() const       { return bool(m_flags & LightFlags::POINT); }
+	bool isDirectional() const { return bool(m_flags & LightFlags::DIRECTIONAL); }
+	bool isSpotlight() const   { return bool(m_flags & LightFlags::SPOTLIGHT); }
+
+	// shader data
+	math::Vector3    m_position;
+	math::Vector3    m_direction;
+	LightFlags       m_flags;
+	// UI data
+	std::string      m_name;
+	float            m_positionRange;
+	util::UI_Vector  m_uiElement;
+
 	static void defaultCallback(BaseDemo& demo);
 };
 
@@ -76,7 +95,7 @@ struct ConstandBufferData
 class BaseDemo : public WindowApp
 {
 public:
-	BaseDemo(u32 width, u32 height, std::string name);
+	BaseDemo(u32 width, u32 height, std::string_view name);
 	BaseDemo()=default;
 	bool initialize()override;
 	void compileShaders();
@@ -87,7 +106,7 @@ public:
 	auto& getLightBuffer() { return m_lightBuffer; }
 
 protected:
-	void onResize()override {}
+	void onResize(uint width, uint height) override;
 	void update()override;
 	void draw()override;
 	void destroy()override;
@@ -95,6 +114,8 @@ protected:
 
 private:
 	gfx::SwapChainSettings getCurrentWindowSettings();
+	u64 signal(graphics::CommandQueue& queue, ID3D12Fence* fence, u64& value);
+	void waitForFence(ID3D12Fence* fence, HANDLE& fenceEvent, u64 fenceValue);
 
 public:
 	graphics::GfxContext m_graphicsContext;
@@ -110,12 +131,13 @@ private:
 	gfx::DescriptorHeap m_descriptorHeaps[static_cast<uint>(gfx::DescriptorHeapType::Count)];
 	gfx::SwapChain m_swapChain;
 	gfx::Resource m_depthStencil;
+
 	ID3D12Fence* m_fence = nullptr;
 	u64 m_fenceValue = 0;
 	HANDLE m_fenceEvent;
+
 	D3D12_VIEWPORT m_viewPort{};
 	D3D12_RECT m_scissorRect{};
-	system::InputManager* m_inputManager;
 	Table<DxBlob*> m_shaders;
 
 	// resources
@@ -146,5 +168,7 @@ private:
 	gfx::Resource m_positionRT[config::NumFrames];
 	gfx::Resource m_albedoRT[config::NumFrames];
 	gfx::Resource m_normalRT[config::NumFrames];
+
+	system::InputManager* m_inputManager;
 };
 

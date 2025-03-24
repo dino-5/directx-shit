@@ -12,17 +12,25 @@ namespace engine::graphics
 		int height{};
 		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		HWND window{};
+		bool isTearingSupported = false;
+		bool isVsyncOn = false;
 	};
 
+	class Device;
 
 	class SwapChain
 	{
 	public:
 		SwapChain() = default;
-		SwapChain(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue);
-		void init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue);
+		SwapChain(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue);
+		void init(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue);
 		IDXGISwapChain* getSwapChain() { return m_swapChain; }
-		void onResize();
+		void onResize(SwapChainSettings settings);
+		void Present()
+		{
+			uint flags = m_currentSettings.isTearingSupported && (m_flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)  ? DXGI_PRESENT_ALLOW_TEARING : 0;
+			m_swapChain->Present(m_currentSettings.isVsyncOn, flags);
+		}
 
 		IDXGISwapChain* operator->() { return m_swapChain; }
 		f32 getAspectRatio()const { 
@@ -53,12 +61,13 @@ namespace engine::graphics
 
 		DescriptorCPU getView(uint index) { return m_resources[index].rtv; }
 
-		uint m_fence[engine::config::NumFrames] = {};
+		u64 m_fence[engine::config::NumFrames] = {};
 		SwapChainSettings m_currentSettings;
 
 		Resource m_resources[engine::config::NumFrames] = {};
 	private:
 		uint m_currentBuffer = 0;
+		DXGI_SWAP_CHAIN_FLAG m_flags {(DXGI_SWAP_CHAIN_FLAG)0 };
 		IDXGISwapChain* m_swapChain = nullptr;
 	};
 };

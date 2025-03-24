@@ -21,8 +21,8 @@ namespace engine::graphics
 	struct DescriptorGPU
 	{
 		uint32_t HeapIndex;
-		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU;
-		D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU;
+		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU { 0 };
+		D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU { 0 };
 
 		operator bool() const { return HandleCPU.ptr != 0; }
 		u32 getDescriptorIndex();
@@ -32,7 +32,7 @@ namespace engine::graphics
 
 	struct DescriptorCPU
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU;
+		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU { 0 };
 
 		operator bool() const { return HandleCPU.ptr != 0; }
 		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }

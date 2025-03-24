@@ -5,13 +5,14 @@
 
 namespace engine::graphics
 {
-	SwapChain::SwapChain(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
+	SwapChain::SwapChain(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue)
 	{
-		init(settings, factory, queue);
+		init(settings, device, queue);
 	}
 
-	void SwapChain::init(SwapChainSettings settings, ComPtr<IDXGIFactory4> factory, ComPtr<ID3D12CommandQueue> queue)
+	void SwapChain::init(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue)
 	{
+		LogScope("SwapChain::Initialize");
 		m_currentSettings = settings;
 		if(m_swapChain)
 		    m_swapChain->Release();
@@ -31,17 +32,24 @@ namespace engine::graphics
 		sd.OutputWindow = m_currentSettings.window;
 		sd.Windowed = true;
 		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH ;
+		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+		if(device.checkForFeatureSupport())
+		{
+			sd.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+			util::printInfo("tearing supported");
+		}
+		m_flags = (DXGI_SWAP_CHAIN_FLAG)sd.Flags;
 
-		ThrowIfFailed(factory->CreateSwapChain(
+		ThrowIfFailed(device.getFactory()->CreateSwapChain(
 			queue.Get(),
 			&sd,
 			&m_swapChain));
 	}
 
 	// call only when descriptor sets are already created
-	void SwapChain::onResize()
+	void SwapChain::onResize(SwapChainSettings settings)
 	{
+		m_currentSettings = settings;
 		for (int i = 0; i < engine::config::NumFrames; ++i)
 			m_resources[i].reset();
 
@@ -49,7 +57,7 @@ namespace engine::graphics
 			engine::config::NumFrames,
 			m_currentSettings.width, m_currentSettings.height,
 			m_currentSettings.format,
-			DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+			m_flags));
 
 		m_currentBuffer = 0;
 

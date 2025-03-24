@@ -33,6 +33,7 @@ namespace engine::graphics
 {
     void Model::initDSH(system::Filepath path, GfxContext& context)
     {
+		LogScope(std::format("loading of dsh model {}", path.str()));
         DSH_Data data = loadDSH(path);
         float* vertices = data.vertexData.data();
         for (int i = 0; i < data.vertexData.size(); i+=3) // we support only vector3 for our format for now
@@ -50,6 +51,7 @@ namespace engine::graphics
 
     void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
     {
+		LogScope(std::format("loading of gltf model {}", path.str()));
         m_context = &context;
         m_directory.init(path.getPath().remove_filename());
         m_model = std::make_unique<tinygltf::Model>();

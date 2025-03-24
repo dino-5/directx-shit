@@ -114,6 +114,23 @@ void Device::initialize()
     engine::util::printInfo("device initialized");
 }
 
+bool Device::checkForFeatureSupport(DXGI_FEATURE feature)
+{
+	BOOL result = FALSE;
+	ComPtr<IDXGIFactory5> factory5;
+
+	if (m_factory && SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory5))))
+	{
+		if (FAILED(factory5->CheckFeatureSupport(
+			feature, 
+			&result, sizeof(result))))
+		{
+			result = FALSE;
+		}
+	}
+	return result == TRUE;
+}
+
 void Device::createCommandAllocator(ID3D12CommandAllocator* &alloc)
 {
     ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)));

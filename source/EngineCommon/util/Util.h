@@ -25,6 +25,7 @@
 #include "MathHelper.h"
 #include <minwinbase.h>
 #include "EngineCommon/include/types.h"
+#include <format>
 
 using namespace engine;
 

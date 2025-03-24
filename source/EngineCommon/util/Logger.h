@@ -6,7 +6,6 @@
 #include <source_location>
 #include "EngineCommon/include/types.h"
 #include "EngineCommon/util/Util.h"
-#
 
 namespace engine::util
 {

@@ -58,7 +58,7 @@ namespace engine::graphics
 	void RenderContext1::resetSwapChain(SwapChainSettings set)
 	{
 		if (m_graphicsQueue.getQueue() != nullptr)
-			m_swapChain.init(set, m_device.getFactory(), m_graphicsQueue.getQueue());
+			m_swapChain.init(set, m_device, m_graphicsQueue.getQueue());
 		setupViewport(set);
 
 		D3D12_CLEAR_VALUE optClear;
