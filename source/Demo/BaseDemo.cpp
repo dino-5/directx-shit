@@ -5,6 +5,7 @@
 #include "EngineCommon/util/Timer.h"
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
+#include <ostream>
 #include <string_view>
 
 using namespace std;
@@ -27,19 +28,16 @@ void Light::defaultCallback(BaseDemo& demo)
 }
 
 BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
-	WindowApp(width, height, name),
-	m_cmdList(m_device),
-	m_cmdQueue(m_device.native()),
-	m_swapChain(getCurrentWindowSettings(), m_device, m_cmdQueue.getQueue())
+    WindowApp(width, height, name),
+    m_cmdList(m_device),
+    m_cmdQueue(m_device.native()),
+    m_swapChain(getCurrentWindowSettings(), m_device, m_cmdQueue.getQueue())
 {
     m_inputManager = &system::InputManager::GetInputManager();
     m_device.createFence(&m_fence);
-
     DescriptorHeapManager::CreateDSVHeap(20);
     DescriptorHeapManager::CreateRTVHeap(100);
     DescriptorHeapManager::CreateSRVHeap(200);
-
-	onResize(width, height);
 
     m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     if (m_fenceEvent == nullptr)
@@ -48,12 +46,13 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
     }
 
     m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
-
+    onResize(width, height);
 }
 
 void BaseDemo::onResize(uint width, uint height)
 {
-	WindowApp::onResize(width, height);
+    flushGPU();
+    WindowApp::onResize(width, height);
     m_swapChain.onResize(getCurrentWindowSettings());
 
     m_viewPort.TopLeftX = 0;
@@ -158,14 +157,14 @@ void BaseDemo::onResize(uint width, uint height)
     perspectiveProps.perspective.farZ = 10000.f;
     perspectiveProps.type = math::ProjectionType::Perspective;
 
-	m_camera.setProjectionProperties(perspectiveProps);
-	m_camera.processUpdate();
+    m_camera.setProjectionProperties(perspectiveProps);
+    m_camera.processUpdate();
 
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
 {
-	return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle(), m_device.checkForFeatureSupport(), false};
+    return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle(), m_device.checkForFeatureSupport(), false};
 }
 
 void BaseDemo::compileShaders()
@@ -280,16 +279,21 @@ void BaseDemo::compileShaders()
 
 u64 BaseDemo::signal(graphics::CommandQueue& queue, ID3D12Fence* fence, u64& value)
 {
-	u64 valueForSignal = ++value;
-	ThrowIfFailed(queue->Signal(fence, valueForSignal));
+    u64 valueForSignal = ++value;
+    ThrowIfFailed(queue->Signal(fence, valueForSignal));
 
-	return valueForSignal;
+    return valueForSignal;
 }
 
 void BaseDemo::waitForFence(ID3D12Fence* fence, HANDLE& fenceEvent, u64 fenceValue)
 {
-	fence->SetEventOnCompletion(fenceValue, fenceEvent);
-	WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+    fence->SetEventOnCompletion(fenceValue, fenceEvent);
+    WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+}
+
+void BaseDemo::flushGPU()
+{
+    waitForFence(m_fence, m_fenceEvent, m_fenceValue);
 }
 
 
@@ -365,8 +369,8 @@ bool BaseDemo::initialize()
     ID3D12CommandList* ppCommandLists[] = { context.cmdList};
     m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-	m_swapChain.m_fence[0] = signal(m_cmdQueue, m_fence, m_fenceValue);
-	waitForFence(m_fence, m_fenceEvent, m_swapChain.m_fence[0]);
+    m_swapChain.m_fence[0] = signal(m_cmdQueue, m_fence, m_fenceValue);
+    waitForFence(m_fence, m_fenceEvent, m_swapChain.m_fence[0]);
 
     return true;
 }
@@ -508,14 +512,14 @@ void BaseDemo::draw()
     timer.Tick("Present");
 
     // sync
-	m_swapChain.m_fence[m_currentFrameIndex] = signal(m_cmdQueue, m_fence, m_fenceValue);
+    m_swapChain.m_fence[m_currentFrameIndex] = signal(m_cmdQueue, m_fence, m_fenceValue);
 }
 
 void BaseDemo::waitForFrame(u32 index)
 {
     u64 fenceValue = m_fence->GetCompletedValue();
     if (fenceValue < m_swapChain.m_fence[index])
-		waitForFence(m_fence, m_fenceEvent, m_swapChain.m_fence[index]);
+        waitForFence(m_fence, m_fenceEvent, m_swapChain.m_fence[index]);
 }
 
 void BaseDemo::update()

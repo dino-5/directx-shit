@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <windows.h>
+#include <utility>
 
 class Window
 {
@@ -38,6 +39,7 @@ public:
 	static inline WindowApp* App = nullptr;
 
 	void run();
+    std::pair<int, int> getWindowSize();
 
 protected:
 	virtual void onResize(unsigned int width, unsigned int height);

@@ -102,6 +102,7 @@ public:
 	SHIT_ENGINE_SINGLETONE(BaseDemo);
 
 	void waitForFrame(u32 index);
+    void flushGPU();
 
 	auto& getLightBuffer() { return m_lightBuffer; }
 
