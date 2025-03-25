@@ -3,44 +3,46 @@
 #include <string>
 #include <memory>
 #include <windows.h>
+#include <utility>
 
 class Window
 {
 public:
-	Window(int width, int height, std::string name);
+	Window(int width, int height, std::string_view name);
 	Window() = default;
 
-	static WNDCLASSEX CreateWindowClass(const std::string& );
+	static WNDCLASSEXA CreateWindowClass(const std::string_view );
 
 	virtual bool initialize();
 	void setWindowHandler(HWND handler) { m_windowHandler = handler; }
-	void setWidth(int w) { width = w; }
-	int getWidth() const { return width; }
-	void setHeight(int h) { height = h; }
-	int getHeight() const { return height; }
+	void setWidth(int w) { m_width = w; }
+	int getWidth() const { return m_width; }
+	void setHeight(int h) { m_height = h; }
+	int getHeight() const { return m_height; }
 	HWND getWindowHandle() const { return m_windowHandler; }
 private:
-	HWND m_windowHandler;
-	int width;
-	int height;
-	std::string windowName;
+	HWND m_windowHandler = 0;
+	int m_width;
+	int m_height;
+	std::string m_windowName;
 };
 
 class WindowApp : public Window {
 public:
 	LRESULT msgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	WindowApp(int width, int height, std::string name);
+	WindowApp(int width, int height, std::string_view name);
 	WindowApp() = default;
 	virtual ~WindowApp() {}
-	bool initialize()override;
+	bool initialize() override;
 	SHIT_ENGINE_NON_COPYABLE(WindowApp);
 
 	static inline WindowApp* App = nullptr;
 
 	void run();
+    std::pair<int, int> getWindowSize();
 
 protected:
-	virtual void onResize() =0;
+	virtual void onResize(unsigned int width, unsigned int height);
 	virtual void update() = 0;
 	virtual void draw() = 0;
 	virtual void destroy() = 0;

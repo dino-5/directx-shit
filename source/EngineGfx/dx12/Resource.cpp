@@ -5,6 +5,25 @@
 #include "EngineCommon/System/config.h"
 #include "third_party/magic_enum/include/magic_enum.hpp"
 
+void locCreateResource(ID3D12Device* device,
+					   D3D12_RESOURCE_DESC desc,
+					   engine::graphics::ResourceState createState,
+					   D3D12_HEAP_TYPE aHeapType,
+					   std::wstring_view name,
+					   ID3D12Resource** resource,
+					   D3D12_CLEAR_VALUE* val)
+{
+	CD3DX12_HEAP_PROPERTIES heapType = CD3DX12_HEAP_PROPERTIES(aHeapType);
+	ThrowIfFailed(device->CreateCommittedResource(
+		&heapType,
+		D3D12_HEAP_FLAG_NONE,
+		&desc,
+		CastEnum(createState),
+		val,
+		IID_PPV_ARGS(resource)));
+	(*resource)->SetName(name.data());
+}
+
 namespace engine::graphics
 {
 	D3D12_RESOURCE_STATES CastEnum(ResourceState state)
@@ -15,8 +34,14 @@ namespace engine::graphics
 	void Resource::initResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val)
 	{
 		static u32 resIndex = 0;
+
 		m_bufferSize = desc.dimension== D3D12_RESOURCE_DIMENSION_BUFFER ? desc.width : 0;
 		m_currentState = desc.createState;
+		m_heapType = desc.heapType;
+		if (val) {
+			m_clearValue = *val;
+		}
+
 		D3D12_RESOURCE_DESC resourceDesc = {};
 		resourceDesc.Format = desc.format;
 		resourceDesc.Width = desc.width;
@@ -30,14 +55,6 @@ namespace engine::graphics
 		resourceDesc.Layout = desc.dimension == D3D12_RESOURCE_DIMENSION_BUFFER ? 
 			D3D12_TEXTURE_LAYOUT_ROW_MAJOR : D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
-		CD3DX12_HEAP_PROPERTIES heapType = CD3DX12_HEAP_PROPERTIES(desc.heapType);
-		ThrowIfFailed(device->CreateCommittedResource(
-			&heapType,
-			D3D12_HEAP_FLAG_NONE,
-			&resourceDesc,
-			CastEnum(desc.createState),
-			val,
-			IID_PPV_ARGS(m_resource.GetAddressOf())));
 		if (desc.name)
 		{
             name = util::to_wstring(std::string(desc.name));
@@ -46,14 +63,18 @@ namespace engine::graphics
 		{
 			name = std::to_wstring(resIndex++);
 		}
-        m_resource->SetName(name.c_str());
-		if (!(descriptorDesc.descriptor == DescriptorFlags::None))
-            createViews(device, descriptorDesc);
+		D3D12_CLEAR_VALUE* clearValue = m_clearValue.has_value() ? &m_clearValue.value() : nullptr;
+		locCreateResource(device, resourceDesc, desc.createState, m_heapType, name, m_resource.ReleaseAndGetAddressOf(), clearValue);
+
+		m_descriptorProps = descriptorDesc;
+		createViews(device, m_descriptorProps);
         util::printInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
 	}
 
 	void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptorProps)
 	{
+		if (descriptorProps.descriptor == DescriptorFlags::None)
+			return;
 
 		D3D12_RESOURCE_DESC desc = m_resource->GetDesc();
 		DescriptorFlags descriptor = descriptorProps.descriptor;

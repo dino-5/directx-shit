@@ -1,20 +1,10 @@
+#include "Shaders/common_light.hlsl"
 struct DeferredTable
 {
     int positionIndex;
     int albedoIndex;
     int normalIndex;
     int lightBufferIndex;
-};
-
-struct Light
-{
-	float3 position;
-};
-
-struct LightSettings
-{
-    float3 cameraPosition;
-    float3 cameraDirection;
 };
 
 Texture2D getTextureByIndex(int index)

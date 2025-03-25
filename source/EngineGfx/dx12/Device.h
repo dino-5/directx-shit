@@ -28,6 +28,8 @@ namespace engine::graphics {
 		void createCommandAllocator(ID3D12CommandAllocator*&);
 		void createFence(ID3D12Fence**);
 
+		bool checkForFeatureSupport(DXGI_FEATURE feature=DXGI_FEATURE_PRESENT_ALLOW_TEARING);
+
 		void reset() { 
 			m_factory->Release(); m_factory = nullptr;
 			m_device->Release(); m_device = nullptr;

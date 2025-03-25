@@ -13,12 +13,32 @@ using namespace engine::graphics;
 
 void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props)
 {
-    m_viewDir = viewDirection;
+	setDirection(viewDirection);
     m_position = pos;
-    m_projectionProps = props;
     updateViewMatrix();
-    updateProjectionMatrix();
+    updateProjectionMatrix(props);
 }
+
+void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection)
+{
+	setDirection(viewDirection);
+    m_position = pos;
+    updateViewMatrix();
+}
+
+void Camera::setPosition(math::Vector3 pos)
+{
+    m_position = pos;
+}
+
+void Camera::setDirection(math::Vector3 dir)
+{
+    m_viewDir = dir.normalize();
+	math::Vector3 y{0.f, 1.f, 0.f};
+	m_rightDir = math::CrossProduct(y, m_viewDir);
+	m_upDir = math::CrossProduct(m_viewDir, m_rightDir);
+}
+
 
 void Camera::updateViewMatrix()
 {
@@ -26,9 +46,9 @@ void Camera::updateViewMatrix()
     m_viewMatrix = math::Translate(m_position) * m_rotationMatrix;
 }
 
-void Camera::updateProjectionMatrix()
+void Camera::updateProjectionMatrix(math::ProjectionProps props)
 {
-    m_projectionMatrix = GetProjectionMatrix(m_projectionProps);
+    m_projectionMatrix = GetProjectionMatrix(props);
 }
 
 void Camera::update()

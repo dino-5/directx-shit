@@ -25,23 +25,25 @@ namespace engine::graphics
 		using CallbackSign = std::function<void(const Camera* camera)>;
 		Camera() = default;
 		void initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props);
+		void initialize(math::Vector3 pos, math::Vector3 viewDirection);
 
 		math::Matrix4 getViewMatrix() const { return m_viewMatrix; }
 		math::Matrix4 getProjectionMatrix() const { return m_projectionMatrix; }
 		math::Vector3 getPos() const { return m_position; }
 		math::Vector3 getDir() const { return m_viewDir; }
+		void setPosition(math::Vector3 pos);
+		void setDirection(math::Vector3 dir);
 
 		void addChangeCallback(CallbackSign ptr) { m_callbacks.push_back(ptr); }
 		void translate(MovementDirection direction, float velocity);
 		void rotate(float vertical, float horizontal);
 		void setProjectionProperties(math::ProjectionProps props)
 		{
-			m_projectionProps = props;
-			updateProjectionMatrix();
+			updateProjectionMatrix(props);
 		}
 
 		void updateViewMatrix();
-		void updateProjectionMatrix();
+		void updateProjectionMatrix(math::ProjectionProps props);
 		void update();
 		void reset();
 		void processUpdate();
@@ -57,7 +59,6 @@ namespace engine::graphics
 		math::Matrix4 m_projectionMatrix;
 		std::vector<CallbackSign> m_callbacks;
 
-		math::ProjectionProps m_projectionProps;
 		bool m_needUpdate = false;
 	};
 

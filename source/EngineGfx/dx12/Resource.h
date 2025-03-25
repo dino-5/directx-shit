@@ -7,6 +7,7 @@
 #include "EngineGfx/dx12/dx12_includes.hpp"
 
 #include <array>
+#include <optional>
 
 namespace engine::graphics
 {
@@ -114,7 +115,10 @@ namespace engine::graphics
 
 	private:
 		ComPtr<ID3D12Resource> m_resource = nullptr;
+		std::optional<D3D12_CLEAR_VALUE> m_clearValue;
 		ResourceState m_currentState = ResourceState::COMMON;
+		DescriptorProperties m_descriptorProps;
+		D3D12_HEAP_TYPE  m_heapType;
 		D3D12_SRV_DIMENSION m_viewDimension{};
 		std::wstring name;
 		u32 m_bufferSize = 0;
