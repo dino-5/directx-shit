@@ -87,70 +87,7 @@ void BaseDemo::onResize(uint width, uint height)
         m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
     }
 
-    D3D12_CLEAR_VALUE val;
-    val.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    val.Color[0] = 1.f;
-    val.Color[1] = 0.f;
-    val.Color[2] = 1.f;
-    val.Color[3] = 0.f;
-
-    for(int i = 0; i < config::NumFrames; ++i)
-    {
-        DescriptorProperties viewProps{
-            .descriptor = DescriptorFlags::RenderTarget | DescriptorFlags::ShaderResource ,
-            .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
-        };
-
-        ResourceDescription descPosition{
-                .format = DXGI_FORMAT_R32G32B32A32_FLOAT,
-                .width= width,
-                .height = height,
-                .depthOrArraySize = 1,
-                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-                .flags = ResourceFlags::RENDER_TARGET,
-                .createState = ResourceState::RENDER_TARGET ,
-                .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                .name = "deferred position"
-       };
-        m_positionRT[i].initResource(m_device.getDevice(), descPosition, viewProps, &val);
-
-        ResourceDescription descAlbedo{
-                .format = DXGI_FORMAT_R32G32B32A32_FLOAT,
-                .width= width,
-                .height = height,
-                .depthOrArraySize = 1,
-                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-                .flags = ResourceFlags::RENDER_TARGET,
-                .createState = ResourceState::RENDER_TARGET ,
-                .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                .name = "deferred albedo"
-       };
-        m_albedoRT[i].initResource(m_device.getDevice(), descAlbedo, viewProps, &val);
-
-        ResourceDescription descNormal{
-                .format = DXGI_FORMAT_R32G32B32A32_FLOAT,
-                .width= width,
-                .height = height,
-                .depthOrArraySize = 1,
-                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-                .flags = ResourceFlags::RENDER_TARGET,
-                .createState = ResourceState::RENDER_TARGET ,
-                .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                .name = "deferred normal"
-       };
-        m_normalRT[i].initResource(m_device.getDevice(), descNormal, viewProps, &val);
-    }
-
     math::ProjectionProps perspectiveProps;
-
-    /*perspectiveProps.orthographic.f = 10000.f;*/
-    /*perspectiveProps.orthographic.n = .1f;*/
-    /*perspectiveProps.orthographic.t = .0f;*/
-    /*perspectiveProps.orthographic.b = 300.f;*/
-    /*perspectiveProps.orthographic.r = 300.f;*/
-    /*perspectiveProps.orthographic.l = .0f;*/
-    /*perspectiveProps.type = math::ProjectionType::Orthographic;*/
-
     perspectiveProps.perspective.fov = 90;
     perspectiveProps.perspective.aspectRatio = m_swapChain.getAspectRatio();
     perspectiveProps.perspective.nearZ = 0.1f;
@@ -176,105 +113,6 @@ void BaseDemo::compileShaders()
         if (entry.second != nullptr)
             this->m_shaders.push_back(entry);
     };
-    {
-        ShaderInfo info(createShader);
-        info.entryPoint = L"VS_Basic";
-        info.path = L"Shaders/deferred_geometry.hlsl";
-        info.shaderName = L"VS_Color";
-        info.type = ShaderType::VERTEX;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.entryPoint = L"PS_Basic";
-        info.path = L"Shaders/deferred_geometry.hlsl";
-        info.shaderName = L"PS_Color";
-        info.type = ShaderType::PIXEL;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.entryPoint = L"VSMain";
-        info.path = L"Shaders/deferred_lighting.hlsl";
-        info.shaderName = L"VS_Deferred";
-        info.type = ShaderType::VERTEX;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.entryPoint = L"PSMain";
-        info.path = L"Shaders/deferred_lighting.hlsl";
-        info.shaderName = L"PS_Deferred";
-        info.type = ShaderType::PIXEL;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.entryPoint = L"VSMain";
-        info.path = L"Shaders/visualizeLight.hlsl";
-        info.shaderName = L"VS_LightBox";
-        info.type = ShaderType::VERTEX;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.entryPoint = L"PSMain";
-        info.path = L"Shaders/visualizeLight.hlsl";
-        info.shaderName = L"PS_LightBox";
-        info.type = ShaderType::PIXEL;
-    }
-
-    // TODO rename and structure pass elements
-    // deferred geometry pass
-    {
-        std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
-            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-            {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-            {"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-            {"UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        };
-        ShaderInputGroup shaderIG;
-        shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
-        shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_Color"));
-        shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_Color"));
-        shaderIG.rootSignature = &m_rootSignature;
-
-        RenderState state;
-        state.m_shader = shaderIG;
-        state.renderTargets = { DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT,DXGI_FORMAT_R32G32B32A32_FLOAT };
-        m_pso = PSO::CreatePSO(state);
-    }
-
-    // deferred lighting pass
-    {
-        ShaderInputGroup shaderIG;
-        shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_Deferred"));
-        shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_Deferred"));
-        shaderIG.rootSignature = &m_lightingRS;
-
-        RenderState state;
-        DepthStencilState depth;
-        depth.m_desc.DepthEnable = FALSE;
-        depth.m_desc.StencilEnable = FALSE;
-
-        state.setRasterizerState(RasterizerState(CullMode::FRONT, true));
-        state.setDepthStencilState(depth);
-        state.m_shader = shaderIG;
-        m_lightingPSO = PSO::CreatePSO(state);
-    }
-
-    // light box
-    {
-        std::vector<D3D12_INPUT_ELEMENT_DESC> desc = {
-            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        };
-        ShaderInputGroup shaderIG;
-        shaderIG.desc = { desc.data(), static_cast<u32>(desc.size()) };
-        shaderIG.vertexShader = getShader(*util::FindElement(m_shaders, L"VS_LightBox"));
-        shaderIG.pixelShader = getShader(*util::FindElement(m_shaders, L"PS_LightBox"));
-        shaderIG.rootSignature = &m_lightBoxRS;
-
-        RenderState state;
-        state.setRasterizerState(RasterizerState(CullMode::NONE, true));
-        state.m_shader = shaderIG;
-        m_lightBoxPSO = PSO::CreatePSO(state);
-    }
-
 }
 
 u64 BaseDemo::signal(graphics::CommandQueue& queue, ID3D12Fence* fence, u64& value)
@@ -303,29 +141,6 @@ bool BaseDemo::initialize()
 
     imgui::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
 
-    //root signature
-    {
-        // deferred geometry
-        RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10),
-                                      RootParameter::CreateConstants(1, 1, 10) };
-        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-        m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
-    }
-    {
-        // deferred lighting
-        RootParameters parameters = { RootParameter::CreateConstants(4, 0, 10),
-            RootParameter::CreateDescriptor(1, 10)};
-        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-        m_lightingRS.init(m_device.getDevice(), parameters, rootSignFlags);
-    }
-    {
-        // visualize light 
-        RootParameters parameters = { RootParameter::CreateDescriptor(0, 0),
-            RootParameter::CreateDescriptor(0, 0, RootParameterType::SRV, ShaderVisibility::ALL) };
-        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT ;
-        m_lightBoxRS.init(m_device.getDevice(), parameters, rootSignFlags);
-    }
-
     ShaderManager::InitializeCompiler();
     compileShaders();
 
@@ -348,9 +163,6 @@ bool BaseDemo::initialize()
     m_lightBuffer.desc.state = ResourceState::GENERIC_READ_STATE;
     m_lightBuffer.desc.type = BufferType::CUSTOM;
     m_lightBuffer.create(context);
-
-    m_lightCube.initDSH(config::g_state.homeDir/ "textures/models/cube.dsh", context);
-    m_model.initGLTF(config::g_state.homeDir/ "textures/models/Sponza/gltf/Sponza.gltf", context);
 
     m_camera.addChangeCallback([this](const Camera* camera)
     {
@@ -380,112 +192,15 @@ void BaseDemo::draw()
 
     Timer timer("draw");
     ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
-    auto& positionRT = m_positionRT[m_currentFrameIndex];
-    auto& albedoRT   = m_albedoRT[m_currentFrameIndex];
-    auto& normalRT   = m_normalRT[m_currentFrameIndex];
-
     m_graphicsContext.cmdList = cmdList;
     m_graphicsContext.device = m_device.getDevice();
 
-    // deferred
-    {
-        positionRT.transition(cmdList, ResourceState::RENDER_TARGET);
-        albedoRT.transition(cmdList, ResourceState::RENDER_TARGET);
-        normalRT.transition(cmdList, ResourceState::RENDER_TARGET);
+    u32 swapChainBufferIndex = m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET);
 
-        cmdList->RSSetViewports(1, &m_viewPort);
-        cmdList->RSSetScissorRects(1, &m_scissorRect);
+    auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
 
-        const float clearColor[] = { 1.0f, .0f, 1.0f, .0f };
-        cmdList->ClearRenderTargetView(positionRT.rtv.HandleCPU, clearColor, 0, nullptr);
-        cmdList->ClearRenderTargetView(albedoRT.rtv.HandleCPU, clearColor, 0, nullptr);
-        cmdList->ClearRenderTargetView(normalRT.rtv.HandleCPU, clearColor, 0, nullptr);
-
-        constexpr const u32 rtHandlesNumber = 3;
-        D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[rtHandlesNumber] = {
-            positionRT.rtv.HandleCPU, 
-            albedoRT.rtv.HandleCPU, 
-            normalRT.rtv.HandleCPU, 
-        };
-        cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-        cmdList->OMSetRenderTargets(rtHandlesNumber, rtHandles, true, &m_depthStencil.dsv.HandleCPU);
-
-        cmdList->SetDescriptorHeaps(1, engine::graphics::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
-        cmdList->SetGraphicsRootSignature(m_rootSignature);
-        cmdList->SetPipelineState(m_pso);
-
-        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        BindlessTable table{ m_constBuffer.getDescriptorHeapIndex(),
-            m_model.m_materialBuffer.getDescriptorHeapIndex()};
-        cmdList->SetGraphicsRoot32BitConstants(0, 2, &table, 0);
-
-        auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
-        auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
-        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-        cmdList->IASetIndexBuffer(&indexBuffer);
-
-        for (auto& submesh : m_model.m_submeshes)
-        {
-            cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
-            submesh.draw(cmdList);
-        }
-
-    }
-    timer.Tick("geometry");
-
-    // deferred lighting
-    {
-        u32 swapChainBufferIndex = m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET);
-
-        auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
-        positionRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
-        albedoRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
-        normalRT.transition(cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
-
-        const float clearColor[] = { .0f, .0f, .0f, .0f };
-        cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
-        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, nullptr);
-
-        struct 
-        {
-            int positionIndex;
-            int albedoIndex;
-            int normalIndex;
-            int lightBufferIndex;
-        }deferredTable;
-        deferredTable.positionIndex = positionRT.srv.getDescriptorIndex();
-        deferredTable.albedoIndex = albedoRT.srv.getDescriptorIndex();
-        deferredTable.normalIndex = normalRT.srv.getDescriptorIndex();
-        deferredTable.lightBufferIndex = m_lightBuffer.buffer.getDescriptorHeapIndex();
-
-        cmdList->SetGraphicsRootSignature(m_lightingRS);
-        cmdList->SetPipelineState(m_lightingPSO);
-        cmdList->IASetVertexBuffers(0, 1, nullptr);
-        cmdList->IASetIndexBuffer(nullptr);
-        cmdList->SetGraphicsRoot32BitConstants(0, 4, &deferredTable, 0);
-        cmdList->SetGraphicsRootConstantBufferView(1, m_lightSettingsResource.getGPUAdress());
-        cmdList->DrawInstanced(6, 1, 0, 0);
-
-        //draw light cube
-        cmdList->SetPipelineState(m_lightBoxPSO);
-        cmdList->SetGraphicsRootSignature(m_lightBoxRS);
-        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
-
-        cmdList->SetGraphicsRootConstantBufferView(0, m_constBuffer.getAddress());
-        cmdList->SetGraphicsRootShaderResourceView(1, m_lightBuffer.buffer.getGPUAdress());
-
-        auto vertexBuffer = GetVertexBufferView(m_lightCube.m_mesh.m_vertexBuffer);
-        auto indexBuffer = GetIndexBufferView(m_lightCube.m_mesh.m_indexBuffer);
-        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-        cmdList->IASetIndexBuffer(&indexBuffer);
-
-        for (auto& submesh : m_lightCube.m_submeshes)
-        {
-            submesh.draw(cmdList);
-        }
-    }
-    timer.Tick("lighting");
+    const float clearColor[] = { .0f, 1.0f, .0f, 1.0f };
+    cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
 
     imgui::StartFrame();
     {
