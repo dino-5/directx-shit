@@ -43,12 +43,7 @@ namespace engine::graphics
 				m_resources[i].reset();
 		}
 
-		u32 changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
-		{
-			u32 index = getCurrentIndex();
-			m_resources[index].transition(cmdList, state);
-			return index;
-		}
+		u32 changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
 		u32 getCurrentIndex() 
 		{

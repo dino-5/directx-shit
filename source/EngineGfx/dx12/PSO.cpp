@@ -139,13 +139,13 @@ namespace engine::graphics
 
 		TableEntry< DxBlob*> CreateShader(const ShaderInfo& info)
 		{
-            UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-
             IDxcBlobEncoding* sourceBlob;
             s_utils->LoadFile(info.path.c_str(), nullptr, &sourceBlob);
+
             DxcBuffer sourceBuffer;
             sourceBuffer.Ptr = sourceBlob->GetBufferPointer();
             sourceBuffer.Size = sourceBlob->GetBufferSize();
+
             BOOL fl;
             sourceBlob->GetEncoding(&fl, &sourceBuffer.Encoding);
             std::wstring type = GetShaderTypeString(info.type);

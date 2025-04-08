@@ -150,25 +150,10 @@ private:
 
 	gfx::ConstantBuffer m_lightSettingsResource;
 
-	// deferred rendering - geometry pass
+	// forward rendering -
 	gfx::PSO m_pso;
 	gfx::RootSignature m_rootSignature;
 	gfx::Model m_model;
-
-	// deferred rendering - lighting pass
-	gfx::PSO m_lightingPSO;
-	gfx::RootSignature m_lightingRS;
-
-	// visualize light
-	gfx::PSO m_lightBoxPSO;
-	gfx::RootSignature m_lightBoxRS;
-	gfx::Model m_lightCube;
-	math::Vector3 m_lightCubePosition;
-
-	//deferred rendering
-	gfx::Resource m_positionRT[config::NumFrames];
-	gfx::Resource m_albedoRT[config::NumFrames];
-	gfx::Resource m_normalRT[config::NumFrames];
 
 	system::InputManager* m_inputManager;
 };

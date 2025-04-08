@@ -10,6 +10,13 @@ namespace engine::graphics
 		init(settings, device, queue);
 	}
 
+    u32 SwapChain::changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
+    {
+        u32 index = getCurrentIndex();
+        m_resources[index].transition(cmdList, state);
+        return index;
+    }
+
 	void SwapChain::init(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue)
 	{
 		LogScope("SwapChain::Initialize");

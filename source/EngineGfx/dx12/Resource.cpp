@@ -68,7 +68,7 @@ namespace engine::graphics
 
 		m_descriptorProps = descriptorDesc;
 		createViews(device, m_descriptorProps);
-        util::printInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
+        //util::printInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
 	}
 
 	void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptorProps)

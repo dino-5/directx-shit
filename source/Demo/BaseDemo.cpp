@@ -5,6 +5,7 @@
 #include "EngineCommon/util/Timer.h"
 #include "third_party/imgui/imgui.h"
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
+#include <dxgiformat.h>
 #include <ostream>
 #include <string_view>
 
@@ -24,7 +25,7 @@ Light::Light(math::Vector3 vec, std::string name, float range, uiActionCallback 
 
 void Light::defaultCallback(BaseDemo& demo)
 {
-    demo.getLightBuffer().update(demo.m_graphicsContext);
+    //demo.getLightBuffer().update(demo.m_graphicsContext);
 }
 
 BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
@@ -35,6 +36,7 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
 {
     m_inputManager = &system::InputManager::GetInputManager();
     m_device.createFence(&m_fence);
+
     DescriptorHeapManager::CreateDSVHeap(20);
     DescriptorHeapManager::CreateRTVHeap(100);
     DescriptorHeapManager::CreateSRVHeap(200);
@@ -113,6 +115,48 @@ void BaseDemo::compileShaders()
         if (entry.second != nullptr)
             this->m_shaders.push_back(entry);
     };
+    {
+        ShaderInfo info(createShader);
+        info.shaderName = L"forwardVS";
+        info.entryPoint = L"VertexMain";
+        info.path       = L"Shaders/forward_render.hlsl";
+        info.type = ShaderType::VERTEX;
+    }
+    {
+        ShaderInfo info(createShader);
+        info.shaderName = L"forwardPS";
+        info.entryPoint = L"PixelMain";
+        info.path       = L"Shaders/forward_render.hlsl";
+        info.type = ShaderType::PIXEL;
+    }
+
+    RootParameters rootParams;
+    rootParams.push_back({ RootParameter::CreateConstants(2, 0, 10) });
+    rootParams.push_back({ RootParameter::CreateConstants(1, 1, 10) });
+
+    auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+    m_rootSignature.init(m_device.getDevice(), rootParams, rootSignFlags);
+
+    {
+        D3D12_INPUT_ELEMENT_DESC inputElements[] ={
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "UV",       0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        };
+        D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, sizeof(inputElements) / sizeof(D3D12_INPUT_ELEMENT_DESC)};
+
+        ShaderInputGroup sig;
+        sig.desc = inputLayout;
+        sig.vertexShader = getShader(*util::FindElement(m_shaders, L"forwardVS"));
+        sig.pixelShader = getShader(*util::FindElement(m_shaders, L"forwardPS"));
+        sig.rootSignature = &m_rootSignature;
+
+        RenderState renderState;
+        renderState.setShaderInputGroup(sig);
+        m_pso = PSO::CreatePSO(renderState);
+    }
+
 }
 
 u64 BaseDemo::signal(graphics::CommandQueue& queue, ID3D12Fence* fence, u64& value)
@@ -159,10 +203,7 @@ bool BaseDemo::initialize()
     lightSettings.viewDirection = m_camera.getDir();
     m_lightSettingsResource.init(context, &lightSettings, 1);
 
-    m_lightBuffer.data.push_back(Light( math::Vector3{1.f, 1.f, 1.f}, "light position", 1000));
-    m_lightBuffer.desc.state = ResourceState::GENERIC_READ_STATE;
-    m_lightBuffer.desc.type = BufferType::CUSTOM;
-    m_lightBuffer.create(context);
+    m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/gltf/Sponza.gltf", context);
 
     m_camera.addChangeCallback([this](const Camera* camera)
     {
@@ -178,7 +219,7 @@ bool BaseDemo::initialize()
     });
 
     ThrowIfFailed(context.cmdList->Close());
-    ID3D12CommandList* ppCommandLists[] = { context.cmdList};
+    ID3D12CommandList* ppCommandLists[] = { context.cmdList };
     m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
     m_swapChain.m_fence[0] = signal(m_cmdQueue, m_fence, m_fenceValue);
@@ -189,7 +230,6 @@ bool BaseDemo::initialize()
 
 void BaseDemo::draw()
 {
-
     Timer timer("draw");
     ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
     m_graphicsContext.cmdList = cmdList;
@@ -197,10 +237,43 @@ void BaseDemo::draw()
 
     u32 swapChainBufferIndex = m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET);
 
-    auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
+    // forward rendering 
+    {
+        const float clearColor[] = { .0f, 0.0f, .0f, 1.0f };
+        auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
 
-    const float clearColor[] = { .0f, 1.0f, .0f, 1.0f };
-    cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
+        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
+        cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
+        cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+
+        cmdList->SetGraphicsRootSignature(m_rootSignature);
+        cmdList->SetPipelineState(m_pso);
+        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        cmdList->SetDescriptorHeaps(1, DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
+
+        cmdList->RSSetViewports(1, &m_viewPort);
+        cmdList->RSSetScissorRects(1, &m_scissorRect);
+
+        struct 
+        {
+            int viewSettingsIndex;
+            int materialArrayIndex;
+        } passIndices;
+        passIndices.viewSettingsIndex = m_constBuffer.getDescriptorHeapIndex();
+        passIndices.materialArrayIndex = m_model.m_materialBuffer.getDescriptorHeapIndex();
+        cmdList->SetGraphicsRoot32BitConstants(0, 2, &passIndices, 0);
+
+        auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
+        auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
+        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+        cmdList->IASetIndexBuffer(&indexBuffer);
+
+        for (auto& submesh : m_model.m_submeshes)
+        {
+            cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
+            submesh.draw(cmdList);
+        }
+    }
 
     imgui::StartFrame();
     {

@@ -41,7 +41,6 @@ namespace engine::graphics
 		std::wstring shaderName{};
 		std::wstring path{};
 		std::wstring entryPoint{};
-		D3D12_INPUT_LAYOUT_DESC desc{};
 		ShaderType  type{};
 		~ShaderInfo();
 	};

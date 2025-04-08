@@ -11,10 +11,10 @@ namespace engine::util
 {
     struct LoggerState
     {
-         #define LoggerVariable(varName) bool varName = true;\
-         void set##varName(bool val) { varName = val;}
-         LoggerVariable(infoEnabled)
-         LoggerVariable(errorsEnabled)
+         #define LoggerVariable(varName) bool m_##varName = true;\
+         void set##varName(bool val) { m_##varName = val;} bool get##varName() const {return m_##varName;}
+         LoggerVariable(InfoEnabled)
+         LoggerVariable(ErrorsEnabled)
     };
     // TODO move this to the one global state object and unite Common and Gfx parts in single dll
     extern LoggerState g_loggerState;
@@ -41,14 +41,14 @@ namespace engine::util
     template<typename... Args>
     void printInfo(std::format_string<Args...> fmt, Args&&... args)
     {
-        if(g_loggerState.infoEnabled)
+        if(g_loggerState.getInfoEnabled())
             std::cout<< std::string(log_info, '\t') <<
                      std::format(fmt, std::forward<Args>(args)...) << '\n';
     }
     template<typename... Args>
     void printError(std::format_string<Args...> fmt, Args&&... args)
     {
-        if (g_loggerState.errorsEnabled)
+        if (g_loggerState.getErrorsEnabled())
         {
             SET_RED_COLOR();
             std::cout << std::string(log_info, '\t') <<

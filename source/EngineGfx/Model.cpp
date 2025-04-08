@@ -135,6 +135,7 @@ namespace engine::graphics
 
     void Model::loadTextures()
     {
+        LogScope("loading model textures");
         for (auto& texture : m_model->textures)
         {
             auto image = m_model->images[texture.source];

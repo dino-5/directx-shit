@@ -67,7 +67,7 @@ namespace engine::graphics
 		RootParameter() = default;
 		static RootParameter CreateTable(uint numberOfDescriptorRanges, DescriptorRange& range,
 			ShaderVisibility vis = ShaderVisibility::PIXEL);
-		static RootParameter CreateDescriptor(uint shaderRegiste, uint registerSpace = 0, RootParameterType type = RootParameterType::CBV,
+		static RootParameter CreateDescriptor(uint shaderRegister, uint registerSpace = 0, RootParameterType type = RootParameterType::CBV,
 			ShaderVisibility vis = ShaderVisibility::ALL);
 		static RootParameter CreateConstants(UINT num32BitValues,
 			UINT shaderRegister,
