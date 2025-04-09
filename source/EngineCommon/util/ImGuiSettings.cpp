@@ -21,13 +21,13 @@ namespace engine::util
             {
                 D3D12_DESCRIPTOR_HEAP_DESC desc = {};
                 desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-                desc.NumDescriptors = 1;
+                desc.NumDescriptors = 10;
                 desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
                 g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
             }
             // Setup Platform/Renderer backends
             ImGui_ImplWin32_Init(hwnd);
-            ImGui_ImplDX12_Init(g_pd3dDevice, 3,
+            ImGui_ImplDX12_Init(g_pd3dDevice, numFrames,
                 DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
                 g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
                 g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());

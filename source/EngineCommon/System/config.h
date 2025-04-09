@@ -4,7 +4,7 @@
 
 namespace engine::config
 {
-    const uint NumFrames = 2;
+    const uint NumFrames = 3;
 
     using namespace system;
     struct GlobalState

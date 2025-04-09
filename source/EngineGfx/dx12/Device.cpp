@@ -95,10 +95,16 @@ void Device::initialize()
     LogScope("Device::Initialize");
 
     {
-        ComPtr<ID3D12Debug> debugController;
+        ComPtr<ID3D12Debug5> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
         {
+            debugController->EnableDebugLayer();        
+
             debugController->EnableDebugLayer();
+
+            debugController->SetEnableGPUBasedValidation(true);
+
+            debugController->SetEnableSynchronizedCommandQueueValidation(true);
 
             // Enable additional debug layers.
             dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;

@@ -84,7 +84,7 @@ void BaseDemo::onResize(uint width, uint height)
                 .name = "depthStencil"
        };
         D3D12_CLEAR_VALUE val;
-        val.DepthStencil = { 1.0f ,0 };
+        val.DepthStencil = { 1.0f, 0 };
         val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
         m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
     }
@@ -113,29 +113,28 @@ void BaseDemo::compileShaders()
     auto createShader = [this](TableEntry<DxBlob*>& entry)
     {
         if (entry.second != nullptr)
-            this->m_shaders.push_back(entry);
+            m_shaders.push_back(entry);
     };
     {
         ShaderInfo info(createShader);
         info.shaderName = L"forwardVS";
         info.entryPoint = L"VertexMain";
         info.path       = L"Shaders/forward_render.hlsl";
-        info.type = ShaderType::VERTEX;
+        info.type       = ShaderType::VERTEX;
     }
     {
         ShaderInfo info(createShader);
         info.shaderName = L"forwardPS";
         info.entryPoint = L"PixelMain";
         info.path       = L"Shaders/forward_render.hlsl";
-        info.type = ShaderType::PIXEL;
+        info.type       = ShaderType::PIXEL;
     }
 
-    RootParameters rootParams;
-    rootParams.push_back({ RootParameter::CreateConstants(2, 0, 10) });
-    rootParams.push_back({ RootParameter::CreateConstants(1, 1, 10) });
+    RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10),
+                                  RootParameter::CreateConstants(1, 1, 10) };
 
     auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-    m_rootSignature.init(m_device.getDevice(), rootParams, rootSignFlags);
+    m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
 
     {
         D3D12_INPUT_ELEMENT_DESC inputElements[] ={
@@ -144,7 +143,7 @@ void BaseDemo::compileShaders()
             { "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "UV",       0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         };
-        D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, sizeof(inputElements) / sizeof(D3D12_INPUT_ELEMENT_DESC)};
+        D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 4};
 
         ShaderInputGroup sig;
         sig.desc = inputLayout;
@@ -242,17 +241,18 @@ void BaseDemo::draw()
         const float clearColor[] = { .0f, 0.0f, .0f, 1.0f };
         auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
 
+        cmdList->RSSetViewports(1, &m_viewPort);
+        cmdList->RSSetScissorRects(1, &m_scissorRect);
+
         cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
         cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
         cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
 
+        cmdList->SetDescriptorHeaps(1, gfx::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
         cmdList->SetGraphicsRootSignature(m_rootSignature);
         cmdList->SetPipelineState(m_pso);
-        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        cmdList->SetDescriptorHeaps(1, DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
 
-        cmdList->RSSetViewports(1, &m_viewPort);
-        cmdList->RSSetScissorRects(1, &m_scissorRect);
+        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         struct 
         {
@@ -287,17 +287,13 @@ void BaseDemo::draw()
         imgui::End();
     }
     imgui::EndFrame(cmdList);
-    timer.Tick("UI");
 
     m_swapChain.changeState(cmdList, ResourceState::PRESENT);
     ThrowIfFailed(cmdList->Close());
     ID3D12CommandList* ppCommandLists[] = { cmdList};
-    m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-    timer.Tick("before present");
+    m_cmdQueue->ExecuteCommandLists(1, ppCommandLists);
 
     m_swapChain.Present();
-
-    timer.Tick("Present");
 
     // sync
     m_swapChain.m_fence[m_currentFrameIndex] = signal(m_cmdQueue, m_fence, m_fenceValue);
