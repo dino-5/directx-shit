@@ -33,23 +33,22 @@ namespace engine::graphics
         return getShader(shader);
     }
 
-    PSO::PSO(ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState, 
-        RasterizerState rasterState, const std::vector<DXGI_FORMAT> renderTargets)
+    PSO::PSO(ID3D12Device* device, const RenderState& state)
     {
-        m_psoDesc.InputLayout = shader.desc;
-        m_psoDesc.pRootSignature = *shader.rootSignature;
-        m_psoDesc.VS = shader.vertexShader;
-        m_psoDesc.PS = shader.pixelShader;
-        m_psoDesc.RasterizerState = rasterState;
-        m_psoDesc.BlendState = blendState;
-        m_psoDesc.DepthStencilState = dsState;
+        m_psoDesc.InputLayout = state.shader.desc;
+        m_psoDesc.pRootSignature = *state.shader.rootSignature;
+        m_psoDesc.VS = state.shader.vertexShader;
+        m_psoDesc.PS = state.shader.pixelShader;
+        m_psoDesc.RasterizerState = +state.rast;
+        m_psoDesc.BlendState = state.blend;
+        m_psoDesc.DepthStencilState = +state.ds;
         m_psoDesc.SampleMask = UINT_MAX;
-        m_psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-        if (renderTargets.size() >= 1)
+        m_psoDesc.PrimitiveTopologyType = state.topology;
+        if (state.renderTargets.size() >= 1)
         {
-            m_psoDesc.NumRenderTargets = renderTargets.size();
+            m_psoDesc.NumRenderTargets = state.renderTargets.size();
             uint index = 0;
-            for(auto& format : renderTargets)
+            for(auto& format : state.renderTargets)
                 m_psoDesc.RTVFormats[index++] = format;
         }
         else
@@ -63,42 +62,41 @@ namespace engine::graphics
         ThrowIfFailed(device->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
     }
 
-    PSO* PSO::CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader, BlendState blendState, DepthStencilState dsState,
-        RasterizerState rasterState, const std::vector<DXGI_FORMAT> renderTargets)
+    PSO* PSO::CreatePSO(std::wstring name, ID3D12Device* device, const RenderState& state)
     {
         if (GetPSO(name) == nullptr)
-            allPSO.push_back({ name, PSO(device, shader, blendState, dsState, rasterState, renderTargets) });
+            allPSO.push_back({ name, PSO(device, state) });
         return &(allPSO.back().second);
     }
 
     void RenderState::setBlendState(BlendState blendState)
     {
-        m_blend = blendState;
+        blend = blendState;
     }
 
-    void RenderState::setDepthStencilState(DepthStencilState ds)
+    void RenderState::setDepthStencilState(DepthStencilState d)
     {
-        m_ds = ds;
+        ds = d;
     }
 
-    void RenderState::setRasterizerState(RasterizerState rast)
+    void RenderState::setRasterizerState(RasterizerState r)
     {
-        m_rast = rast;
+        rast = r;
     }
 
-    void RenderState::setShaderInputGroup(ShaderInputGroup& shader)
+    void RenderState::setShaderInputGroup(ShaderInputGroup& s)
     {
-        m_shader = shader;
+        shader = s;
     }
 
     PSO PSO::CreatePSO(const RenderState& state)
     {
-        return PSO(Device::device->getDevice(), state.m_shader, state.m_blend, state.m_ds, state.m_rast, state.renderTargets);
+        return PSO(Device::device->getDevice(), state);
     }
 
     PSO* RenderState::compile(std::wstring name)
     {
-        return PSO::CreatePSO(name, Device::device->getDevice(), m_shader, m_blend, m_ds, m_rast);
+        return PSO::CreatePSO(name, Device::device->getDevice(), *this);
     }
 
     std::wstring GetShaderTypeString(ShaderType type)

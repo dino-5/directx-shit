@@ -70,7 +70,6 @@ namespace engine::graphics
             for (auto& primitive : mesh.primitives)
             {
                 indexCount += primitive.indices;
-                int positionIndex, texIndex, normalIndex;
                 for (auto& [attrName, attrIndex] : primitive.attributes)
                 {
                     if (attrName == "POSITION")
@@ -98,7 +97,7 @@ namespace engine::graphics
         m_geometry.indices.reserve(indexCount);
 
         loadTextures();
-        
+
         for (auto& scene : m_model->scenes)
         {
             for (auto& nodeIndex : scene.nodes)
@@ -232,6 +231,7 @@ namespace engine::graphics
             //u32 materialIndex = primitive.material != -1 ? primitive.material : 0;
             m_submeshes.push_back(m_geometry.getSubmesh(primitive.material));
         }
+        util::printInfo("{} index count {} vertex count", m_geometry.indices.size(), m_geometry.vertices.size());
     }
 
     void Model::drawModel(ID3D12GraphicsCommandList* cmdList)

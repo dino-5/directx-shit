@@ -129,14 +129,28 @@ void BaseDemo::compileShaders()
         info.path       = L"Shaders/forward_render.hlsl";
         info.type       = ShaderType::PIXEL;
     }
+    {
+        ShaderInfo info(createShader);
+        info.shaderName = L"debugBVH_VS";
+        info.entryPoint = L"VertexMain";
+        info.path       = L"Shaders/debug_BVHdraw.hlsl";
+        info.type       = ShaderType::VERTEX;
+    }
+    {
+        ShaderInfo info(createShader);
+        info.shaderName = L"debugBVH_PS";
+        info.entryPoint = L"PixelMain";
+        info.path       = L"Shaders/debug_BVHdraw.hlsl";
+        info.type       = ShaderType::PIXEL;
+    }
 
-    RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10),
-                                  RootParameter::CreateConstants(1, 1, 10) };
-
-    auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-    m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
 
     {
+        RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10),
+                                      RootParameter::CreateConstants(1, 1, 10) };
+
+        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+        m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
         D3D12_INPUT_ELEMENT_DESC inputElements[] ={
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
             { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -154,6 +168,27 @@ void BaseDemo::compileShaders()
         RenderState renderState;
         renderState.setShaderInputGroup(sig);
         m_pso = PSO::CreatePSO(renderState);
+    }
+    {
+        RootParameters parameters = { RootParameter::CreateConstants(1, 0, 10) };
+
+        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+        m_bvhDebugDrawRS.init(m_device.getDevice(), parameters, rootSignFlags);
+        D3D12_INPUT_ELEMENT_DESC inputElements[] ={
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        };
+        D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 1};
+
+        ShaderInputGroup sig;
+        sig.desc = inputLayout;
+        sig.vertexShader = getShader(*util::FindElement(m_shaders, L"debugBVH_VS"));
+        sig.pixelShader = getShader(*util::FindElement(m_shaders, L"debugBVH_PS"));
+        sig.rootSignature = &m_bvhDebugDrawRS;
+
+        RenderState renderState;
+        renderState.setShaderInputGroup(sig);
+        renderState.topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+        m_bvhDebugDrawPSO = PSO::CreatePSO(renderState);
     }
 
 }
@@ -203,6 +238,8 @@ bool BaseDemo::initialize()
     m_lightSettingsResource.init(context, &lightSettings, 1);
 
     m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/gltf/Sponza.gltf", context);
+    m_bvhBuilder.build(m_model);
+    m_bvhBuilder.generateDrawData(context);
 
     m_camera.addChangeCallback([this](const Camera* camera)
     {
@@ -273,6 +310,20 @@ void BaseDemo::draw()
             cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
             submesh.draw(cmdList);
         }
+    }
+    // BVH debug draw
+    {
+        cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
+        cmdList->SetPipelineState(m_bvhDebugDrawPSO);
+        cmdList->SetGraphicsRoot32BitConstant(0, m_constBuffer.getDescriptorHeapIndex(), 0);
+        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+
+        auto mesh = m_bvhBuilder.getMesh();
+        auto vertexBuffer = GetVertexBufferView(mesh.m_vertexBuffer);
+        auto indexBuffer = GetIndexBufferView(mesh.m_indexBuffer);
+        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+        cmdList->IASetIndexBuffer(&indexBuffer);
+        m_bvhBuilder.getSubmesh().draw(cmdList);
     }
 
     imgui::StartFrame();

@@ -81,10 +81,11 @@ namespace engine::graphics
 		void setRasterizerState  (RasterizerState raster = RasterizerState());
 		void setShaderInputGroup (ShaderInputGroup&);
 
-		BlendState        m_blend;
-		DepthStencilState m_ds;
-		RasterizerState   m_rast;
-		ShaderInputGroup  m_shader;
+		BlendState        blend;
+		DepthStencilState ds;
+		RasterizerState   rast;
+		ShaderInputGroup  shader;
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		std::vector<DXGI_FORMAT> renderTargets = {};
 	};
 
@@ -99,11 +100,9 @@ namespace engine::graphics
 		}
 
 		// Warning: pointer can have dangling memory after adding new element
-		PSO(ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , 
-			RasterizerState rasterState, std::vector<DXGI_FORMAT> renderTargets = {});
+		PSO(ID3D12Device* device, const RenderState& state);
 		static PSO CreatePSO(const RenderState& state);
-		static PSO* CreatePSO(std::wstring name, ID3D12Device* device, ShaderInputGroup shader , BlendState blendState , DepthStencilState dsState , 
-			RasterizerState rasterState, std::vector<DXGI_FORMAT> renderTargets = {});
+		static PSO* CreatePSO(std::wstring name, ID3D12Device* device, const RenderState& state);
 		static PSO* GetPSO(std::wstring name)
 		{
 			return util::FindElement(allPSO, name);

@@ -2,6 +2,7 @@
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/include/types.h"
 
+#include <algorithm>
 #include <initializer_list>
 #include <type_traits>
 #include <math.h>
@@ -160,6 +161,29 @@ private:
 using Vector2 = Vector<2>;
 using Vector3 = Vector<3>;
 using Vector4 = Vector<4>;
+
+template<int N>
+inline Vector<N> minVectorCoords(const Vector<N>& v1, const Vector<N>& v2)
+{
+    Vector<N> result;
+    for(int i = 0; i < N; ++i)
+    {
+        result[i] = std::fmin(v1[i], v2[i]);
+    }
+    return result;
+}
+
+template<int N>
+inline Vector<N> maxVectorCoords(const Vector<N>& v1, const Vector<N>& v2)
+{
+    Vector<N> result;
+    for(int i = 0; i < N; ++i)
+    {
+        result[i] = std::fmax(v1[i], v2[i]);
+    }
+    return result;
+}
+
 
 
 class Quartenion 

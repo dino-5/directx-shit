@@ -154,7 +154,7 @@ class DepthStencilState
 {
 public:
 	DepthStencilState();
-	operator D3D12_DEPTH_STENCIL_DESC()
+	D3D12_DEPTH_STENCIL_DESC operator+() const
 	{
 		return m_desc;
 	}
@@ -177,7 +177,7 @@ class RasterizerState
 {
 public:
 	RasterizerState(CullMode cull = CullMode::BACK, bool frontCounterClockwise = false);
-	operator D3D12_RASTERIZER_DESC()
+	D3D12_RASTERIZER_DESC operator+() const 
 	{
 		return m_desc;
 	}

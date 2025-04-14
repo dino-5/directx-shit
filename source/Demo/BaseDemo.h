@@ -14,6 +14,7 @@
 #include "EngineGfx/dx12/DescriptorHeap.h"
 #include "EngineGfx/util/Camera.h"
 #include "EngineGfx/Model.h"
+#include "EngineGfx/BVH_Builder.h"
 
 #include "third_party/magic_enum/include/magic_enum.hpp"
 
@@ -150,10 +151,16 @@ private:
 
 	gfx::ConstantBuffer m_lightSettingsResource;
 
+    gfx::BVHBuilder m_bvhBuilder;
+
 	// forward rendering -
 	gfx::PSO m_pso;
 	gfx::RootSignature m_rootSignature;
 	gfx::Model m_model;
+
+    // BVH debug draw
+	gfx::PSO m_bvhDebugDrawPSO;
+	gfx::RootSignature m_bvhDebugDrawRS;
 
 	system::InputManager* m_inputManager;
 };

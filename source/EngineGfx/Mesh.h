@@ -13,7 +13,7 @@ namespace engine::graphics
 		TextureHandle occlusionTexture;
 		//TextureHandle emmisiveTexture;
 	};
-	class GfxContext;
+
 	struct Submesh
 	{
 		u32 IndexCount = 0;
@@ -24,7 +24,7 @@ namespace engine::graphics
 			BaseVertexLocation(baseVertexLoc), materialIndex(matIndex) {}
 		Submesh() = default;
 
-		void draw(ID3D12GraphicsCommandList* cmList);
+		void draw(ID3D12GraphicsCommandList* cmList) const;
 	};
 
 	struct Vertex
@@ -40,17 +40,17 @@ namespace engine::graphics
     {
         std::vector<VertexT> vertices;
         std::vector<u32> indices;
-        u32 lastIndexLocation=0;
-        u32 lastVertexOffset=0;
-        Submesh getSubmesh(i32 index)
+        u32 lastIndexLocation = 0;
+        u32 lastVertexOffset = 0;
+        Submesh getSubmesh(i32 index = -1)
         {
             Submesh result;
             result.IndexCount = indices.size() - lastIndexLocation;
             result.StartIndexLocation = lastIndexLocation;
             result.BaseVertexLocation = lastVertexOffset;
+            result.materialIndex = index;
             lastIndexLocation = indices.size();
             lastVertexOffset = vertices.size();
-			result.materialIndex = index;
             return result;
         }
     };
