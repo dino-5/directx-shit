@@ -29,6 +29,7 @@ namespace engine::graphics
 		Model() = default;
 		void initGLTF(system::Filepath path, GfxContext& context);
         void initDSH(system::Filepath path, GfxContext& context);
+        void initOBJ(system::Filepath path, GfxContext& context);
 		void drawModel(ID3D12GraphicsCommandList* cmdList);
         void reset()
         {

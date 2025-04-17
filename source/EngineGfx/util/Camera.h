@@ -4,6 +4,7 @@
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/math/Matrix.h"
 #include "EngineCommon/math/Vector.h"
+#include "EngineCommon/util/ImGuiSettings.h"
 
 #include <functional>
 #include <vector>
@@ -23,7 +24,7 @@ namespace engine::graphics
 	{
 	public:
 		using CallbackSign = std::function<void(const Camera* camera)>;
-		Camera() = default;
+		Camera();
 		void initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props);
 		void initialize(math::Vector3 pos, math::Vector3 viewDirection);
 
@@ -47,8 +48,12 @@ namespace engine::graphics
 		void update();
 		void reset();
 		void processUpdate();
+        void setCameraMovementSpeed(float speed) { m_cameraMovementSpeed = speed; }
+        void setCameraRotationSpeed(float speed) { m_cameraRotationSpeed = speed; }
 
 	private:
+        static constexpr float defaultCameraMovementSpeed = 10.f;
+        static constexpr float defaultCameraRotationSpeed = 1.f;
 		math::Vector3 m_position;
 		math::Vector3 m_viewDir {0.f, 0.f, 1.f};
 		math::Vector3 m_rightDir{1.f, 0.f, 0.f};
@@ -58,6 +63,10 @@ namespace engine::graphics
 		math::Matrix4 m_rotationMatrix;
 		math::Matrix4 m_projectionMatrix;
 		std::vector<CallbackSign> m_callbacks;
+        float m_cameraMovementSpeed = defaultCameraMovementSpeed;
+        util::UI_Float<Camera> m_cameraMovementSpeedButton;
+        float m_cameraRotationSpeed = defaultCameraRotationSpeed;
+        util::UI_Float<Camera> m_cameraRotationSpeedButton;
 
 		bool m_needUpdate = false;
 	};

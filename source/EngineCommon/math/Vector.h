@@ -1,5 +1,4 @@
 #pragma once
-#include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/include/types.h"
 
 #include <algorithm>
@@ -9,8 +8,6 @@
 #include <array>
 
 using std::initializer_list;
-using namespace engine;
-
 
 namespace engine::math
 {
@@ -126,7 +123,7 @@ public:
         {
             result += m_data[i] * m_data[i];
         }
-        return sqrt(result);
+        return (float)sqrt(result);
     }
 
     Vector normalize() const
@@ -168,7 +165,7 @@ inline Vector<N> minVectorCoords(const Vector<N>& v1, const Vector<N>& v2)
     Vector<N> result;
     for(int i = 0; i < N; ++i)
     {
-        result[i] = std::fmin(v1[i], v2[i]);
+        result[i] = (float)fmin(v1[i], v2[i]);
     }
     return result;
 }
@@ -179,7 +176,7 @@ inline Vector<N> maxVectorCoords(const Vector<N>& v1, const Vector<N>& v2)
     Vector<N> result;
     for(int i = 0; i < N; ++i)
     {
-        result[i] = std::fmax(v1[i], v2[i]);
+        result[i] = (float)fmax(v1[i], v2[i]);
     }
     return result;
 }

@@ -1,5 +1,5 @@
 
-    inline void Buffer::copyData(const void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state)
+    inline void Buffer::copyData(const void* data, ID3D12GraphicsCommandList* commandList, ResourceState state)
     {
         D3D12_SUBRESOURCE_DATA subresData = {};
         subresData.pData = data;
@@ -40,7 +40,7 @@
 
         m_uploadBuffer.init(context.device, 1, m_bufferSize, false);
         if(bufferDesc.data)
-            copyData(bufferDesc.data, context.device, context.cmdList, bufferDesc.state);
+            copyData(bufferDesc.data, context.cmdList, bufferDesc.state);
     }
     template<typename T>
     Buffer::Buffer(GfxContext& context, T* data, uint numberOfElements, std::string_view name)

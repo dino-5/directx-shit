@@ -14,25 +14,20 @@ using namespace gfx;
 using namespace util;
 using namespace DirectX;
 
-Light::Light(math::Vector3 vec, std::string name, float range, uiActionCallback callback)
+Light::Light(math::Vector3 vec, std::string name, float range)
     : m_position(vec),
       m_name(name),
-      m_positionRange(range),
-      m_uiElement(3, m_position.data(), m_name, m_positionRange)
+      m_positionRange(range)
 {
-    m_uiElement.m_callback = callback;
-}
-
-void Light::defaultCallback(BaseDemo& demo)
-{
-    //demo.getLightBuffer().update(demo.m_graphicsContext);
 }
 
 BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
     WindowApp(width, height, name),
     m_cmdList(m_device),
     m_cmdQueue(m_device.native()),
-    m_swapChain(getCurrentWindowSettings(), m_device, m_cmdQueue.getQueue())
+    m_swapChain(getCurrentWindowSettings(), m_device, m_cmdQueue.getQueue()),
+    m_renderModel(*this, true, "render model"),
+    m_drawBVHDebugView(*this, true, "draw BVH debug view")
 {
     m_inputManager = &system::InputManager::GetInputManager();
     m_device.createFence(&m_fence);
@@ -54,13 +49,16 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
 void BaseDemo::onResize(uint width, uint height)
 {
     flushGPU();
+    if(width==0 && height==0)
+        return;
+
     WindowApp::onResize(width, height);
     m_swapChain.onResize(getCurrentWindowSettings());
 
     m_viewPort.TopLeftX = 0;
     m_viewPort.TopLeftY = 0;
-    m_viewPort.Width = width;
-    m_viewPort.Height = height;
+    m_viewPort.Width = (float)width;
+    m_viewPort.Height = (float)height;
     m_viewPort.MaxDepth = 1.0;
     m_viewPort.MinDepth = .0;
 
@@ -146,8 +144,8 @@ void BaseDemo::compileShaders()
 
 
     {
-        RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10),
-                                      RootParameter::CreateConstants(1, 1, 10) };
+        RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10) };
+                                      /*RootParameter::CreateConstants(1, 1, 10) };*/
 
         auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
         m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
@@ -237,7 +235,8 @@ bool BaseDemo::initialize()
     lightSettings.viewDirection = m_camera.getDir();
     m_lightSettingsResource.init(context, &lightSettings, 1);
 
-    m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/gltf/Sponza.gltf", context);
+    /*m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/gltf/Sponza.gltf", context);*/
+    m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
     m_bvhBuilder.build(m_model);
     m_bvhBuilder.generateDrawData(context);
 
@@ -305,9 +304,10 @@ void BaseDemo::draw()
         cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
         cmdList->IASetIndexBuffer(&indexBuffer);
 
+        if(m_renderModel.getData())
         for (auto& submesh : m_model.m_submeshes)
         {
-            cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
+            /*cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);*/
             submesh.draw(cmdList);
         }
     }
@@ -323,7 +323,8 @@ void BaseDemo::draw()
         auto indexBuffer = GetIndexBufferView(mesh.m_indexBuffer);
         cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
         cmdList->IASetIndexBuffer(&indexBuffer);
-        m_bvhBuilder.getSubmesh().draw(cmdList);
+        if(m_drawBVHDebugView.getData())
+            m_bvhBuilder.getSubmesh().draw(cmdList);
     }
 
     imgui::StartFrame();
@@ -331,9 +332,9 @@ void BaseDemo::draw()
         imgui::Begin("Settings");
 
         // light UI
-        auto& uiElements = UI_Element::s_uiElements;
-        for(UI_Element* uiElement: uiElements)
-            uiElement->onUIAction(*this);
+        auto& uiElements = UI_ElementInterface::s_uiElements;
+        for(UI_ElementInterface* uiElement: uiElements)
+            uiElement->onUIAction();
 
         imgui::End();
     }

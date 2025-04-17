@@ -61,6 +61,9 @@ PS_Input VertexMain(Vertex vertex)
 
 float4 PixelMain(PS_Input input) : SV_Target 
 {
+    if(length(input.normal)>0)
+        return float4(input.normal, 1.f);
+    return float4(input.pos.xyz, 1.f);
     StructuredBuffer<Material> materialArray = ResourceDescriptorHeap[g_passIndices.materialArrayIndex];
     Material objectMaterial = materialArray[g_objectIndices.materialIndex];
     if(objectMaterial.colorTextureIndex != -1)
@@ -68,5 +71,4 @@ float4 PixelMain(PS_Input input) : SV_Target
         Texture2D texture = ResourceDescriptorHeap[objectMaterial.colorTextureIndex];
         return texture.Sample(texture_sampler, input.uv);
     }
-    return float4(input.normal, 1.f);
 }

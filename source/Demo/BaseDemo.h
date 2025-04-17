@@ -30,7 +30,6 @@ struct DemoSettings
 	graphics::SwapChainSettings m_settings; 
 };
 
-using uiActionCallback = engine::util::UI_Element::uiActionCallback;
 enum class LightFlags
 {
 	POINT,
@@ -41,15 +40,13 @@ using namespace magic_enum::bitwise_operators;
 
 struct Light
 {
-	Light(math::Vector3 vec, std::string name, float range, uiActionCallback callback = defaultCallback);
+	Light(math::Vector3 vec, std::string name, float range);
 	Light(const Light&)=delete;
 	Light(Light&& other) 
 		:m_position(std::move(other.m_position)),
 		m_name(std::move(other.m_name)),
-		m_positionRange(other.m_positionRange),
-		m_uiElement(std::move(other.m_uiElement))
+		m_positionRange(other.m_positionRange)
 	{
-		m_uiElement.m_ptr = m_position.data();
 	}
 
 	bool isPoint() const       { return bool(m_flags & LightFlags::POINT); }
@@ -63,9 +60,7 @@ struct Light
 	// UI data
 	std::string      m_name;
 	float            m_positionRange;
-	util::UI_Vector  m_uiElement;
 
-	static void defaultCallback(BaseDemo& demo);
 };
 
 struct ObjectData
@@ -97,7 +92,7 @@ class BaseDemo : public WindowApp
 {
 public:
 	BaseDemo(u32 width, u32 height, std::string_view name);
-	BaseDemo()=default;
+	BaseDemo():m_renderModel(*this, true, "render model"), m_drawBVHDebugView(*this, true, "draw BVH debug view"){}
 	bool initialize()override;
 	void compileShaders();
 	SHIT_ENGINE_SINGLETONE(BaseDemo);
@@ -161,6 +156,9 @@ private:
     // BVH debug draw
 	gfx::PSO m_bvhDebugDrawPSO;
 	gfx::RootSignature m_bvhDebugDrawRS;
+
+    util::UI_CheckBox<BaseDemo> m_renderModel;
+    util::UI_CheckBox<BaseDemo> m_drawBVHDebugView;
 
 	system::InputManager* m_inputManager;
 };

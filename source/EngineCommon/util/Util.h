@@ -21,11 +21,13 @@
 #include <cassert>
 #include <source_location>
 #include <format>
+#include <minwinbase.h>
+#include <format>
 #include "EngineGfx/dx12/d3dx12.h"
 #include "MathHelper.h"
-#include <minwinbase.h>
 #include "EngineCommon/include/types.h"
-#include <format>
+#include "third_party/utfcpp/utf8.h"
+
 
 using namespace engine;
 
@@ -33,18 +35,22 @@ namespace engine::util
 {
     inline std::wstring to_wstring(std::string str)
     {
-        return std::wstring(str.begin(), str.end());
+        std::wstring result;
+        utf8::utf8to16(str.begin(), str.end(), std::back_inserter(result));
+        return result;
     }
 
     inline std::string to_string(std::wstring wstr)
     {
-        return std::string(wstr.begin(), wstr.end());
+        std::string result;
+        utf8::utf16to8(wstr.begin(), wstr.end(), std::back_inserter(result));
+        return result;
     }
 
     inline std::string to_string(const wchar_t* wchar)
     {
         std::wstring wstr(wchar);
-        return std::string(wstr.begin(), wstr.end());
+        return to_string(wstr);
     }
 
     inline std::string GetFormattedPath(const std::source_location& location, const std::string_view& name = "")

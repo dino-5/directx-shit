@@ -30,7 +30,7 @@ namespace engine::system
         SWITCH_CAMERA = 192,
     };
     constexpr auto KeyCount = magic_enum::enum_count<Key>();
-    inline u32 KeyToIndex(Key key) { return magic_enum::enum_index(key).value(); }
+    inline u32 KeyToIndex(Key key) { return (u32)magic_enum::enum_index(key).value(); }
 
     class KeyboardHandler 
     {

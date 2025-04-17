@@ -38,6 +38,12 @@ namespace engine::util {
             util::printInfo("{} was {} miliseconds", name, time_elapsed.count());
         }
 
+        void saveCurrentTime()
+        {
+            auto now = clock::now();
+            m_lastCheck = now;
+        }
+
         double getElapsedTime() const
         {
             auto now = clock::now();

@@ -101,7 +101,7 @@ namespace engine::graphics
         u32 getBufferSize() const { return m_bufferSize; }
         u32 getElementSize() const { return m_elementSize; }
 
-        void copyData(const void* data, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ResourceState state);
+        void copyData(const void* data, ID3D12GraphicsCommandList* commandList, ResourceState state);
 
 	private:
         UploadBuffer m_uploadBuffer;
@@ -123,7 +123,7 @@ namespace engine::graphics
         }
         void update(GfxContext& ctx)
         {
-            buffer.copyData(data.data(), ctx.device, ctx.cmdList, buffer.getCurrentState());
+            buffer.copyData(data.data(), ctx.cmdList, buffer.getCurrentState());
         }
 
         Buffer buffer;
@@ -167,7 +167,7 @@ namespace engine::graphics
                 memcpy(m_buffer, data, sizeof(T) * elementCount);
             else
             {
-                for(int i = 0; i < elementCount; ++i)
+                for(u32 i = 0; i < elementCount; ++i)
                     memcpy(m_buffer + i * m_elementSize, &data[i], sizeof(T));
             }
 

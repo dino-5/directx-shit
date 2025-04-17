@@ -32,8 +32,16 @@ struct Triangle
 
 struct AABB
 {
-     Vector3 leftBottom;
-     Vector3 rightTop;
+    Vector3 leftBottom;
+    Vector3 rightTop;
+    void grow(Vector3 p) { leftBottom = minVectorCoords(leftBottom, p); rightTop = maxVectorCoords(rightTop, p); }
+    float area() const
+    {
+        Vector3 diagonal = rightTop - leftBottom;
+        return diagonal[0]*diagonal[1] + diagonal[0]*diagonal[2] +diagonal[1]*diagonal[2];
+    }
+
+    
 };
 
 struct BVHNode
@@ -56,6 +64,7 @@ public:
 private:
     void subdivide(u32 index);
     void updateNodeBounds(u32 index);
+    float evaluteSAH(u32 nodeIndex, u32 axisIndex, float splitPos);
 
     const Model* m_model;
     Mesh m_mesh;

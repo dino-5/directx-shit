@@ -16,13 +16,14 @@ void BVHBuilder::build(const Model& model)
     auto& submeshes = model.m_submeshes;
     auto& vertices = model.m_geometry.vertices;
     auto& indices = model.m_geometry.indices;
+    util::printInfo("vertices {} indices {} indices/3 {}", vertices.size(), indices.size(), indices.size()/3);
 
     triangles.reserve(indices.size()/3);
     m_nodes.resize(triangles.capacity() * 2 - 1);
 
     for(auto& submesh : submeshes)
     {
-        for(int i = 0; i < submesh.IndexCount; i+=3)
+        for(u32 i = 0; i < submesh.IndexCount; i+=3)
         {
             u32 index = submesh.StartIndexLocation + i;
             auto ind = &indices[index];
@@ -38,18 +39,68 @@ void BVHBuilder::build(const Model& model)
         index = i++;
 
     m_nodes[0].leftChild = 0;
-    m_nodes[0].triangleCount = triangles.size();
+    m_nodes[0].triangleCount = (u32)triangles.size();
     updateNodeBounds(0);
     subdivide(0);
     util::printInfo("{} elements of BVH", lastElement);
 }
 
+float BVHBuilder::evaluteSAH(u32 nodeIndex, u32 axisIndex, float splitPos)
+{
+    BVHNode& node = m_nodes[nodeIndex];
+    auto& vertices = m_model->m_geometry.vertices;
+
+    u32 leftCount = 0, rightCount = 0;
+    AABB leftAABB, rightAABB;
+
+    for(u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
+    {
+        auto& tri = triangles[triIndices[i]];
+        if(tri.centroid[axisIndex] < splitPos)
+        {
+            leftAABB.grow(vertices[tri.firstI].position);
+            leftAABB.grow(vertices[tri.secondI].position);
+            leftAABB.grow(vertices[tri.thirdI].position);
+            leftCount++;
+        }
+        else
+        {
+            rightAABB.grow(vertices[tri.firstI].position);
+            rightAABB.grow(vertices[tri.secondI].position);
+            rightAABB.grow(vertices[tri.thirdI].position);
+            rightCount++;
+        }
+        
+    }
+    float cost = leftCount * leftAABB.area() + rightCount * rightAABB.area();
+    return cost > 0 ? cost : 1e20f;
+}
+
 void BVHBuilder::subdivide(u32 index)
 {
     BVHNode& node = m_nodes[index];
-    if (node.triangleCount <= 3)
+    if (node.triangleCount <= 50)
         return;
 
+    u32 bestSplitAxisIndex = 0;
+    float bestSplitLine = 0;
+    float bestSah = 1e20;
+    for(int i = 0; i < 3; ++i)
+    {
+        break;
+        for(u32 j = node.leftChild; j < node.leftChild + node.triangleCount; j++)
+        {
+            auto& triangle = triangles[triIndices[j]];
+            float candidateSplitLine = triangle.centroid[i];
+            float sah = evaluteSAH(index, i, candidateSplitLine);
+            if (sah < bestSah)
+            {
+                bestSah = sah;
+                bestSplitAxisIndex = i;
+                bestSplitLine = candidateSplitLine;
+            }
+        }
+    }
     Vector3 diagonal = node.aabbMax - node.aabbMin;
     u32 splitAxisIndex = 0;
     if (abs(diagonal[splitAxisIndex]) < abs(diagonal[1]))
@@ -58,11 +109,13 @@ void BVHBuilder::subdivide(u32 index)
         splitAxisIndex = 2;
 
     float splitLine = node.aabbMin[splitAxisIndex] + diagonal[splitAxisIndex] * 0.5f;
-    util::printInfo("{} {}", splitLine, splitAxisIndex);
-    int i = node.leftChild, j = i + node.triangleCount - 1;
+    /*splitAxisIndex = bestSplitAxisIndex;*/
+    /*splitLine = bestSplitLine;*/
+    u32 i = node.leftChild, j = i + node.triangleCount - 1;
     while (i <= j)
     {
-        if(triangles[triIndices[i]].centroid[splitAxisIndex] < splitLine)
+        auto& triangle = triangles[triIndices[i]];
+        if(triangle.centroid[splitAxisIndex] < splitLine)
             i++;
         else
             std::swap(triIndices[i], triIndices[j--]);
@@ -83,6 +136,15 @@ void BVHBuilder::subdivide(u32 index)
     node.triangleCount = 0;
     node.leftChild = leftChildIndex;
 
+    /*leftNode.aabbMin = node.aabbMin;*/
+    /*leftNode.aabbMax = node.aabbMax;*/
+    /*leftNode.aabbMax[splitAxisIndex] = splitLine;*/
+    /**/
+    /*rightNode.aabbMin = node.aabbMin;*/
+    /*rightNode.aabbMax = node.aabbMax;*/
+    /*rightNode.aabbMin[splitAxisIndex] = splitLine;*/
+
+
     updateNodeBounds(leftChildIndex);
     updateNodeBounds(rightChildIndex);
 
@@ -96,7 +158,7 @@ void BVHBuilder::updateNodeBounds(u32 index)
     node.aabbMin = math::Vector3(1e30);
     node.aabbMax = math::Vector3(-1e30);
     auto& vertices = m_model->m_geometry.vertices;
-    for (int i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
+    for (u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
     {
         auto& triangle = triangles[triIndices[i]];
         node.aabbMin = math::minVectorCoords(node.aabbMin, vertices[triangle.firstI].position);
@@ -106,10 +168,6 @@ void BVHBuilder::updateNodeBounds(u32 index)
         node.aabbMax = math::maxVectorCoords(node.aabbMax, vertices[triangle.secondI].position);
         node.aabbMax = math::maxVectorCoords(node.aabbMax, vertices[triangle.thirdI].position);
     }
-    Vector3& min = node.aabbMin;
-    Vector3& max = node.aabbMax;
-    util::printInfo("index {}, aabb min {} {} {} aabb max {} {} {}", index, min[0], min[1], min[2], max[0], max[1], max[2]);
-
 }
 
 void BVHBuilder::generateDrawData(GfxContext& context)
@@ -119,10 +177,17 @@ void BVHBuilder::generateDrawData(GfxContext& context)
 
     vertices.resize(lastElement * 8);
     indices.resize(lastElement * 24);
+    uint leafCount=0;
+    uint triangleCount=0;
 
-    for(int i = 0; i < lastElement; ++i)
+    for(u32 i = 0; i < lastElement; ++i)
     {
         BVHNode& node = m_nodes[i];
+        if(node.triangleCount>0)
+        {
+            leafCount++;
+            triangleCount += node.triangleCount;
+        }
         Vector3 d = node.aabbMax - node.aabbMin;
         vertices[i * 8 + 0] = node.aabbMin;
         vertices[i * 8 + 1] = node.aabbMin + Vector3({ d[0], 0,    0    });
@@ -152,6 +217,7 @@ void BVHBuilder::generateDrawData(GfxContext& context)
             indices[i * 24 + 2 * j + 17] = i * 8 + j + 4;
         }
     }
+    util::printInfo("{} leafs {}", leafCount, triangleCount);
     m_submesh = m_geometry.getSubmesh();
     m_mesh.init(context, m_geometry);
 }

@@ -68,6 +68,11 @@ namespace engine::util
             return ImGui::SliderFloat3(name.data(), ptr, min, max);
         }
 
+        bool checkBox(std::string_view name, bool* value)
+        {
+            return ImGui::Checkbox(name.data(), value);
+        }
+
         bool SliderFloat4(std::string_view name, float* ptr, float min, float max)
         {
             return ImGui::SliderFloat4(name.data(), ptr, min, max);

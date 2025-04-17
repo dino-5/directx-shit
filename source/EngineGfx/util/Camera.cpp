@@ -1,15 +1,27 @@
 
 #include "Camera.h"
 #include "EngineCommon/util/ImGuiSettings.h"
+#include "EngineCommon/util/Timer.h"
 #include "EngineCommon/System/InputManager.h"
-#include <chrono>
-#include <ctime>
-#include <sys/utime.h>
 
 using namespace DirectX;
 using namespace engine;
 
 using namespace engine::graphics;
+
+Camera::Camera() 
+    : m_cameraMovementSpeedButton(*this, defaultCameraMovementSpeed, "CameraMovementSpeed", 100),
+      m_cameraRotationSpeedButton(*this, defaultCameraRotationSpeed, "CameraRotationSpeed", 5)
+{
+    m_cameraMovementSpeedButton.setCallback([](Camera& camera, float speed)
+    {
+        camera.setCameraMovementSpeed(speed);
+    });
+    m_cameraRotationSpeedButton.setCallback([](Camera& camera, float speed)
+    {
+        camera.setCameraRotationSpeed(speed);
+    });
+}
 
 void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props)
 {
@@ -56,9 +68,14 @@ void Camera::update()
     // TODO: optimize it to call it once per frame after all changes are done
     // TODO: move input handling in client specific implementation
 
-    // TODO: frame independent movement https://gamedev.stackexchange.com/questions/9515/frame-independent-movement
     float velocity = 2.f;
     float rotationVelocity = 5.f;
+    static util::Timer timer("camera");
+    float time = (float)timer.getElapsedTime();
+    timer.saveCurrentTime();
+
+    velocity *= time * m_cameraMovementSpeed;
+    rotationVelocity *= time * 10 * m_cameraRotationSpeed;
 
     auto inputManager = system::InputManager::GetInputManager();
 

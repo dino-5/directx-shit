@@ -45,12 +45,12 @@ namespace engine::graphics
         Submesh getSubmesh(i32 index = -1)
         {
             Submesh result;
-            result.IndexCount = indices.size() - lastIndexLocation;
+            result.IndexCount = (u32)indices.size() - lastIndexLocation;
             result.StartIndexLocation = lastIndexLocation;
             result.BaseVertexLocation = lastVertexOffset;
             result.materialIndex = index;
-            lastIndexLocation = indices.size();
-            lastVertexOffset = vertices.size();
+            lastIndexLocation = (u32)indices.size();
+            lastVertexOffset = (u32)vertices.size();
             return result;
         }
     };
@@ -79,15 +79,15 @@ namespace engine::graphics
 		template<typename VertexType>
 		void init(GfxContext& context, const Geometry<VertexType>& geometry)
 		{
-			init(context, geometry.vertices.data(), geometry.vertices.size(),
-				geometry.indices.data(), geometry.indices.size());
+			init(context, geometry.vertices.data(), (u32)geometry.vertices.size(),
+				geometry.indices.data(), (u32)geometry.indices.size());
 		}
 
         template<typename VertexType, typename IndexType>
 		void init(
 			GfxContext& context,
-			const VertexType* vertexData, UINT vertexCount,
-			const IndexType* indexData, UINT indexCount)
+			const VertexType* vertexData, u32 vertexCount,
+			const IndexType* indexData, u32 indexCount)
 		{
             m_vertexByteStride = sizeof(VertexType);
             m_vertexBufferByteSize = m_vertexByteStride * vertexCount;
@@ -102,13 +102,13 @@ namespace engine::graphics
 
             if (indexData != nullptr)
             {
-                BufferDescription<IndexType> desc;
-                desc.data = indexData;
-                desc.elementCount = indexCount;
-                desc.name = "IndexBuffer";
-                desc.state = ResourceState::INDEX_BUFFER;
-                desc.type = BufferType::INDEX;
-				m_indexBuffer.init(context, desc);
+                BufferDescription<IndexType> indexDesc;
+                indexDesc.data = indexData;
+                indexDesc.elementCount = indexCount;
+                indexDesc.name = "IndexBuffer";
+                indexDesc.state = ResourceState::INDEX_BUFFER;
+                indexDesc.type = BufferType::INDEX;
+				m_indexBuffer.init(context, indexDesc);
 
                 m_indexBufferByteSize = sizeof(IndexType);
 				m_indexCount = indexCount;
