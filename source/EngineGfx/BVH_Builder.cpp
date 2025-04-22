@@ -16,7 +16,6 @@ void BVHBuilder::build(const Model& model)
     auto& submeshes = model.m_submeshes;
     auto& vertices = model.m_geometry.vertices;
     auto& indices = model.m_geometry.indices;
-    util::printInfo("vertices {} indices {} indices/3 {}", vertices.size(), indices.size(), indices.size()/3);
 
     triangles.reserve(indices.size()/3);
     m_nodes.resize(triangles.capacity() * 2 - 1);
@@ -30,10 +29,9 @@ void BVHBuilder::build(const Model& model)
             triangles.push_back(Triangle(ind[0], ind[1], ind[2], vertices, submesh.BaseVertexLocation));
         }
     }
-    util::printInfo("{} avg distribution", Triangle::avarageDistribution);
 
     triIndices.resize(triangles.size());
-    util::printInfo("{} triangles and {} triIndices", triangles.size(), triIndices.size());
+    util::printInfo("{} triangles", triangles.size());
     u32 i = 0;
     for(auto& index : triIndices)
         index = i++;
@@ -76,6 +74,39 @@ float BVHBuilder::evaluteSAH(u32 nodeIndex, u32 axisIndex, float splitPos)
     return cost > 0 ? cost : 1e20f;
 }
 
+float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition)
+{
+    BVHNode& node = m_nodes[nodeIndex];
+
+    float bestSah = 1e20;
+    for(int i = 0; i < 3; ++i)
+    {
+        float boundMin = 1e20;
+        float boundMax = -1e20;
+        for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
+        {
+            float centroid = triangles[triIndices[j]].centroid[i];
+            boundMin = min(boundMin, centroid);
+            boundMax = max(boundMax, centroid);
+        }
+        if(boundMax == boundMin) continue;
+        u32 stepCount = 4;
+        float stepSize = (boundMax - boundMin) / (float)stepCount;
+        for(u32 j = 0; j < stepCount; ++j)
+        {
+            float candidateSplitLine = boundMin + j * stepSize;
+            float sah = evaluteSAH(nodeIndex, i, candidateSplitLine);
+            if (sah < bestSah)
+            {
+                bestSah = sah;
+                splitAxis = i;
+                splitPosition = candidateSplitLine;
+            }
+        }
+    }
+    return bestSah > 0 ? bestSah : 1e20;
+}
+
 void BVHBuilder::subdivide(u32 index)
 {
     BVHNode& node = m_nodes[index];
@@ -84,33 +115,24 @@ void BVHBuilder::subdivide(u32 index)
 
     u32 bestSplitAxisIndex = 0;
     float bestSplitLine = 0;
-    float bestSah = 1e20;
-    for(int i = 0; i < 3; ++i)
-    {
-        break;
-        for(u32 j = node.leftChild; j < node.leftChild + node.triangleCount; j++)
-        {
-            auto& triangle = triangles[triIndices[j]];
-            float candidateSplitLine = triangle.centroid[i];
-            float sah = evaluteSAH(index, i, candidateSplitLine);
-            if (sah < bestSah)
-            {
-                bestSah = sah;
-                bestSplitAxisIndex = i;
-                bestSplitLine = candidateSplitLine;
-            }
-        }
-    }
-    Vector3 diagonal = node.aabbMax - node.aabbMin;
-    u32 splitAxisIndex = 0;
-    if (abs(diagonal[splitAxisIndex]) < abs(diagonal[1]))
-        splitAxisIndex = 1;
-    if (abs(diagonal[splitAxisIndex]) < abs(diagonal[2])) 
-        splitAxisIndex = 2;
+    float bestSah = findBestSplitPosition(index, bestSplitAxisIndex, bestSplitLine);
+    
+    /*Vector3 diagonal = node.aabbMax - node.aabbMin;*/
+    /*u32 splitAxisIndex = 0;*/
+    /*if (abs(diagonal[splitAxisIndex]) < abs(diagonal[1]))*/
+    /*    splitAxisIndex = 1;*/
+    /*if (abs(diagonal[splitAxisIndex]) < abs(diagonal[2])) */
+    /*    splitAxisIndex = 2;*/
 
-    float splitLine = node.aabbMin[splitAxisIndex] + diagonal[splitAxisIndex] * 0.5f;
-    /*splitAxisIndex = bestSplitAxisIndex;*/
-    /*splitLine = bestSplitLine;*/
+    float splitLine;
+    float splitAxisIndex = bestSplitAxisIndex;
+    splitLine = bestSplitLine;
+
+    Vector3 diagonal = node.aabbMax - node.aabbMin;
+    float parrentCost = node.triangleCount * (diagonal[0] * diagonal[1] + diagonal[0] * diagonal[2] + diagonal[1] * diagonal[2]);
+    if(parrentCost <= bestSah)
+        return;;
+
     u32 i = node.leftChild, j = i + node.triangleCount - 1;
     while (i <= j)
     {
@@ -135,15 +157,6 @@ void BVHBuilder::subdivide(u32 index)
     rightNode.leftChild = i;
     node.triangleCount = 0;
     node.leftChild = leftChildIndex;
-
-    /*leftNode.aabbMin = node.aabbMin;*/
-    /*leftNode.aabbMax = node.aabbMax;*/
-    /*leftNode.aabbMax[splitAxisIndex] = splitLine;*/
-    /**/
-    /*rightNode.aabbMin = node.aabbMin;*/
-    /*rightNode.aabbMax = node.aabbMax;*/
-    /*rightNode.aabbMin[splitAxisIndex] = splitLine;*/
-
 
     updateNodeBounds(leftChildIndex);
     updateNodeBounds(rightChildIndex);

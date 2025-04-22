@@ -230,7 +230,7 @@ void Model::processMesh(uint index)
     auto& mesh = m_model->meshes[index];
     for (auto& primitive : mesh.primitives)
     {
-        int positionIndex=0, texIndex=0, normalIndex=0, tangentIndex=0;
+        int positionIndex=0, texIndex=0, normalIndex=0, tangentIndex=-1;
         for (auto& [attrName, attrIndex] : primitive.attributes)
         {
             if (attrName == "POSITION")
@@ -254,12 +254,15 @@ void Model::processMesh(uint index)
         auto position = getAccessor(positionIndex);
         auto normal = getAccessor(normalIndex);
         auto texture = getAccessor(texIndex);
-        auto tangent = getAccessor(tangentIndex ? tangentIndex : 0);
+        AccessorData tangent;
+        if(tangentIndex != -1)
+            tangent = getAccessor(tangentIndex ? tangentIndex : 0);
 
         assert(checkAccessor(position, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3));
         assert(checkAccessor(normal, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3));
         assert(checkAccessor(texture, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC2));
-        assert(checkAccessor(tangent, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC4));
+        if(tangentIndex != -1)
+            assert(checkAccessor(tangent, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC4));
 
         assert(position.accessor.count == normal.accessor.count && normal.accessor.count == texture.accessor.count);
         u32 count = (u32)position.accessor.count;
@@ -273,11 +276,13 @@ void Model::processMesh(uint index)
         auto positionSpan = getSpan3(position);
         auto normalSpan = getSpan3(normal);
         auto textureSpan = getSpan2(texture);
-        auto tangentSpan = getSpan4(tangent);
+        std::span<math::Vector4> tangentSpan;
+        if(tangentIndex != -1)
+            tangentSpan = getSpan4(tangent);
 
         for (u32 i = 0; i < count; i++)
         {
-            m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], tangentSpan[i], textureSpan[i] });
+            m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], tangentIndex != -1 ? tangentSpan[i] : math::Vector4(), textureSpan[i] });
         }
 
         auto indicesAccessor = getAccessor(primitive.indices);

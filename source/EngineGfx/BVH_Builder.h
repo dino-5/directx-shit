@@ -13,8 +13,6 @@ namespace engine::graphics
 
 struct Triangle
 {
-    static inline double avarageDistribution = 0;
-    static inline u32 count = 0;
     u32 firstI, secondI, thirdI; // indices to real vertices inside Model
     Vector3 centroid;
     Triangle(u32 first, u32 second, u32 third, const std::vector<Vertex>& vertices, u32 offset=0):
@@ -22,11 +20,6 @@ struct Triangle
     {
         auto result = (vertices[firstI].position + vertices[secondI].position + vertices[thirdI].position);
         centroid = result * 0.333;
-
-        auto avg = (vertices[firstI].position - centroid).length() + (vertices[secondI].position - centroid).length() +(vertices[thirdI].position - centroid).length();
-        avg *= 0.333;
-        avarageDistribution = avarageDistribution * count / (count + 1) + avg / (count + 1);
-        count++;
     }
 };
 
@@ -64,6 +57,7 @@ public:
 private:
     void subdivide(u32 index);
     void updateNodeBounds(u32 index);
+    float findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition);
     float evaluteSAH(u32 nodeIndex, u32 axisIndex, float splitPos);
 
     const Model* m_model;

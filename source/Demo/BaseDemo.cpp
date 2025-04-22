@@ -235,8 +235,8 @@ bool BaseDemo::initialize()
     lightSettings.viewDirection = m_camera.getDir();
     m_lightSettingsResource.init(context, &lightSettings, 1);
 
-    /*m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/gltf/Sponza.gltf", context);*/
-    m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
+    m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);
+    /*m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);*/
     m_bvhBuilder.build(m_model);
     m_bvhBuilder.generateDrawData(context);
 
