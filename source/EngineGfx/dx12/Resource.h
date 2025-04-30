@@ -11,126 +11,134 @@
 
 namespace engine::graphics
 {
-	enum class ResourceState
-	{
-		COMMON = D3D12_RESOURCE_STATE_COMMON,
-		VERTEX_CONSTANT_BUFFER = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-		INDEX_BUFFER = D3D12_RESOURCE_STATE_INDEX_BUFFER,
-		RENDER_TARGET = D3D12_RESOURCE_STATE_RENDER_TARGET,
-		UNORDERED_ACCESS = D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		DEPTH_WRITE = D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		DEPTH_READ = D3D12_RESOURCE_STATE_DEPTH_READ,
-		COPY_DEST = D3D12_RESOURCE_STATE_COPY_DEST,
-		COPY_SOURCE = D3D12_RESOURCE_STATE_COPY_SOURCE,
-		PIXEL_SHADER_RESOURCE = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		GENERIC_READ_STATE = D3D12_RESOURCE_STATE_GENERIC_READ,
-		PRESENT = D3D12_RESOURCE_STATE_PRESENT,
-	};
-	D3D12_RESOURCE_STATES CastEnum(ResourceState state);
+enum class ResourceState
+{
+    COMMON = D3D12_RESOURCE_STATE_COMMON,
+    VERTEX_CONSTANT_BUFFER = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+    INDEX_BUFFER = D3D12_RESOURCE_STATE_INDEX_BUFFER,
+    RENDER_TARGET = D3D12_RESOURCE_STATE_RENDER_TARGET,
+    UNORDERED_ACCESS = D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+    DEPTH_WRITE = D3D12_RESOURCE_STATE_DEPTH_WRITE,
+    DEPTH_READ = D3D12_RESOURCE_STATE_DEPTH_READ,
+    COPY_DEST = D3D12_RESOURCE_STATE_COPY_DEST,
+    COPY_SOURCE = D3D12_RESOURCE_STATE_COPY_SOURCE,
+    PIXEL_SHADER_RESOURCE = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+    GENERIC_READ_STATE = D3D12_RESOURCE_STATE_GENERIC_READ,
+    PRESENT = D3D12_RESOURCE_STATE_PRESENT,
+};
+D3D12_RESOURCE_STATES CastEnum(ResourceState state);
 
-	enum class DescriptorFlags : std::uint32_t
-	{
-		None = 0,
-		RenderTarget = 1 << 0,
-		DepthStencil = 1 << 1,
-		ShaderResource = 1 << 2,
-		UnorderedAccess = 1 << 3,
-		ConstantBuffer = 1 << 4,
-	};
-	using namespace magic_enum::bitwise_operators;
+enum class DescriptorFlags : std::uint32_t
+{
+    None = 0,
+    RenderTarget = 1 << 0,
+    DepthStencil = 1 << 1,
+    ShaderResource = 1 << 2,
+    UnorderedAccess = 1 << 3,
+    ConstantBuffer = 1 << 4,
+};
+using namespace magic_enum::bitwise_operators;
 
-	struct DescriptorProperties
-	{
-		DescriptorFlags descriptor{0};
-		D3D12_SRV_DIMENSION viewDimension{};
-		u32 bufferStride{};
-		u64 numElements{};
-	};
+struct DescriptorProperties
+{
+    DescriptorFlags descriptor{0};
+    D3D12_SRV_DIMENSION viewDimension{};
+    u32 bufferStride{};
+    u64 numElements{};
+};
 
-	//DescriptorProperties descProps{
-	//	.descriptor = DescriptorFlags::None,
-	//	.viewDimension = D3D12_SRV_DIMENSION_UNKNOWN,
-	//	.bufferStride = 0,
-	//	.numElements = 0
-	//};
+//DescriptorProperties descProps{
+//    .descriptor = DescriptorFlags::None,
+//    .viewDimension = D3D12_SRV_DIMENSION_UNKNOWN,
+//    .bufferStride = 0,
+//    .numElements = 0
+//};
 
-	struct ResourceDescription
-	{
-		DXGI_FORMAT format;
-		u32 width;
-		u32 height;
-		u32 depthOrArraySize = 1;
-		D3D12_RESOURCE_DIMENSION dimension;
-		ResourceFlags flags = ResourceFlags::NONE;
-		ResourceState createState = ResourceState::COMMON;
-		D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
-		const char* name=nullptr;
-	};
+struct ResourceDescription
+{
+    DXGI_FORMAT format;
+    u32 width;
+    u32 height;
+    u32 depthOrArraySize = 1;
+    D3D12_RESOURCE_DIMENSION dimension;
+    ResourceFlags flags = ResourceFlags::NONE;
+    ResourceState createState = ResourceState::COMMON;
+    D3D12_HEAP_TYPE  heapType = D3D12_HEAP_TYPE_DEFAULT;
+    const char* name=nullptr;
+};
 
-	//ResourceDescription desc{
-	//		.format = DXGI_FORMAT_,
-	//		.width= ,
-	//		.height = ,
-	//		.depthOrArraySize = 1,
-	//		.dimension = D3D12_RESOURCE_DIMENSION_,
-	//		.flags = ResourceFlags::None,
-	//		.createState = ResourceState::,
-	//		.heapType = D3D12_HEAP_TYPE_DEFAULT,
-   //};
+//ResourceDescription desc{
+//        .format = DXGI_FORMAT_,
+//        .width= ,
+//        .height = ,
+//        .depthOrArraySize = 1,
+//        .dimension = D3D12_RESOURCE_DIMENSION_,
+//        .flags = ResourceFlags::None,
+//        .createState = ResourceState::,
+//        .heapType = D3D12_HEAP_TYPE_DEFAULT,
+//};
 
-	class Resource
-	{
-	public:
-		Resource() = default;
+class Resource
+{
+public:
+    Resource() = default;
 
-		void initResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val=nullptr);
-		void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
+    void initResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val=nullptr);
+    void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
-		void reset()
-		{
-			m_resource.Reset();
-		}
+    void reset()
+    {
+        m_resource.Reset();
+    }
+    
+    ~Resource()
+    {
+        reset();
+    }
 
-		operator ID3D12Resource* ()
-		{
-			return m_resource.Get();
-		}
+    operator ID3D12Resource* ()
+    {
+        return m_resource.Get();
+    }
 
-		ID3D12Resource* operator->()
-		{
-			return m_resource.Get();
-		}
+    ID3D12Resource* operator->()
+    {
+        return m_resource.Get();
+    }
 
-		ID3D12Resource* resource() { return m_resource.Get(); }
-		ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
-        D3D12_GPU_VIRTUAL_ADDRESS getGPUAdress() const { return m_resource->GetGPUVirtualAddress(); }
+    ID3D12Resource* resource() { return m_resource.Get(); }
+    ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
+    D3D12_GPU_VIRTUAL_ADDRESS getGPUAdress() const { return m_resource->GetGPUVirtualAddress(); }
 
-		void createViews(ID3D12Device* device, DescriptorProperties descriptors);
-		ResourceState getCurrentState() const { return m_currentState; }
+    void createViews(ID3D12Device* device, DescriptorProperties descriptors);
+    ResourceState getCurrentState() const { return m_currentState; }
 
-		DescriptorCPU dsv;
-		DescriptorCPU rtv;
-		DescriptorGPU srv;
-		DescriptorGPU uav;
+    DescriptorCPU dsv;
+    DescriptorCPU rtv;
+    DescriptorGPU srv;
+    DescriptorGPU uav;
 
-	private:
-		ComPtr<ID3D12Resource> m_resource = nullptr;
-		std::optional<D3D12_CLEAR_VALUE> m_clearValue;
-		ResourceState m_currentState = ResourceState::COMMON;
-		DescriptorProperties m_descriptorProps;
-		D3D12_HEAP_TYPE  m_heapType;
-		D3D12_SRV_DIMENSION m_viewDimension{};
-		std::wstring name;
-		u32 m_bufferSize = 0;
-	};
+private:
+    ComPtr<ID3D12Resource> m_resource = nullptr;
+    std::optional<D3D12_CLEAR_VALUE> m_clearValue;
+    ResourceState m_currentState = ResourceState::COMMON;
+    DescriptorProperties m_descriptorProps;
+    D3D12_HEAP_TYPE  m_heapType;
+    D3D12_SRV_DIMENSION m_viewDimension{};
+    std::wstring name;
+    u32 m_bufferSize = 0;
+protected:
+    static inline u32 s_counter = 0;
+    u32 m_id = 0;
+};
 
-	template<typename T>
-	class FrameResourceHandler
-	{
-	public:
-		T& operator[](u16 index) { return m_resources[index]; }
-	private:
-		std::array<T, engine::config::NumFrames> m_resources;
-	};
+template<typename T>
+class FrameResourceHandler
+{
+public:
+    T& operator[](u16 index) { return m_resources[index]; }
+private:
+    std::array<T, engine::config::NumFrames> m_resources;
+};
 
 };

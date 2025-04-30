@@ -8,12 +8,6 @@
 
 namespace engine::graphics
 {
-	struct Material
-	{
-		TextureHandle occlusionTexture;
-		//TextureHandle emmisiveTexture;
-	};
-
 	struct Submesh
 	{
 		u32 IndexCount = 0;
@@ -92,22 +86,12 @@ namespace engine::graphics
             m_vertexByteStride = sizeof(VertexType);
             m_vertexBufferByteSize = m_vertexByteStride * vertexCount;
 
-			BufferDescription<VertexType> desc;
-			desc.data = vertexData;
-			desc.elementCount = vertexCount;
-			desc.name = "VertexBuffer";
-			desc.state = ResourceState::VERTEX_CONSTANT_BUFFER;
-			desc.type = BufferType::VERTEX;
+			BufferDescription desc(vertexData, vertexCount, "VertexBuffer", ResourceState::VERTEX_CONSTANT_BUFFER, BufferType::VERTEX);
 			m_vertexBuffer.init(context, desc);
 
             if (indexData != nullptr)
             {
-                BufferDescription<IndexType> indexDesc;
-                indexDesc.data = indexData;
-                indexDesc.elementCount = indexCount;
-                indexDesc.name = "IndexBuffer";
-                indexDesc.state = ResourceState::INDEX_BUFFER;
-                indexDesc.type = BufferType::INDEX;
+                BufferDescription indexDesc(indexData, indexCount, "IndexBuffer", ResourceState::INDEX_BUFFER, BufferType::INDEX);
 				m_indexBuffer.init(context, indexDesc);
 
                 m_indexBufferByteSize = sizeof(IndexType);
@@ -131,9 +115,5 @@ namespace engine::graphics
 		u32 m_vertexBufferByteSize = 0;
 		u32 m_indexBufferByteSize = 0;
 		u32 m_indexCount = 0;
-
-		//std::unordered_map<Material, std::vector<Submesh>> DrawArgs;
-		Material m_material;
-
 	};
 };

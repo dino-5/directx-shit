@@ -228,15 +228,15 @@ bool BaseDemo::initialize()
     ConstandBufferData data;
     data.projection = m_camera.getProjectionMatrix();
     data.view = m_camera.getViewMatrix();
-    m_constBuffer.init(context, &data, 1);
+    m_constBuffer = ConstantBuffer(context, &data, 1);
 
     LightSettings lightSettings;
     lightSettings.cameraPosition = m_camera.getPos();
     lightSettings.viewDirection = m_camera.getDir();
-    m_lightSettingsResource.init(context, &lightSettings, 1);
+    m_lightSettingsResource= ConstantBuffer(context, &lightSettings, 1);
 
-    m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);
-    /*m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);*/
+    /*m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);*/
+    m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
     m_bvhBuilder.build(m_model);
     m_bvhBuilder.generateDrawData(context);
 

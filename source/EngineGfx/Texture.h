@@ -6,6 +6,7 @@
 #include "EngineCommon/util/Logger.h"
 #include "EngineGfx/dx12/Resource.h"
 #include "EngineGfx/dx12/d3dx12.h"
+#include "dx12/Device.h"
 #include <d3d12.h>
 #include <string>
 #include <unordered_map>
@@ -54,48 +55,15 @@ namespace engine::graphics
 	{
 	public:
 		Texture() = default;
-		Texture (ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
-		void init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
+		Texture (ImageData imData, const GfxContext& ctx);
+		void init(ImageData imData, const GfxContext& ctx);
 		u32 getDescriptorHeapIndex()
 		{
 			return srv.getDescriptorIndex();
 		}
 
-		static Texture* CreateTexture(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "");
-		static Texture* GetTexture(std::string name){
-            if(s_textures.find(name)!=s_textures.end())
-                return &s_textures[name];
-			util::printError("trying to get texture which does not exist {}", name);
-			return nullptr;
-		}
-
-		static inline std::unordered_map<std::string, Texture> s_textures;
 	public:
 		Resource textureUploadHeap;
-		std::string m_name;
-	};
-
-	class TextureHandle
-	{
-	public:
-		TextureHandle() = default;
-		TextureHandle(Texture* texture) : m_ptr(texture) {}
-		TextureHandle(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = ""){
-			init(imData, device, cmdList, s);
-		}
-		void init(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, std::string s = "")
-		{
-			m_ptr = Texture::CreateTexture(imData, device, cmdList, s);
-		}
-		void init(std::string name)
-		{
-			m_ptr = Texture::GetTexture(name);
-		}
-		operator bool() { return m_ptr != nullptr; }
-
-		Texture* operator->() { return m_ptr; }
-	private:
-		Texture* m_ptr = nullptr;
 	};
 
 };

@@ -63,6 +63,8 @@ struct Light
 
 };
 
+namespace gfx = engine::graphics;
+
 struct ObjectData
 {
 	uint materialIndex;
@@ -73,8 +75,6 @@ struct LightSettings
 	math::Vector3 cameraPosition;
 	math::Vector3 viewDirection;
 };
-
-namespace gfx = engine::graphics;
 
 struct BindlessTable
 {
@@ -141,7 +141,7 @@ private:
 	gfx::Camera m_camera;
 
 	gfx::Buffer m_buffer;
-	gfx::BufferObject<Light> m_lightBuffer;
+	gfx::BufferObject m_lightBuffer;
 	gfx::ConstantBuffer m_constBuffer;
 
 	gfx::ConstantBuffer m_lightSettingsResource;

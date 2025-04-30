@@ -1,5 +1,7 @@
 #pragma once
+#include <cstring>
 #include <d3d12.h>
+#include <string_view>
 #include <vector>
 #include "EngineGfx/dx12/Device.h"
 #include "EngineGfx/dx12/d3dx12.h"
@@ -12,187 +14,204 @@
 
 namespace engine::graphics
 {
-	using namespace magic_enum::bitwise_operators;
-    using engine::util::CalcConstantBufferByteSize;
+using namespace magic_enum::bitwise_operators;
+using engine::util::CalcConstantBufferByteSize;
 
-    class UploadBuffer : public Resource
-    {
-    public:
-        UploadBuffer(ID3D12Device* device, uint elementCount, uint sizeOfType , bool isConstantBuffer)  
-        {
-            init(device, elementCount, sizeOfType, isConstantBuffer);
-        }
+enum class BufferType : u16
+{
+    NONE     = 0,
+    VERTEX   = 1 << 0,
+    INDEX    = 1 << 1,
+    CONSTANT = 1 << 2,
+    UPLOAD   = 1 << 3,
+    CUSTOM   = 1 << 4
+};
 
-        void init(ID3D12Device* device, uint elementCount, uint typeSize, bool isConstantBuffer) 
-        {
-            m_IsConstantBuffer = isConstantBuffer;
-            m_ElementByteSize = isConstantBuffer ? CalcConstantBufferByteSize(typeSize) : typeSize;
+struct BufferDescription
+{
+    template<typename T>
+    BufferDescription(T* aData, u32 aElementCount, std::string_view aName, ResourceState aState = ResourceState::GENERIC_READ_STATE, BufferType aType = BufferType::CUSTOM) 
+    : data((void*)aData), elementCount(aElementCount),
+    elementSize(sizeof(T)), name(aName), state(aState), type(aType)
+    {}
 
-            ResourceDescription desc{
-                    .format = DXGI_FORMAT_UNKNOWN,
-                    .width = m_ElementByteSize * elementCount,
-                    .height = 1,
-                    .depthOrArraySize = 1,
-                    .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-                    .flags = ResourceFlags::NONE,
-                    .createState = ResourceState::GENERIC_READ_STATE,
-                    .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .name = "Upload Buffer"
-            };
-			Resource::initResource(device, desc, DescriptorProperties(DescriptorFlags::None));
-            ThrowIfFailed(resource()->Map(0, nullptr, reinterpret_cast<void**>(&m_MappedData)));
-        }
+    BufferDescription(u32 aSize, std::string_view aName, ResourceState aState = ResourceState::GENERIC_READ_STATE, BufferType aType = BufferType::CUSTOM) 
+      : data(nullptr),
+        elementCount(1),
+        elementSize(aSize), 
+        name(aName), 
+        state(aState), 
+        type(aType)
+    {}
 
-        UploadBuffer() = default;
-        UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
+    BufferDescription(u32 aElementCount, u32 aElementSize, std::string_view aName, ResourceState aState = ResourceState::GENERIC_READ_STATE, BufferType aType = BufferType::CUSTOM) 
+      : data(nullptr),
+        elementCount(aElementCount),
+        elementSize(aElementSize), 
+        name(aName), 
+        state(aState), 
+        type(aType)
+    {}
+    BufferDescription() = default;
 
-        void CopyData(int elementIndex, const void* data)
-        {
-            memcpy(&m_MappedData[elementIndex*m_ElementByteSize], data, m_ElementByteSize);
-        }
+    const void* data = nullptr;
+    u32 elementCount{};
+    u32 elementSize = 0;
+    std::string_view name;
+    ResourceState state{};
+    BufferType type{};
+};
 
-    public:
-        BYTE* m_MappedData = nullptr;
-
-        UINT m_ElementByteSize = 0;
-        bool m_IsConstantBuffer = false;
-    };
-
-    enum class BufferType : u16
-    {
-        NONE,
-        VERTEX,
-        INDEX,
-        CONSTANT,
-        UPLOAD,
-        CUSTOM
-    };
+class Buffer : public Resource
+{
+public:
+    Buffer() = default;
 
     template<typename T>
-    struct BufferDescription
+    Buffer(GfxContext& context, T* data, u32 elementCount, std::string_view name)
     {
-        const T* data = nullptr;
-        u32 elementCount{};
-        std::string_view name;
-        ResourceState state{};
-        BufferType type{};
-    };
+        init(context, BufferDescription(data, elementCount, name));
+    }
 
-	class Buffer : public Resource
-	{
-	public:
-		Buffer() = default;
+    Buffer(const GfxContext& context, const BufferDescription& desc)
+    {
+        init(context, desc);
+    }
 
-		template<typename T>
-        Buffer(GfxContext& context, T* data, uint numberOfElements, std::string_view name);
-
-		template<typename T>
-        static Buffer CreateVertexBuffer(GfxContext& context, T* data, uint numberOfElements);
-		template<typename T>
-        static Buffer CreateIndexBuffer(GfxContext& context, T* data, uint numberOfElements);
-
-        template<typename T>
-        void init(GfxContext& context, const BufferDescription<T>& desc);
-    
-		u32 getDescriptorHeapIndex()
-		{
-			return srv.getDescriptorIndex();
-		}
-        u32 getBufferSize() const { return m_bufferSize; }
-        u32 getElementSize() const { return m_elementSize; }
-
-        void copyData(const void* data, ID3D12GraphicsCommandList* commandList, ResourceState state);
-
-	private:
-        UploadBuffer m_uploadBuffer;
-        uint m_elementSize;
-        uint m_bufferSize;
-        BufferType m_type;
-	};
-    #include "Buffer.hpp"
+    static Buffer CreateIndexBuffer(GfxContext& context, u32* data, u32 elementCount)
+    {
+        return CreateBuffer(context, BufferDescription(data, elementCount, "IndexBuffer", ResourceState::INDEX_BUFFER, BufferType::INDEX));
+    }
 
     template<typename T>
-    struct BufferObject
+    static Buffer CreateVertexBuffer(GfxContext& context, T* data, u32 elementCount){
+        return CreateBuffer(context, BufferDescription(data, elementCount, "VertexBuffer", ResourceState::VERTEX_CONSTANT_BUFFER, BufferType::VERTEX));
+    }
+
+    template<typename T>
+    static Buffer CreateCustomBuffer(GfxContext& context, T* data, u32 elementCount){
+        return CreateBuffer(context, BufferDescription(data, elementCount, "CustomBuffer", ResourceState::COMMON, BufferType::CUSTOM));
+    }
+
+    static Buffer CreateUploadBuffer(const GfxContext& context, u32 bufferSize){
+        return CreateBuffer(context, BufferDescription(bufferSize, "UploadBuffer", ResourceState::COPY_SOURCE, BufferType::UPLOAD));
+    }
+
+    static Buffer CreateBuffer(const GfxContext& context, const BufferDescription& bufferDesc)
     {
-        void create(GfxContext& ctx)
-        {
-            assert(desc.type != BufferType::NONE);
-            desc.data = data.data();
-            desc.elementCount = data.size();
-            buffer.init(ctx, desc);
-        }
-        void update(GfxContext& ctx)
-        {
-            buffer.copyData(data.data(), ctx.cmdList, buffer.getCurrentState());
-        }
+        return Buffer(context, bufferDesc);
+    }
 
-        Buffer buffer;
-        std::vector<T> data;
-        BufferDescription<T> desc;
+    void init(const GfxContext& context, const BufferDescription& desc);
+
+    u32 getDescriptorHeapIndex()
+    {
+        return srv.getDescriptorIndex();
+    }
+    u32 getBufferSize() const { return m_bufferSize; }
+    u32 getElementSize() const { return m_elementSize; }
+
+    void copyDataToGPU(const void* data, const GfxContext& context, ResourceState state);
+
+protected:
+    struct UploadBufferInfo
+    {
+        u32 size;
+        bool isUsed;
     };
+    using BufferHandle = u32;
+    static BufferHandle GetUploadBufferHandle(const GfxContext& ctx, u32 bufferSize)
+    {
+        for(u32 i = 0; i < (u32)s_uploadBufferInfo.size(); ++i)
+        {
+            auto& buffer = s_uploadBufferInfo[i];
+            if(buffer.size >= bufferSize && !buffer.isUsed)
+                return i;
+        }
+        s_uploadBuffers.push_back(CreateUploadBuffer(ctx, bufferSize));
+        s_uploadBufferInfo.push_back({bufferSize, true});
+        return (u32)s_uploadBuffers.size()-1;
+    }
+    static void ReleaseUploadBuffer(BufferHandle handle)
+    {
+        s_uploadBufferInfo[handle].isUsed = false;
+    }
+    static Buffer& GetUploadBuffer(BufferHandle handle) 
+    {
+        return s_uploadBuffers[handle];
+    }
 
-	class ConstantBuffer : public Resource
-	{
-	public:
-        ConstantBuffer() = default;
-        template<typename T>
-		void init(GfxContext& context, T* data, u32 elementCount, bool createDescriptors = true)
-		{
-            m_structSize = sizeof(T);
-            m_elementSize = CalcConstantBufferByteSize(m_structSize);
-            m_bufferSize = m_elementSize * elementCount; 
-            ResourceDescription desc{
-                    .format = DXGI_FORMAT_UNKNOWN,
-                    .width = m_bufferSize,
-                    .height = 1,
-                    .depthOrArraySize = 1,
-                    .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-                    .flags = ResourceFlags::NONE,
-                    .createState = ResourceState::GENERIC_READ_STATE,
-                    .heapType = D3D12_HEAP_TYPE_UPLOAD,
-                    .name = "Constant Buffer"
-            };
+    static std::vector<Buffer> s_uploadBuffers;
+    static std::vector<UploadBufferInfo> s_uploadBufferInfo;
+    u32 m_elementSize;
+    u32 m_bufferSize;
+    BufferType m_type;
+};
 
-            DescriptorProperties descProps{
-                .descriptor = createDescriptors ? DescriptorFlags::ConstantBuffer : DescriptorFlags::None,
-                .viewDimension = {},
-                .bufferStride = m_bufferSize,
-                .numElements = elementCount 
-            };
-			Resource::initResource(context.device, desc, descProps);
-			CD3DX12_RANGE readRange(0, 0);       
-            ThrowIfFailed(resource()->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
+class ConstantBuffer : public Buffer
+{
+public:
+    template<typename T>
+    ConstantBuffer(GfxContext& context, T* data, u32 elementCount) : Buffer(CreateConstantBuffer(context, elementCount, sizeof(T))) 
+    {
+        CD3DX12_RANGE readRange(0, 0);       
+        ThrowIfFailed(resource()->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
+        update(data);
+    }
+    ~ConstantBuffer() 
+    {
+        CD3DX12_RANGE readRange(0, 0);       
+        resource()->Unmap(0, &readRange);
+    }
+    ConstantBuffer() = default;
 
-            if(sizeof(T) * elementCount == m_bufferSize)
-                memcpy(m_buffer, data, sizeof(T) * elementCount);
-            else
-            {
-                for(u32 i = 0; i < elementCount; ++i)
-                    memcpy(m_buffer + i * m_elementSize, &data[i], sizeof(T));
-            }
+    template<typename T>
+    void update(T* data, u32 elementNumber = 0)
+    {
+        memcpy(&m_buffer[elementNumber * m_elementSize], data, sizeof(T));
+    }
+private:
+    static Buffer CreateConstantBuffer(GfxContext& context, u32 elementCount, u32 elementSize){
+        return CreateBuffer(context, BufferDescription(elementCount, elementSize, "ConstantBuffer", ResourceState::VERTEX_CONSTANT_BUFFER, BufferType::CONSTANT));
+    }
+    char* m_buffer = nullptr;
+};
 
-            // TODO : maybe transition to the constant state
-		}
+struct BufferObject
+{
+    template<typename T>
+    void create(GfxContext& ctx, const BufferDescription& aDesc)
+    {
+        assert(aDesc.type != BufferType::NONE);
 
-		D3D12_GPU_VIRTUAL_ADDRESS getAddress(u32 element=0) 		{
-			return resource()->GetGPUVirtualAddress() + m_elementSize * element;
-		}
-		u32 getDescriptorHeapIndex()
-		{
-			return srv.getDescriptorIndex();
-		}
+        data.resize(aDesc.elementSize * aDesc.elementCount);
+        memcpy(aDesc.data, data.data(), aDesc.elementSize * aDesc.elementCount);
 
-        template<typename T>
-		void update(T* data, uint elementNumber = 0)
-		{
-            memcpy(&m_buffer[elementNumber * m_elementSize], data, sizeof(T));
-		}
+        buffer.init(ctx, aDesc);
+    }
+    void update(GfxContext& ctx)
+    {
+        buffer.copyDataToGPU(data.data(), ctx, buffer.getCurrentState());
+    }
 
-	private:
-		char* m_buffer=nullptr;
-		uint m_bufferSize = 0;
-		uint m_structSize = 0;
-        uint m_elementSize = 0;
-	};
+    Buffer buffer;
+    std::vector<char*> data;
+};
+
+inline D3D12_INDEX_BUFFER_VIEW GetIndexBufferView(Buffer& buffer) {
+    D3D12_INDEX_BUFFER_VIEW view;
+    view.BufferLocation = buffer.resource()->GetGPUVirtualAddress();
+    view.Format = DXGI_FORMAT_R32_UINT;
+    view.SizeInBytes = buffer.getBufferSize();
+    return view;
+}
+
+inline D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView(Buffer& buffer) {
+    D3D12_VERTEX_BUFFER_VIEW view;
+    view.BufferLocation = buffer.resource()->GetGPUVirtualAddress();
+    view.StrideInBytes = buffer.getElementSize();
+    view.SizeInBytes = buffer.getBufferSize();
+    return view;
+}
 
 };

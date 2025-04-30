@@ -107,9 +107,7 @@ enum class StencilOP
 };
 
 D3D12_COMPARISON_FUNC CastType(ComparisonFunc obj);
-
 D3D12_DEPTH_WRITE_MASK CastType(DepthWriteMask obj);
-
 D3D12_STENCIL_OP CastType(StencilOP obj);
 
 struct DepthState

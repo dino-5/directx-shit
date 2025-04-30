@@ -184,12 +184,7 @@ void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
         materialData.push_back({ colorTexture, normalTexture });
     }
 
-    BufferDescription<SubmeshData> desc;
-    desc.data = materialData.data();
-    desc.elementCount = (u32)materialData.size();
-    desc.name = "model submesh data";
-    desc.state = ResourceState::PIXEL_SHADER_RESOURCE;
-    desc.type = BufferType::CUSTOM;
+    BufferDescription desc(materialData.data(), (u32)materialData.size(), "model submesh data", ResourceState::PIXEL_SHADER_RESOURCE, BufferType::CUSTOM);
 
     m_materialBuffer.init(context, desc);
 
@@ -207,7 +202,7 @@ void Model::loadTextures()
             util::printError("no uri is provided for an image");
             return;
         }
-        m_textures.push_back(Texture(ImageData(m_directory/image.uri), m_context->device, m_context->cmdList));
+        m_textures.push_back(Texture(ImageData(m_directory/image.uri), *m_context));
     }
 
 }

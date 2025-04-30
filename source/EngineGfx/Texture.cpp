@@ -13,12 +13,12 @@ namespace engine::graphics
         needToDestruct = true;
     }
 
-    Texture::Texture(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    Texture::Texture(ImageData imData, const GfxContext& ctx)
     {
-        init(imData, device, commandList, s);
+        init(imData, ctx);
     }
 
-    void Texture::init(ImageData imData , ID3D12Device* device, ID3D12GraphicsCommandList* commandList, std::string s)
+    void Texture::init(ImageData imData, const GfxContext& ctx)
     {
         ResourceDescription desc;
         desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -34,13 +34,13 @@ namespace engine::graphics
         	.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D
         };
 
-        Resource::initResource(Device::device->getDevice(), desc, descriptorProps);
+        Resource::initResource(ctx.device, desc, descriptorProps);
 
         const UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource(), 0, 1);
 
         ResourceDescription uploadDesc;
         uploadDesc.format = DXGI_FORMAT_UNKNOWN;
-        uploadDesc.width = uploadBufferSize;
+        uploadDesc.width = (u32)uploadBufferSize;
         uploadDesc.height = 1;
         uploadDesc.dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         uploadDesc.flags = ResourceFlags::NONE;
@@ -54,17 +54,8 @@ namespace engine::graphics
         textureData.RowPitch = imData.width * size;
         textureData.SlicePitch = textureData.RowPitch * imData.height;
 
-        UpdateSubresources(commandList, resource(), textureUploadHeap, 0, 0, 1, &textureData);
-        Resource::transition(commandList, ResourceState::PIXEL_SHADER_RESOURCE);
-        m_name = s;
-    }
-
-    Texture* Texture::CreateTexture(ImageData imData, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
-        std::string s )
-    {
-        if(s_textures.find(std::string(imData.name))==s_textures.end())
-            s_textures[imData.name] = Texture(imData, device, cmdList, s);
-        return &s_textures[imData.name];
+        UpdateSubresources(ctx.cmdList, resource(), textureUploadHeap, 0, 0, 1, &textureData);
+        Resource::transition(ctx.cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
     }
 
 };

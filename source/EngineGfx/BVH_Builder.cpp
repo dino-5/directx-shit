@@ -104,7 +104,7 @@ float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& sp
             }
         }
     }
-    return bestSah > 0 ? bestSah : 1e20;
+    return bestSah > 0 ? bestSah : (float)1e20;
 }
 
 void BVHBuilder::subdivide(u32 index)
@@ -117,17 +117,6 @@ void BVHBuilder::subdivide(u32 index)
     float bestSplitLine = 0;
     float bestSah = findBestSplitPosition(index, bestSplitAxisIndex, bestSplitLine);
     
-    /*Vector3 diagonal = node.aabbMax - node.aabbMin;*/
-    /*u32 splitAxisIndex = 0;*/
-    /*if (abs(diagonal[splitAxisIndex]) < abs(diagonal[1]))*/
-    /*    splitAxisIndex = 1;*/
-    /*if (abs(diagonal[splitAxisIndex]) < abs(diagonal[2])) */
-    /*    splitAxisIndex = 2;*/
-
-    float splitLine;
-    float splitAxisIndex = bestSplitAxisIndex;
-    splitLine = bestSplitLine;
-
     Vector3 diagonal = node.aabbMax - node.aabbMin;
     float parrentCost = node.triangleCount * (diagonal[0] * diagonal[1] + diagonal[0] * diagonal[2] + diagonal[1] * diagonal[2]);
     if(parrentCost <= bestSah)
@@ -137,7 +126,7 @@ void BVHBuilder::subdivide(u32 index)
     while (i <= j)
     {
         auto& triangle = triangles[triIndices[i]];
-        if(triangle.centroid[splitAxisIndex] < splitLine)
+        if(triangle.centroid[bestSplitAxisIndex] < bestSplitLine)
             i++;
         else
             std::swap(triIndices[i], triIndices[j--]);
