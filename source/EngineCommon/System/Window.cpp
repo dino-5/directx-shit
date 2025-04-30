@@ -132,11 +132,12 @@ void WindowApp::run()
         }
         else
         {
-            util::Timer timer("main loop", true);
+            util::Timer timer(true);
             update();
             draw();
 
-            std::string title = util::to_string(std::format(L"DX12 Demo fps: {}/{}", int(timer.getFps()), timer.getElapsedTime() ));
+            double fps = timer.getFps();
+            std::string title = util::to_string(std::format(L"DX12 Demo fps: {}/{}", round(fps), timer.getElapsedTime()));
             if(!SetWindowTextA(getWindowHandle(), title.c_str()))
                 util::printError("can't change title name");
         }

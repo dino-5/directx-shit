@@ -1,5 +1,7 @@
 #include "BVH_Builder.h"
 #include "Model.h"
+#include "EngineCommon/util/Timer.h"
+
 
 namespace engine::graphics
 {
@@ -12,6 +14,7 @@ BVHBuilder::BVHBuilder(const Model& model)
 void BVHBuilder::build(const Model& model)
 {
     m_model = &model;
+    PROFILER("BVH::build");
 
     auto& submeshes = model.m_submeshes;
     auto& vertices = model.m_geometry.vertices;
