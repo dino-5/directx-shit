@@ -1,13 +1,12 @@
+#include <dxgiformat.h>
+#include <ostream>
+#include <string_view>
 #include "BaseDemo.h"
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/util/CommandLine.h"
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/util/Timer.h"
-#include "third_party/imgui/imgui.h"
-#include "third_party/imgui/backends/imgui_impl_dx12.h"
-#include <dxgiformat.h>
-#include <ostream>
-#include <string_view>
+#include "EngineGfx/tiny_bvh.h"
 
 using namespace std;
 using namespace gfx;
@@ -239,6 +238,9 @@ bool BaseDemo::initialize()
     m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
     m_bvhBuilder.build(m_model);
     m_bvhBuilder.generateDrawData(context);
+
+    tinybvh::BVH bvh;
+
 
     m_camera.addChangeCallback([this](const Camera* camera)
     {
