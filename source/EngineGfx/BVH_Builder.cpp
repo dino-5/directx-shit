@@ -2,7 +2,6 @@
 #include "Model.h"
 #include "EngineCommon/util/Timer.h"
 
-
 namespace engine::graphics
 {
 
@@ -69,7 +68,7 @@ float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& sp
 {
     BVHNode& node = m_nodes[nodeIndex];
 
-    float bestSah = 1e20;
+    float bestSah = 1e20 + 5.1235f;
     auto& vertices = m_model->m_geometry.vertices;
 
     {
@@ -86,7 +85,6 @@ float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& sp
             for(int i = 0; i < 3; ++i)
             {
                 u32 binIdx = min(NUMBER_OF_BINS - 1, (u32)(binDistr[i]));
-                
                 bins[binIdx][i].aabb.grow(vertices[triangle.vertex0].position);
                 bins[binIdx][i].aabb.grow(vertices[triangle.vertex1].position);
                 bins[binIdx][i].aabb.grow(vertices[triangle.vertex2].position);
@@ -103,11 +101,13 @@ float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& sp
         {
             for(int i = 0; i < 3; ++i)
             {
-                leftAABB[i].grow(bins[j][i].aabb);
+                if(bins[j][i].triangleCount)
+                    leftAABB[i].grow(bins[j][i].aabb);
                 currentLeftCount[i] += bins[j][i].triangleCount;
                 leftArea[j][i] = leftAABB[i].area() * currentLeftCount[i];
 
-                rightAABB[i].grow(bins[NUMBER_OF_BINS - j - 1][i].aabb);
+                if(bins[NUMBER_OF_BINS - j - 1][i].triangleCount)
+                    rightAABB[i].grow(bins[NUMBER_OF_BINS - j - 1][i].aabb);
                 currentRightCount[i] += bins[NUMBER_OF_BINS - j - 1][i].triangleCount;
                 rightArea[NUMBER_OF_BINS - j - 2][i] = rightAABB[i].area() * currentRightCount[i];
             }
@@ -139,12 +139,12 @@ void BVHBuilder::subdivide(u32 index)
     float bestSplitLine = 0;
     float bestSah = findBestSplitPosition(index, bestSplitAxisIndex, bestSplitLine);
     
-    float parrentCost = node.triangleCount * node.aabb.area();
-    if(parrentCost <= bestSah)
-        return;;
+    float parentCost = node.triangleCount * node.aabb.area();
+    if(parentCost <= bestSah)
+        return;
 
     u32 i = node.leftChild, j = i + (node.triangleCount - 1);
-    while (i <= j)
+    while (i < j)
     {
         auto& triangle = triangles[triIndices[i]];
         if(triangle.centroid[bestSplitAxisIndex] < bestSplitLine)
