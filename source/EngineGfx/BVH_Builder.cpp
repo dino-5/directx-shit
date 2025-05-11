@@ -6,6 +6,13 @@
 namespace engine::graphics
 {
 
+constexpr u32 NUMBER_OF_BINS = 8;
+struct Bin
+{
+    AABB aabb;
+    u32 triangleCount = 0;
+};
+
 BVHBuilder::BVHBuilder(const Model& model)
 {
     build(model);
@@ -43,38 +50,19 @@ void BVHBuilder::build(const Model& model)
     m_nodes[0].triangleCount = (u32)triangles.size();
     updateNodeBounds(0);
     subdivide(0);
-    util::printInfo("{} elements of BVH", lastElement);
-}
-
-float BVHBuilder::evaluteSAH(u32 nodeIndex, u32 axisIndex, float splitPos)
-{
-    BVHNode& node = m_nodes[nodeIndex];
-    auto& vertices = m_model->m_geometry.vertices;
-
-    u32 leftCount = 0, rightCount = 0;
-    AABB leftAABB, rightAABB;
-
-    for(u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
+    float minDiagonal = 1e20, maxDiagonal = -1e20;
+    for(auto& node: m_nodes)
     {
-        auto& tri = triangles[triIndices[i]];
-        if(tri.centroid[axisIndex] < splitPos)
+        if(node.isLeaf())
         {
-            leftAABB.grow(vertices[tri.firstI].position);
-            leftAABB.grow(vertices[tri.secondI].position);
-            leftAABB.grow(vertices[tri.thirdI].position);
-            leftCount++;
+            float d = node.aabb.diagonal().length();
+            if (d > maxDiagonal)
+                maxDiagonal = d;
+            if (d < minDiagonal)
+                minDiagonal = d;
         }
-        else
-        {
-            rightAABB.grow(vertices[tri.firstI].position);
-            rightAABB.grow(vertices[tri.secondI].position);
-            rightAABB.grow(vertices[tri.thirdI].position);
-            rightCount++;
-        }
-        
     }
-    float cost = leftCount * leftAABB.area() + rightCount * rightAABB.area();
-    return cost > 0 ? cost : 1e20f;
+    util::printInfo("{} elements of BVH, {} min and max {} ", lastElement, minDiagonal, maxDiagonal);
 }
 
 float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition)
@@ -82,50 +70,80 @@ float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& sp
     BVHNode& node = m_nodes[nodeIndex];
 
     float bestSah = 1e20;
-    for(int i = 0; i < 3; ++i)
+    auto& vertices = m_model->m_geometry.vertices;
+
     {
-        float boundMin = 1e20;
-        float boundMax = -1e20;
+        AABB aabb;
+        for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
+            aabb.grow(triangles[triIndices[j]].centroid);
+
+        Bin bins[NUMBER_OF_BINS][3];
+        Vector3 stepSize =  (float)NUMBER_OF_BINS / aabb.diagonal();
         for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
         {
-            float centroid = triangles[triIndices[j]].centroid[i];
-            boundMin = min(boundMin, centroid);
-            boundMax = max(boundMax, centroid);
-        }
-        if(boundMax == boundMin) continue;
-        u32 stepCount = 4;
-        float stepSize = (boundMax - boundMin) / (float)stepCount;
-        for(u32 j = 0; j < stepCount; ++j)
-        {
-            float candidateSplitLine = boundMin + j * stepSize;
-            float sah = evaluteSAH(nodeIndex, i, candidateSplitLine);
-            if (sah < bestSah)
+            Triangle& triangle = triangles[triIndices[j]];
+            Vector3 binDistr = (triangle.centroid - aabb.aabbMin) * stepSize;
+            for(int i = 0; i < 3; ++i)
             {
-                bestSah = sah;
-                splitAxis = i;
-                splitPosition = candidateSplitLine;
+                u32 binIdx = min(NUMBER_OF_BINS - 1, (u32)(binDistr[i]));
+                
+                bins[binIdx][i].aabb.grow(vertices[triangle.vertex0].position);
+                bins[binIdx][i].aabb.grow(vertices[triangle.vertex1].position);
+                bins[binIdx][i].aabb.grow(vertices[triangle.vertex2].position);
+                bins[binIdx][i].triangleCount++;
+            }
+        }
+
+        float leftArea[NUMBER_OF_BINS - 1][3], rightArea[NUMBER_OF_BINS - 1][3];
+
+        u32 currentLeftCount[3] = {0,0,0}, currentRightCount[3] = {0,0,0};
+        AABB leftAABB[3], rightAABB[3];
+
+        for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+        {
+            for(int i = 0; i < 3; ++i)
+            {
+                leftAABB[i].grow(bins[j][i].aabb);
+                currentLeftCount[i] += bins[j][i].triangleCount;
+                leftArea[j][i] = leftAABB[i].area() * currentLeftCount[i];
+
+                rightAABB[i].grow(bins[NUMBER_OF_BINS - j - 1][i].aabb);
+                currentRightCount[i] += bins[NUMBER_OF_BINS - j - 1][i].triangleCount;
+                rightArea[NUMBER_OF_BINS - j - 2][i] = rightAABB[i].area() * currentRightCount[i];
+            }
+        }
+
+        stepSize =  aabb.diagonal() / (float)NUMBER_OF_BINS ;
+        for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+        {
+            for(int i = 0; i < 3; ++i)
+            {
+                float sah = leftArea[j][i] + rightArea[j][i];
+                if (sah < bestSah)
+                {
+                    bestSah = sah;
+                    splitAxis = i;
+                    splitPosition = aabb.aabbMin[i] + (j+1) * stepSize[i];
+                }
             }
         }
     }
-    return bestSah > 0 ? bestSah : (float)1e20;
+    return bestSah;
 }
 
 void BVHBuilder::subdivide(u32 index)
 {
     BVHNode& node = m_nodes[index];
-    if (node.triangleCount <= 50)
-        return;
 
     u32 bestSplitAxisIndex = 0;
     float bestSplitLine = 0;
     float bestSah = findBestSplitPosition(index, bestSplitAxisIndex, bestSplitLine);
     
-    Vector3 diagonal = node.aabbMax - node.aabbMin;
-    float parrentCost = node.triangleCount * (diagonal[0] * diagonal[1] + diagonal[0] * diagonal[2] + diagonal[1] * diagonal[2]);
+    float parrentCost = node.triangleCount * node.aabb.area();
     if(parrentCost <= bestSah)
         return;;
 
-    u32 i = node.leftChild, j = i + node.triangleCount - 1;
+    u32 i = node.leftChild, j = i + (node.triangleCount - 1);
     while (i <= j)
     {
         auto& triangle = triangles[triIndices[i]];
@@ -160,18 +178,13 @@ void BVHBuilder::subdivide(u32 index)
 void BVHBuilder::updateNodeBounds(u32 index)
 {
     BVHNode& node = m_nodes[index];
-    node.aabbMin = math::Vector3(1e30);
-    node.aabbMax = math::Vector3(-1e30);
     auto& vertices = m_model->m_geometry.vertices;
     for (u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
     {
         auto& triangle = triangles[triIndices[i]];
-        node.aabbMin = math::minVectorCoords(node.aabbMin, vertices[triangle.firstI].position);
-        node.aabbMin = math::minVectorCoords(node.aabbMin, vertices[triangle.secondI].position);
-        node.aabbMin = math::minVectorCoords(node.aabbMin, vertices[triangle.thirdI].position);
-        node.aabbMax = math::maxVectorCoords(node.aabbMax, vertices[triangle.firstI].position);
-        node.aabbMax = math::maxVectorCoords(node.aabbMax, vertices[triangle.secondI].position);
-        node.aabbMax = math::maxVectorCoords(node.aabbMax, vertices[triangle.thirdI].position);
+        node.aabb.grow(vertices[triangle.vertex0].position);
+        node.aabb.grow(vertices[triangle.vertex1].position);
+        node.aabb.grow(vertices[triangle.vertex2].position);
     }
 }
 
@@ -193,15 +206,16 @@ void BVHBuilder::generateDrawData(GfxContext& context)
             leafCount++;
             triangleCount += node.triangleCount;
         }
-        Vector3 d = node.aabbMax - node.aabbMin;
-        vertices[i * 8 + 0] = node.aabbMin;
-        vertices[i * 8 + 1] = node.aabbMin + Vector3({ d[0], 0,    0    });
-        vertices[i * 8 + 2] = node.aabbMin + Vector3({ d[0], 0,    d[2] });
-        vertices[i * 8 + 3] = node.aabbMin + Vector3({ 0,    0,    d[2] });
-        vertices[i * 8 + 4] = node.aabbMin + Vector3({ 0,    d[1], 0    });
-        vertices[i * 8 + 5] = node.aabbMin + Vector3({ d[0], d[1], 0    });
-        vertices[i * 8 + 6] = node.aabbMax;
-        vertices[i * 8 + 7] = node.aabbMin + Vector3({ 0,    d[1], d[2] });
+        Vector3 d = node.aabb.diagonal();
+        Vector3 aabbMin = node.aabb.aabbMin;
+        vertices[i * 8 + 0] = aabbMin;
+        vertices[i * 8 + 1] = aabbMin + Vector3({ d[0], 0,    0    });
+        vertices[i * 8 + 2] = aabbMin + Vector3({ d[0], 0,    d[2] });
+        vertices[i * 8 + 3] = aabbMin + Vector3({ 0,    0,    d[2] });
+        vertices[i * 8 + 4] = aabbMin + Vector3({ 0,    d[1], 0    });
+        vertices[i * 8 + 5] = aabbMin + Vector3({ d[0], d[1], 0    });
+        vertices[i * 8 + 6] = node.aabb.aabbMax;
+        vertices[i * 8 + 7] = aabbMin + Vector3({ 0,    d[1], d[2] });
 
         // bottom
         for (int j = 0; j <= 3; j++)

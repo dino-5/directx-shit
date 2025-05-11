@@ -13,25 +13,29 @@ namespace engine::graphics
 
 struct Triangle
 {
-    u32 firstI, secondI, thirdI; // indices to real vertices inside Model
+    u32 vertex0, vertex1, vertex2; // indices to real vertices inside Model
     Vector3 centroid;
     Triangle(u32 first, u32 second, u32 third, const std::vector<Vertex>& vertices, u32 offset=0):
-        firstI(first + offset), secondI(second + offset), thirdI(third + offset)
+        vertex0(first + offset), vertex1(second + offset), vertex2(third + offset)
     {
-        auto result = (vertices[firstI].position + vertices[secondI].position + vertices[thirdI].position);
+        auto result = (vertices[vertex0].position + vertices[vertex1].position + vertices[vertex2].position);
         centroid = result * 0.333;
     }
 };
 
+const float AABB_MIN = -1e20;
+const float AABB_MAX =  1e20;
 struct AABB
 {
-    Vector3 leftBottom;
-    Vector3 rightTop;
-    void grow(Vector3 p) { leftBottom = minVectorCoords(leftBottom, p); rightTop = maxVectorCoords(rightTop, p); }
+    Vector3 aabbMin = AABB_MAX;
+    Vector3 aabbMax = AABB_MIN;
+    void grow(Vector3 p) { aabbMin = minVectorCoords(aabbMin, p); aabbMax = maxVectorCoords(aabbMax, p); }
+    void grow(AABB p) { grow(p.aabbMin); grow(p.aabbMax); } 
+    Vector3 diagonal() const { return aabbMax - aabbMin;}
     float area() const
     {
-        Vector3 diagonal = rightTop - leftBottom;
-        return diagonal[0]*diagonal[1] + diagonal[0]*diagonal[2] +diagonal[1]*diagonal[2];
+        Vector3 d = diagonal();
+        return (d[0]*d[1] + d[0]*d[2] +d[1]*d[2]);
     }
 
     
@@ -39,8 +43,9 @@ struct AABB
 
 struct BVHNode
 {
-    Vector3 aabbMin, aabbMax;
+    AABB aabb;
     u32 leftChild = 0, triangleCount = 0;
+    bool isLeaf() const { return triangleCount > 0; }
 };
 
 class BVHBuilder
@@ -58,7 +63,6 @@ private:
     void subdivide(u32 index);
     void updateNodeBounds(u32 index);
     float findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition);
-    float evaluteSAH(u32 nodeIndex, u32 axisIndex, float splitPos);
 
     const Model* m_model;
     Mesh m_mesh;

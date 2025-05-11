@@ -32,6 +32,12 @@ public:
             m_data[i] = value;
     }
 
+    Vector(double value)
+    {
+        for (int i = 0; i < N; i++)
+            m_data[i] = (float)value;
+    }
+
     Vector(initializer_list<float> list) 
     {
         auto itr = list.begin();
@@ -91,6 +97,14 @@ public:
             m_data[i] = v1.m_data[i];
         }
         return *this;
+    }
+
+    bool operator==(const Vector& v) const 
+    {
+        for (int i = 0; i < N; i++)
+            if(m_data[i] != v.m_data[i])
+                return false;
+        return true;
     }
 
     auto begin() { return m_data.begin(); }
@@ -259,6 +273,12 @@ template<int N>
 const Vector<N> operator/(const Vector<N>& v1, const float v)
 {
     return VectorOpFloat(v1, v, [](float a, float b) { return a / b; });
+}
+
+template<int N>
+const Vector<N> operator/(const float v, const Vector<N>& v1)
+{
+    return VectorOpFloat(v1, v, [](float a, float b) { return b / a; });
 }
 
 

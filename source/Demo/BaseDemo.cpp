@@ -234,13 +234,34 @@ bool BaseDemo::initialize()
     lightSettings.viewDirection = m_camera.getDir();
     m_lightSettingsResource= ConstantBuffer(context, &lightSettings, 1);
 
-    /*m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);*/
-    m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
+    if(1)
+        m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);
+    else
+        m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
     m_bvhBuilder.build(m_model);
     m_bvhBuilder.generateDrawData(context);
 
-    tinybvh::BVH bvh;
+    auto geometry = m_model.m_geometry;
+    std::vector<tinybvh::bvhvec4> vertices(geometry.vertices.size());
+    u32 currentIndex = 0;
+    auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
+    {
+        tinybvh::bvhvec4 result;
+        result.x = vec[0];
+        result.y = vec[1];
+        result.z = vec[2];
+        result.w = 1;
+        return result;
+    };
+    for(auto& vertex : geometry.vertices)
+        vertices[currentIndex++] = convertV3_to_V4(vertex.position);
 
+    tinybvh::BVH bvh;
+    {
+        PROFILER("tiny BVH state of art");
+        bvh.Build(vertices.data(), geometry.indices.data(), geometry.indices.size() / 3);
+        util::printInfo("tiny bvh node number {}", bvh.NodeCount());
+    }
 
     m_camera.addChangeCallback([this](const Camera* camera)
     {
