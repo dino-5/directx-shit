@@ -157,6 +157,9 @@ private:
 	gfx::PSO m_bvhDebugDrawPSO;
 	gfx::RootSignature m_bvhDebugDrawRS;
 
+    gfx::Model m_bvhModel;
+    gfx::Model m_tinybvhModel;
+
     util::UI_CheckBox<BaseDemo> m_renderModel;
     util::UI_CheckBox<BaseDemo> m_drawBVHDebugView;
 

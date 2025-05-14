@@ -1,4 +1,5 @@
 #include <dxgiformat.h>
+#include <functional>
 #include <ostream>
 #include <string_view>
 #include "BaseDemo.h"
@@ -141,7 +142,6 @@ void BaseDemo::compileShaders()
         info.type       = ShaderType::PIXEL;
     }
 
-
     {
         RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10) };
                                       /*RootParameter::CreateConstants(1, 1, 10) };*/
@@ -238,29 +238,60 @@ bool BaseDemo::initialize()
         m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);
     else
         m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
-    m_bvhBuilder.build(m_model);
-    m_bvhBuilder.generateDrawData(context);
-
-    auto geometry = m_model.m_geometry;
-    std::vector<tinybvh::bvhvec4> vertices(geometry.vertices.size());
-    u32 currentIndex = 0;
-    auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
     {
-        tinybvh::bvhvec4 result;
-        result.x = vec[0];
-        result.y = vec[1];
-        result.z = vec[2];
-        result.w = 1;
-        return result;
-    };
-    for(auto& vertex : geometry.vertices)
-        vertices[currentIndex++] = convertV3_to_V4(vertex.position);
 
-    tinybvh::BVH bvh;
+        m_bvhBuilder.build(m_model);
+        std::function<Vector3(const BVHNode&)> diagonalF = [](const BVHNode& node) -> Vector3 { return node.aabb.diagonal();};
+        std::function<Vector3(const BVHNode&)> aabbF = [](const BVHNode& node) -> Vector3 { return node.aabb.aabbMin;};
+        m_bvhModel = BVHBuilder::generateDrawData(context, m_bvhBuilder.getRootNode(), m_bvhBuilder.getNodeCount(), diagonalF, aabbF);
+    }
+
     {
-        PROFILER("tiny BVH state of art");
-        bvh.Build(vertices.data(), geometry.indices.data(), geometry.indices.size() / 3);
-        util::printInfo("tiny bvh node number {}", bvh.NodeCount());
+        auto geometry = m_model.m_geometry;
+        std::vector<tinybvh::bvhvec4> vertices(geometry.vertices.size());
+        u32 currentIndex = 0;
+        auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
+        {
+            tinybvh::bvhvec4 result;
+            result.x = vec[0];
+            result.y = vec[1];
+            result.z = vec[2];
+            result.w = 1;
+            return result;
+        };
+        for(auto& vertex : geometry.vertices)
+            vertices[currentIndex++] = convertV3_to_V4(vertex.position);
+
+        currentIndex = 0;
+        std::vector<u32> indices(geometry.indices.size());
+        {
+            auto& submeshes = m_model.m_submeshes;
+            auto& modelIndices = m_model.m_geometry.indices;
+            for(auto& submesh : submeshes)
+            {
+                for(u32 i = submesh.StartIndexLocation; i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
+                {
+                    auto ind = &modelIndices[i];
+                    indices[currentIndex++] = ind[0] + submesh.BaseVertexLocation;
+                    indices[currentIndex++] = ind[1] + submesh.BaseVertexLocation;
+                    indices[currentIndex++] = ind[2] + submesh.BaseVertexLocation;
+                }
+            }
+        }
+
+        tinybvh::BVH bvh;
+        {
+            PROFILER("tiny BVH state of art");
+            bvh.Build(vertices.data(), indices.data(), geometry.indices.size() / 3);
+            util::printInfo("tiny bvh node number {}", bvh.NodeCount());
+        }
+
+        auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) -> Vector3 { return Vector3({vec.x, vec.y, vec.z}); };
+        std::function<Vector3(const tinybvh::BVH::BVHNode&)> diagonalF = [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) -> Vector3 {
+            return from_tinyV3_to_mathV3(node.aabbMax - node.aabbMin);};
+        std::function<Vector3(const tinybvh::BVH::BVHNode&)> aabbF = [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) -> Vector3 {
+            return from_tinyV3_to_mathV3(node.aabbMin);};
+        m_tinybvhModel = BVHBuilder::generateDrawData(context, bvh.bvhNode, bvh.NodeCount(), diagonalF, aabbF);
     }
 
     m_camera.addChangeCallback([this](const Camera* camera)
@@ -335,19 +366,35 @@ void BaseDemo::draw()
         }
     }
     // BVH debug draw
+    if(m_drawBVHDebugView.getData())
     {
         cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
         cmdList->SetPipelineState(m_bvhDebugDrawPSO);
         cmdList->SetGraphicsRoot32BitConstant(0, m_constBuffer.getDescriptorHeapIndex(), 0);
         cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
-        auto mesh = m_bvhBuilder.getMesh();
+        auto mesh = m_bvhModel.m_mesh;
+        auto submesh = m_bvhModel.m_submeshes[0];
         auto vertexBuffer = GetVertexBufferView(mesh.m_vertexBuffer);
         auto indexBuffer = GetIndexBufferView(mesh.m_indexBuffer);
         cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
         cmdList->IASetIndexBuffer(&indexBuffer);
-        if(m_drawBVHDebugView.getData())
-            m_bvhBuilder.getSubmesh().draw(cmdList);
+        submesh.draw(cmdList);
+    }
+    else
+    {
+        cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
+        cmdList->SetPipelineState(m_bvhDebugDrawPSO);
+        cmdList->SetGraphicsRoot32BitConstant(0, m_constBuffer.getDescriptorHeapIndex(), 0);
+        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+
+        auto mesh = m_tinybvhModel.m_mesh;
+        auto submesh = m_tinybvhModel.m_submeshes[0];
+        auto vertexBuffer = GetVertexBufferView(mesh.m_vertexBuffer);
+        auto indexBuffer = GetIndexBufferView(mesh.m_indexBuffer);
+        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+        cmdList->IASetIndexBuffer(&indexBuffer);
+        submesh.draw(cmdList);
     }
 
     imgui::StartFrame();

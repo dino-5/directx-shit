@@ -31,10 +31,9 @@ void BVHBuilder::build(const Model& model)
 
     for(auto& submesh : submeshes)
     {
-        for(u32 i = 0; i < submesh.IndexCount; i+=3)
+        for(u32 i = submesh.StartIndexLocation; i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
         {
-            u32 index = submesh.StartIndexLocation + i;
-            auto ind = &indices[index];
+            auto ind = &indices[i];
             triangles.push_back(Triangle(ind[0], ind[1], ind[2], vertices, submesh.BaseVertexLocation));
         }
     }
@@ -186,59 +185,6 @@ void BVHBuilder::updateNodeBounds(u32 index)
         node.aabb.grow(vertices[triangle.vertex1].position);
         node.aabb.grow(vertices[triangle.vertex2].position);
     }
-}
-
-void BVHBuilder::generateDrawData(GfxContext& context)
-{
-    auto& vertices = m_geometry.vertices;
-    auto& indices = m_geometry.indices;
-
-    vertices.resize(lastElement * 8);
-    indices.resize(lastElement * 24);
-    uint leafCount=0;
-    uint triangleCount=0;
-
-    for(u32 i = 0; i < lastElement; ++i)
-    {
-        BVHNode& node = m_nodes[i];
-        if(node.triangleCount>0)
-        {
-            leafCount++;
-            triangleCount += node.triangleCount;
-        }
-        Vector3 d = node.aabb.diagonal();
-        Vector3 aabbMin = node.aabb.aabbMin;
-        vertices[i * 8 + 0] = aabbMin;
-        vertices[i * 8 + 1] = aabbMin + Vector3({ d[0], 0,    0    });
-        vertices[i * 8 + 2] = aabbMin + Vector3({ d[0], 0,    d[2] });
-        vertices[i * 8 + 3] = aabbMin + Vector3({ 0,    0,    d[2] });
-        vertices[i * 8 + 4] = aabbMin + Vector3({ 0,    d[1], 0    });
-        vertices[i * 8 + 5] = aabbMin + Vector3({ d[0], d[1], 0    });
-        vertices[i * 8 + 6] = node.aabb.aabbMax;
-        vertices[i * 8 + 7] = aabbMin + Vector3({ 0,    d[1], d[2] });
-
-        // bottom
-        for (int j = 0; j <= 3; j++)
-        {
-            indices[i * 24 + 2 * j + 0] = i * 8 + j;
-            indices[i * 24 + 2 * j + 1] = i * 8 + (j+1) % 4;
-        }
-        // top
-        for (int j = 0; j <= 3; j++)
-        {
-            indices[i * 24 + 2 * j + 8] = i * 8 + 4 + j;
-            indices[i * 24 + 2 * j + 9] = i * 8 + 4 + (j+1) % 4;
-        }
-        // edges
-        for (int j = 0; j <= 3; j++)
-        {
-            indices[i * 24 + 2 * j + 16] = i * 8 + j;
-            indices[i * 24 + 2 * j + 17] = i * 8 + j + 4;
-        }
-    }
-    util::printInfo("{} leafs {}", leafCount, triangleCount);
-    m_submesh = m_geometry.getSubmesh();
-    m_mesh.init(context, m_geometry);
 }
 
 };
