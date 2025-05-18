@@ -18,8 +18,9 @@ struct AABB
     Vector3 aabbMax = AABB_MIN;
     void grow(Vector3 p) { aabbMin = minVectorCoords(aabbMin, p); aabbMax = maxVectorCoords(aabbMax, p); }
     void grow(AABB p) { aabbMin = minVectorCoords(aabbMin, p.aabbMin); aabbMax = maxVectorCoords(aabbMax, p.aabbMax);  } 
-    Vector3 diagonal() const { return aabbMax - aabbMin;}
-    float area() const
+    inline Vector3 diagonal() const { return aabbMax - aabbMin;}
+    inline Vector3 middle() const { return (aabbMin + aabbMax) * 0.5; }
+    inline float area() const
     {
         Vector3 d = diagonal();
         return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];

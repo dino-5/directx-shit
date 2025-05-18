@@ -1,7 +1,7 @@
 @echo off
 call .\scripts\vsbuild.bat
 pushd .\source\Demo\
-.\output\win64\debug\demo.exe
+.\output\win64\release\demo.exe
 popd
 exit /b
 

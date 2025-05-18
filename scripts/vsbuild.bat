@@ -1,1 +1,1 @@
-MSBuild.exe .\generated\d12engine.sln
+MSBuild.exe .\generated\d12engine.sln /p:Configuration=Release
