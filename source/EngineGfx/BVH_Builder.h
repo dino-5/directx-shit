@@ -29,11 +29,8 @@ struct AABB
 
 struct Triangle
 {
-    //u32 vertex0, vertex1, vertex2; // indices to real vertices inside Model
-    //Vector3 centroid;
     AABB aabb;
     Triangle(u32 first, u32 second, u32 third, const std::vector<Vertex>& vertices, u32 offset=0)
-        //vertex0(first + offset), vertex1(second + offset), vertex2(third + offset)
     {
         aabb.grow(vertices[first+offset].position);
         aabb.grow(vertices[second+offset].position);
@@ -55,7 +52,6 @@ public:
     BVHBuilder(const graphics::Model& model);
     void build(const graphics::Model& model);
 
-    //void generateDrawData(GfxContext& context);
     const Mesh& getMesh()const { return m_mesh; }
     const Submesh getSubmesh() const { return m_submesh; }
     template<typename BVHNodeType>
@@ -66,7 +62,7 @@ public:
                                   std::function<Vector3(const BVHNodeType&)> aabbMinF);
 
     const BVHNode* getRootNode() const { return &m_nodes[0]; }
-    u32 getNodeCount() const { return m_nodes.size(); }
+    u32 getNodeCount() const { return lastElement; }
 
 private:
     void subdivide(u32 index);
@@ -97,8 +93,6 @@ Model BVHBuilder::generateDrawData(GfxContext& context,
 
     vertices.resize(nodeCount * 8);
     indices.resize(nodeCount * 24);
-    uint leafCount=0;
-    uint triangleCount=0;
 
     for(u32 i = 0; i < nodeCount; ++i)
     {
