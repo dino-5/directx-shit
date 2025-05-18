@@ -701,7 +701,8 @@ void BVH::Build()
 			}
 			splitCost = c_trav + c_int * rSAV * splitCost;
 			float noSplitCost = (float)node.triCount * c_int;
-			if (splitCost >= noSplitCost) break; // not splitting is better.
+			if (splitCost >= noSplitCost) 
+                break; // not splitting is better.
 			// in-place partition
 			uint32_t j = node.leftFirst + node.triCount, src = node.leftFirst;
 			const float rpd = rpd3[bestAxis], nmin = nmin3[bestAxis];

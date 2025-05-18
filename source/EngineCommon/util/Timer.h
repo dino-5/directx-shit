@@ -4,6 +4,8 @@
 #include <ctime>
 #include <ratio>
 #include <string_view>
+#include <unordered_map>
+#include <algorithm>
 #include "EngineCommon/util/Logger.h"
 #include "EngineCommon/System/config.h"
 
@@ -55,42 +57,163 @@ protected:
     bool m_isFps = false;
 };
 
-class Profiler : public Timer
+class Profiler
 {
 public:
-    Profiler(std::string_view name, bool fps = false):
+    struct ProfilerNode
+    {
+        std::string name;
+        double duration = -1;
+        u32 count = 0;
+        u32 parrentIndex = 0;
+        u32 recursionDepth = 0;
+        std::vector<std::string> names;
+        std::vector<u32> indices;
+        void print()
+        {
+            util::printInfo("[{}] : total duration {}, called {} times, mean duration {}", name, duration, count, duration / count);
+        }
+    };
+
+
+    static void StartProfiling() 
+    {
+        s_profilerStarted = true;
+    }
+
+    static void EndProfiling() 
+    {
+        s_profilerStarted = false;
+        PrintReport();
+        Clear();
+    }
+
+    static void Clear() 
+    {
+        s_currentCallstack.clear(); 
+        s_currentNodeIndex = 0;
+    }
+
+    static void Push(const std::string& name)
+    {
+        if(!s_profilerStarted)
+            return;
+        if(s_currentCallstack.size() )
+        {
+            auto& data = s_currentCallstack[s_currentNodeIndex];
+            if(data.name== name)
+            {
+                data.recursionDepth++;
+                return;
+            }
+            i32 index = 0;
+            for(auto& n : data.names)
+                if(n == name)
+                    break;
+                else
+                    index++;
+
+            if (index != data.names.size())
+                s_currentNodeIndex = data.indices[index];
+            else
+            {
+                data.names.push_back(name);
+                data.indices.push_back(s_currentCallstack.size());
+                s_currentCallstack.push_back(ProfilerNode(name, 0, 0, s_currentNodeIndex));
+                s_currentNodeIndex = s_currentCallstack.size() - 1;
+            }
+        }
+        else 
+            s_currentCallstack.push_back(ProfilerNode(name, 0, 0, s_currentNodeIndex));
+    }
+
+    static void Pop(double ms)
+    {
+        if(!s_profilerStarted)
+            return;
+        auto& data = s_currentCallstack[s_currentNodeIndex];
+        data.duration += ms;
+        data.count++;
+        if(data.recursionDepth==0)
+            s_currentNodeIndex  = data.parrentIndex;
+        else
+            data.recursionDepth--;
+    }
+
+    static void PrintReport()
+    {
+        auto& node = s_currentCallstack[0];
+        node.print();
+        log_info++;
+        u32 currentIndex = 0;
+        std::vector<bool> printedNodes(s_currentCallstack.size(), false);
+
+        if(node.indices.size())
+        {
+            printedNodes[currentIndex] = true;
+            currentIndex = node.indices[0];
+        }
+        while(1)
+        {
+            if(!currentIndex)
+                for(u32 index = 0; index < printedNodes.size(); index++)
+                    if(!printedNodes[index])
+                    {
+                        log_info++;
+                        currentIndex = index;
+                    }
+            if(!currentIndex)
+                break;
+            auto& node = s_currentCallstack[currentIndex];
+            if(!printedNodes[currentIndex])
+            {
+                node.print();
+                printedNodes[currentIndex] = true;
+            }
+            u32 newIndex = 0;
+            for (auto& index : node.indices)
+            {
+                if(!printedNodes[index])
+                {
+                    newIndex = index;
+                    currentIndex = newIndex;
+                    log_info++;
+                    break;
+                }
+            }
+            // if there is no child elements or we visited all our children go to parent
+            if(!newIndex)
+            {
+                currentIndex = node.parrentIndex;
+                log_info--;
+            }
+        }
+
+    }
+
+private:
+    static inline std::vector<ProfilerNode> s_currentCallstack;
+    static inline u32 s_currentNodeIndex = 0;
+    static inline bool s_profilerStarted;
+};
+
+class ProfilerTimer : public Timer
+{
+public:
+    ProfilerTimer(std::string_view name, bool fps = false):
         Timer(fps), m_name(name)
     {
         if (!g_state.profilingEnabled)
             return;
-        util::printInfo("{} started", name);
-        log_info++;
+        Profiler::Push(m_name);
     }
 
-    void Tick(std::string_view name)
-    {
-        double time = Timer::Tick();
-        if (!g_state.profilingEnabled)
-            return;
-        util::printInfo("{} was {} miliseconds", name, time);
-    }
-
-    ~Profiler()
+    ~ProfilerTimer()
     {
         if (!g_state.profilingEnabled)
             return;
-        log_info--;
         double time_elapsed = Timer::getMiliseconds(clock::now(), m_start);
-        if(m_isFps)
-            util::printInfo("fps for {} is {}", m_name, 1.0/time_elapsed);
-        else 
-        {
-
-            if(time_elapsed > 1000)
-                util::printInfo("{} was {} seconds", m_name, time_elapsed/1000);
-            else
-                util::printInfo("{} was {} miliseconds", m_name, time_elapsed);
-        }
+        Profiler::Pop(time_elapsed);
     }
 private:
     std::string m_name;
@@ -99,4 +222,4 @@ private:
 };
 
 #define TIMER(name) engine::util::Timer _(#name)
-#define PROFILER(name) engine::util::Profiler _(#name)
+#define PROFILER(name) engine::util::ProfilerTimer _(#name)

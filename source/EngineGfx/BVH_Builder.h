@@ -10,19 +10,6 @@ using namespace engine::math;
 
 namespace engine::graphics
 {
-
-struct Triangle
-{
-    u32 vertex0, vertex1, vertex2; // indices to real vertices inside Model
-    Vector3 centroid;
-    Triangle(u32 first, u32 second, u32 third, const std::vector<Vertex>& vertices, u32 offset=0):
-        vertex0(first + offset), vertex1(second + offset), vertex2(third + offset)
-    {
-        auto result = (vertices[vertex0].position + vertices[vertex1].position + vertices[vertex2].position);
-        centroid = result * 0.333;
-    }
-};
-
 const float AABB_MIN = -1e20;
 const float AABB_MAX =  1e20;
 struct AABB
@@ -30,15 +17,27 @@ struct AABB
     Vector3 aabbMin = AABB_MAX;
     Vector3 aabbMax = AABB_MIN;
     void grow(Vector3 p) { aabbMin = minVectorCoords(aabbMin, p); aabbMax = maxVectorCoords(aabbMax, p); }
-    void grow(AABB p) { grow(p.aabbMin); grow(p.aabbMax); } 
+    void grow(AABB p) { aabbMin = minVectorCoords(aabbMin, p.aabbMin); aabbMax = maxVectorCoords(aabbMax, p.aabbMax);  } 
     Vector3 diagonal() const { return aabbMax - aabbMin;}
     float area() const
     {
-        Vector3 d = diagonal()*0.01;
-        return (d[0]*d[1] + d[0]*d[2] +d[1]*d[2]);
+        Vector3 d = diagonal();
+        return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
     }
+};
 
-    
+struct Triangle
+{
+    //u32 vertex0, vertex1, vertex2; // indices to real vertices inside Model
+    //Vector3 centroid;
+    AABB aabb;
+    Triangle(u32 first, u32 second, u32 third, const std::vector<Vertex>& vertices, u32 offset=0)
+        //vertex0(first + offset), vertex1(second + offset), vertex2(third + offset)
+    {
+        aabb.grow(vertices[first+offset].position);
+        aabb.grow(vertices[second+offset].position);
+        aabb.grow(vertices[third+offset].position);
+    }
 };
 
 struct BVHNode
@@ -79,6 +78,7 @@ private:
     std::vector<Triangle> triangles;
     std::vector<u32> triIndices;
     u32 lastElement=0;
+    Vector3 m_minDim;
 
     std::vector<BVHNode> m_nodes;
 };

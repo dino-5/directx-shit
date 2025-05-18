@@ -47,143 +47,151 @@ void BVHBuilder::build(const Model& model)
     m_nodes[0].leftChild = 0;
     m_nodes[0].triangleCount = (u32)triangles.size();
     updateNodeBounds(0);
+    m_minDim = m_nodes[0].aabb.diagonal() * 1e-20f;
+
     subdivide(0);
-    float minDiagonal = 1e20, maxDiagonal = -1e20;
-    for(auto& node: m_nodes)
-    {
-        if(node.isLeaf())
-        {
-            float d = node.aabb.diagonal().length();
-            if (d > maxDiagonal)
-                maxDiagonal = d;
-            if (d < minDiagonal)
-                minDiagonal = d;
-        }
-    }
-    util::printInfo("{} elements of BVH, {} min and max {} ", lastElement, minDiagonal, maxDiagonal);
-}
-
-float BVHBuilder::findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition)
-{
-    BVHNode& node = m_nodes[nodeIndex];
-
-    float bestSah = 1e20 + 5.1235f;
-    auto& vertices = m_model->m_geometry.vertices;
-
-    {
-        AABB aabb;
-        for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
-            aabb.grow(triangles[triIndices[j]].centroid);
-
-        Bin bins[NUMBER_OF_BINS][3];
-        Vector3 stepSize =  (float)NUMBER_OF_BINS / aabb.diagonal();
-        for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
-        {
-            Triangle& triangle = triangles[triIndices[j]];
-            Vector3 binDistr = (triangle.centroid - aabb.aabbMin) * stepSize;
-            for(int i = 0; i < 3; ++i)
-            {
-                u32 binIdx = min(NUMBER_OF_BINS - 1, (u32)(binDistr[i]));
-                bins[binIdx][i].aabb.grow(vertices[triangle.vertex0].position);
-                bins[binIdx][i].aabb.grow(vertices[triangle.vertex1].position);
-                bins[binIdx][i].aabb.grow(vertices[triangle.vertex2].position);
-                bins[binIdx][i].triangleCount++;
-            }
-        }
-
-        float leftArea[NUMBER_OF_BINS - 1][3], rightArea[NUMBER_OF_BINS - 1][3];
-
-        u32 currentLeftCount[3] = {0,0,0}, currentRightCount[3] = {0,0,0};
-        AABB leftAABB[3], rightAABB[3];
-
-        for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
-        {
-            for(int i = 0; i < 3; ++i)
-            {
-                if(bins[j][i].triangleCount)
-                    leftAABB[i].grow(bins[j][i].aabb);
-                currentLeftCount[i] += bins[j][i].triangleCount;
-                leftArea[j][i] = leftAABB[i].area() * currentLeftCount[i];
-
-                if(bins[NUMBER_OF_BINS - j - 1][i].triangleCount)
-                    rightAABB[i].grow(bins[NUMBER_OF_BINS - j - 1][i].aabb);
-                currentRightCount[i] += bins[NUMBER_OF_BINS - j - 1][i].triangleCount;
-                rightArea[NUMBER_OF_BINS - j - 2][i] = rightAABB[i].area() * currentRightCount[i];
-            }
-        }
-
-        stepSize =  aabb.diagonal() / (float)NUMBER_OF_BINS ;
-        for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
-        {
-            for(int i = 0; i < 3; ++i)
-            {
-                float sah = leftArea[j][i] + rightArea[j][i];
-                if (sah < bestSah)
-                {
-                    bestSah = sah;
-                    splitAxis = i;
-                    splitPosition = aabb.aabbMin[i] + (j+1) * stepSize[i];
-                }
-            }
-        }
-    }
-    return bestSah;
+    util::printInfo("{} elements of BVH", lastElement);
 }
 
 void BVHBuilder::subdivide(u32 index)
 {
-    BVHNode& node = m_nodes[index];
+    PROFILER("BVHBuilder::subdivide");
+	uint32_t task[256], taskCount = 0, nodeIdx = 0;
 
-    u32 bestSplitAxisIndex = 0;
-    float bestSplitLine = 0;
-    float bestSah = findBestSplitPosition(index, bestSplitAxisIndex, bestSplitLine);
-    
-    float parentCost = node.triangleCount * node.aabb.area();
-    if(parentCost <= bestSah)
-        return;
-
-    u32 i = node.leftChild, j = i + (node.triangleCount - 1);
-    while (i < j)
+    while(1)
     {
-        auto& triangle = triangles[triIndices[i]];
-        if(triangle.centroid[bestSplitAxisIndex] < bestSplitLine)
-            i++;
-        else
-            std::swap(triIndices[i], triIndices[j--]);
+        while(1)
+        {
+            BVHNode& node = m_nodes[nodeIdx];
+
+            u32 bestSplitAxisIndex = 0;
+            u32 bestSplitPos = 0;
+            float bestSah = 1e20;
+            AABB bestLeftAABB;
+            AABB bestRightAABB;
+            Vector3 stepSize =  (float)NUMBER_OF_BINS / node.aabb.diagonal();
+            Vector3 nodeMin = node.aabb.aabbMin;
+            {
+                PROFILER("BVHBuilder::subdivide_findBestSplitPosition");
+                {
+
+                    Bin bins[3][NUMBER_OF_BINS];
+                    for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
+                    {
+                        Triangle& triangle = triangles[triIndices[j]];
+                        auto& triAABB = triangle.aabb;
+                        Vector3 centroid = (triAABB.aabbMin + triAABB.aabbMax) * 0.5;
+                        Int3 binDistr = (centroid - nodeMin) * stepSize;
+                        binDistr = math::clamp(binDistr, Int3(0), Int3(NUMBER_OF_BINS - 1));
+                        for(int i = 0; i < 3; ++i)
+                        {
+                            bins[i][binDistr[i]].aabb.grow(triAABB);
+                            bins[i][binDistr[i]].triangleCount++;
+                        }
+                    }
+
+                    if(nodeIdx == 26)
+                        util::printInfo("hellow");
+                    for(int i = 0; i < 3; ++i)
+                        if(node.aabb.diagonal()[i] > m_minDim[i])
+                    {
+                        float leftArea[NUMBER_OF_BINS - 1], rightArea[NUMBER_OF_BINS - 1];
+                        AABB leftAABB[NUMBER_OF_BINS - 1], rightAABB[NUMBER_OF_BINS - 1];
+
+                        u32 currentLeftCount = 0, currentRightCount = 0;
+                        AABB currentLeftAABB, currentRightAABB;
+
+                        for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+                        {
+                                currentLeftAABB.grow(bins[i][j].aabb);
+                                leftAABB[j] = currentLeftAABB;
+                                currentLeftCount += bins[i][j].triangleCount;
+                                leftArea[j] = currentLeftCount == 0 ? 1e20 : currentLeftAABB.area() * currentLeftCount;
+
+                                currentRightAABB.grow(bins[i][NUMBER_OF_BINS - j - 1].aabb);
+                                rightAABB[NUMBER_OF_BINS - j - 2] = currentRightAABB;
+                                currentRightCount += bins[i][NUMBER_OF_BINS - j - 1].triangleCount;
+                                rightArea[NUMBER_OF_BINS - j - 2] = currentRightCount == 0 ? 1e20 : currentRightAABB.area() * currentRightCount;
+                        }
+
+                        for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+                        {
+                                float sah = leftArea[j] + rightArea[j];
+                                if (sah < bestSah)
+                                {
+                                    bestSah = sah;
+                                    bestSplitAxisIndex = i;
+                                    bestLeftAABB = leftAABB[j];
+                                    bestRightAABB = rightAABB[j];
+                                    bestSplitPos = j;
+                                }
+                        }
+                    }
+
+                }
+            }
+            
+            float splitCost = 1 + bestSah / node.aabb.area();
+            float noSplitCost = (float)node.triangleCount;
+            if(splitCost >= noSplitCost)
+                break;
+
+            u32 i = node.leftChild, j = i + (node.triangleCount - 1);
+            while (i < j)
+            {
+                auto& triAABB = triangles[triIndices[i]].aabb;
+                float centroid = (triAABB.aabbMin[bestSplitAxisIndex] + triAABB.aabbMax[bestSplitAxisIndex]) * 0.5;
+                i32 binDistr = (i32)((centroid - nodeMin[bestSplitAxisIndex]) * stepSize[bestSplitAxisIndex]);
+                binDistr = math::clamp(binDistr, 0, (i32)NUMBER_OF_BINS - 1);
+                if((u32)binDistr <= bestSplitPos)
+                    i++;
+                else
+                    std::swap(triIndices[i], triIndices[j--]);
+            }
+
+            u32 leftCount = i - node.leftChild;
+            if (leftCount == 0 || leftCount == node.triangleCount)
+                break;
+
+            u32 leftChildIndex = ++lastElement;
+            u32 rightChildIndex = ++lastElement;
+            BVHNode& leftNode = m_nodes[leftChildIndex];
+            BVHNode& rightNode = m_nodes[rightChildIndex];
+            leftNode.triangleCount = leftCount;
+            leftNode.leftChild = node.leftChild;
+            rightNode.triangleCount = node.triangleCount - leftCount;
+            rightNode.leftChild = i;
+            node.triangleCount = 0;
+            node.leftChild = leftChildIndex;
+
+            {
+                BVHNode& node = m_nodes[leftChildIndex];
+                node.aabb = bestLeftAABB;
+            }
+
+            {
+                BVHNode& node = m_nodes[rightChildIndex];
+                node.aabb = bestRightAABB;
+            }
+
+            task[taskCount++] = rightChildIndex;
+            nodeIdx = leftChildIndex;
+        }
+        if(taskCount == 0)
+            break;
+        nodeIdx = task[--taskCount];
     }
 
-    u32 leftCount = i - node.leftChild;
-    if (leftCount == 0 || leftCount == node.triangleCount)
-        return;
-
-    u32 leftChildIndex = ++lastElement;
-    u32 rightChildIndex = ++lastElement;
-    BVHNode& leftNode = m_nodes[leftChildIndex];
-    BVHNode& rightNode = m_nodes[rightChildIndex];
-    leftNode.triangleCount = leftCount;
-    leftNode.leftChild = node.leftChild;
-    rightNode.triangleCount = node.triangleCount - leftCount;
-    rightNode.leftChild = i;
-    node.triangleCount = 0;
-    node.leftChild = leftChildIndex;
-
-    updateNodeBounds(leftChildIndex);
-    updateNodeBounds(rightChildIndex);
-
-    subdivide(leftChildIndex);
-    subdivide(rightChildIndex);
 }
 
 void BVHBuilder::updateNodeBounds(u32 index)
 {
+    PROFILER("BVHBuilder::updateNodeBounds");
     BVHNode& node = m_nodes[index];
-    auto& vertices = m_model->m_geometry.vertices;
     for (u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
     {
         auto& triangle = triangles[triIndices[i]];
-        node.aabb.grow(vertices[triangle.vertex0].position);
-        node.aabb.grow(vertices[triangle.vertex1].position);
-        node.aabb.grow(vertices[triangle.vertex2].position);
+        node.aabb.grow(triangle.aabb);
     }
 }
 

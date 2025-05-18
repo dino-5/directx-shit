@@ -239,8 +239,9 @@ bool BaseDemo::initialize()
     else
         m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
     {
-
+        Profiler::StartProfiling();
         m_bvhBuilder.build(m_model);
+        Profiler::EndProfiling();
         std::function<Vector3(const BVHNode&)> diagonalF = [](const BVHNode& node) -> Vector3 { return node.aabb.diagonal();};
         std::function<Vector3(const BVHNode&)> aabbF = [](const BVHNode& node) -> Vector3 { return node.aabb.aabbMin;};
         m_bvhModel = BVHBuilder::generateDrawData(context, m_bvhBuilder.getRootNode(), m_bvhBuilder.getNodeCount(), diagonalF, aabbF);
@@ -280,11 +281,13 @@ bool BaseDemo::initialize()
         }
 
         tinybvh::BVH bvh;
+        Profiler::StartProfiling();
         {
             PROFILER("tiny BVH state of art");
             bvh.Build(vertices.data(), indices.data(), geometry.indices.size() / 3);
-            util::printInfo("tiny bvh node number {}", bvh.NodeCount());
         }
+        Profiler::EndProfiling();
+        util::printInfo("tiny bvh node number {}", bvh.NodeCount());
 
         auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) -> Vector3 { return Vector3({vec.x, vec.y, vec.z}); };
         std::function<Vector3(const tinybvh::BVH::BVHNode&)> diagonalF = [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) -> Vector3 {
