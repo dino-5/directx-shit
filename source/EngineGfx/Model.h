@@ -23,27 +23,27 @@ namespace engine::graphics
     using GeometryGLTF = Geometry<Vertex>;
     using GeometryDSH = Geometry<math::Vector3>;
 
-	class Model
-	{
-	public:
-		Model() = default;
-		void initGLTF(system::Filepath path, GfxContext& context);
+    class Model
+    {
+    public:
+        Model() = default;
+        void initGLTF(system::Filepath path, GfxContext& context);
         void initDSH(system::Filepath path, GfxContext& context);
         void initOBJ(system::Filepath path, GfxContext& context);
-		void drawModel(ID3D12GraphicsCommandList* cmdList);
+        void drawModel(ID3D12GraphicsCommandList* cmdList);
         void reset()
         {
             m_mesh.reset();
             m_materialBuffer.reset();
             for (auto& texture : m_textures)
                 texture.reset();
-
         }
+        bool isInitialized() const { return m_isInitialized; }
 
-	private:
-		void loadTextures();
-		void processNode(uint index);
-		void processMesh(uint index);
+    private:
+        void loadTextures();
+        void processNode(uint index);
+        void processMesh(uint index);
 
         struct AccessorData
         {
@@ -75,17 +75,17 @@ namespace engine::graphics
                 obj.accessor.type == type;
         };
 
-
-	public:
-		GeometryGLTF m_geometry;
-		Mesh m_mesh;
-		std::vector<Submesh> m_submeshes;
-		std::vector<Texture> m_textures;
+    public:
+        bool m_isInitialized = false;
+        GeometryGLTF m_geometry;
+        Mesh m_mesh;
+        std::vector<Submesh> m_submeshes;
+        std::vector<Texture> m_textures;
         Buffer m_materialBuffer;
         Buffer m_objectBuffer;
         GfxContext* m_context = nullptr;
 
-		system::Filepath m_directory;
+        system::Filepath m_directory;
         std::unique_ptr<tinygltf::Model> m_model;
-	};
+    };
 };

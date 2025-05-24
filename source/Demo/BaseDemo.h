@@ -12,7 +12,7 @@
 #include "EngineGfx/dx12/CommandList.h"
 #include "EngineGfx/dx12/CommandQueue.h"
 #include "EngineGfx/dx12/DescriptorHeap.h"
-#include "EngineGfx/util/Camera.h"
+#include "EngineCommon/Scene/Camera.h"
 #include "EngineGfx/Model.h"
 #include "EngineGfx/BVH_Builder.h"
 
@@ -40,12 +40,10 @@ using namespace magic_enum::bitwise_operators;
 
 struct Light
 {
-	Light(math::Vector3 vec, std::string name, float range);
+	Light(math::Vector3 vec);
 	Light(const Light&)=delete;
 	Light(Light&& other) 
-		:m_position(std::move(other.m_position)),
-		m_name(std::move(other.m_name)),
-		m_positionRange(other.m_positionRange)
+		:m_position(std::move(other.m_position))
 	{
 	}
 
@@ -57,9 +55,6 @@ struct Light
 	math::Vector3    m_position;
 	math::Vector3    m_direction;
 	LightFlags       m_flags;
-	// UI data
-	std::string      m_name;
-	float            m_positionRange;
 
 };
 

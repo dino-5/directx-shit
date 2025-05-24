@@ -14,10 +14,40 @@ using namespace gfx;
 using namespace util;
 using namespace DirectX;
 
-Light::Light(math::Vector3 vec, std::string name, float range)
-    : m_position(vec),
-      m_name(name),
-      m_positionRange(range)
+void locGenerateTinyBVHCompatibleGeometry(std::vector<tinybvh::bvhvec4>& outVertices, std::vector<u32>& outIndices,
+                                          const std::vector<Vertex>& vertices, const std::vector<u32>& indices, const std::vector<Submesh>& submeshes)
+{
+    u32 currentIndex = 0;
+    auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
+    {
+        tinybvh::bvhvec4 result;
+        result.x = vec[0];
+        result.y = vec[1];
+        result.z = vec[2];
+        result.w = 1;
+        return result;
+    };
+    for(auto& vertex : vertices)
+        outVertices[currentIndex++] = convertV3_to_V4(vertex.position);
+
+    currentIndex = 0;
+    {
+        for(auto& submesh : submeshes)
+        {
+            for(u32 i = submesh.StartIndexLocation; i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
+            {
+                auto ind = &indices[i];
+                outIndices[currentIndex++] = ind[0] + submesh.BaseVertexLocation;
+                outIndices[currentIndex++] = ind[1] + submesh.BaseVertexLocation;
+                outIndices[currentIndex++] = ind[2] + submesh.BaseVertexLocation;
+            }
+        }
+    }
+}
+
+
+Light::Light(math::Vector3 vec)
+    : m_position(vec)
 {
 }
 
@@ -236,8 +266,10 @@ bool BaseDemo::initialize()
 
     if(1)
         m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);
-    else
+    else if (0)
         m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
+
+    if(m_model.isInitialized())
     {
         Profiler::StartProfiling();
         m_bvhBuilder.build(m_model);
@@ -247,44 +279,18 @@ bool BaseDemo::initialize()
         m_bvhModel = BVHBuilder::generateDrawData(context, m_bvhBuilder.getRootNode(), m_bvhBuilder.getNodeCount(), diagonalF, aabbF);
     }
 
+    if(m_model.isInitialized())
     {
-        auto geometry = m_model.m_geometry;
+        auto& geometry = m_model.m_geometry;
         std::vector<tinybvh::bvhvec4> vertices(geometry.vertices.size());
-        u32 currentIndex = 0;
-        auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
-        {
-            tinybvh::bvhvec4 result;
-            result.x = vec[0];
-            result.y = vec[1];
-            result.z = vec[2];
-            result.w = 1;
-            return result;
-        };
-        for(auto& vertex : geometry.vertices)
-            vertices[currentIndex++] = convertV3_to_V4(vertex.position);
-
-        currentIndex = 0;
         std::vector<u32> indices(geometry.indices.size());
-        {
-            auto& submeshes = m_model.m_submeshes;
-            auto& modelIndices = m_model.m_geometry.indices;
-            for(auto& submesh : submeshes)
-            {
-                for(u32 i = submesh.StartIndexLocation; i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
-                {
-                    auto ind = &modelIndices[i];
-                    indices[currentIndex++] = ind[0] + submesh.BaseVertexLocation;
-                    indices[currentIndex++] = ind[1] + submesh.BaseVertexLocation;
-                    indices[currentIndex++] = ind[2] + submesh.BaseVertexLocation;
-                }
-            }
-        }
+        locGenerateTinyBVHCompatibleGeometry(vertices, indices, geometry.vertices, geometry.indices, m_model.m_submeshes);
 
         tinybvh::BVH bvh;
         Profiler::StartProfiling();
         {
             PROFILER("tiny BVH state of art");
-            bvh.Build(vertices.data(), indices.data(), geometry.indices.size() / 3);
+            bvh.Build(vertices.data(), indices.data(), (u32)geometry.indices.size() / 3);
         }
         Profiler::EndProfiling();
         util::printInfo("tiny bvh node number {}", bvh.NodeCount());
@@ -356,20 +362,23 @@ void BaseDemo::draw()
         passIndices.materialArrayIndex = m_model.m_materialBuffer.getDescriptorHeapIndex();
         cmdList->SetGraphicsRoot32BitConstants(0, 2, &passIndices, 0);
 
-        auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
-        auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
-        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-        cmdList->IASetIndexBuffer(&indexBuffer);
-
-        if(m_renderModel.getData())
-        for (auto& submesh : m_model.m_submeshes)
+        if(m_model.isInitialized())
         {
-            /*cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);*/
-            submesh.draw(cmdList);
+            auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
+            auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
+            cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
+            cmdList->IASetIndexBuffer(&indexBuffer);
+
+            if(m_renderModel.getData())
+            for (auto& submesh : m_model.m_submeshes)
+            {
+                /*cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);*/
+                submesh.draw(cmdList);
+            }
         }
     }
     // BVH debug draw
-    if(m_drawBVHDebugView.getData())
+    if(m_drawBVHDebugView.getData() && m_tinybvhModel.isInitialized())
     {
         cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
         cmdList->SetPipelineState(m_bvhDebugDrawPSO);
@@ -384,7 +393,7 @@ void BaseDemo::draw()
         cmdList->IASetIndexBuffer(&indexBuffer);
         submesh.draw(cmdList);
     }
-    else
+    else if(m_tinybvhModel.isInitialized())
     {
         cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
         cmdList->SetPipelineState(m_bvhDebugDrawPSO);

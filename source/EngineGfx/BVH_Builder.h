@@ -65,7 +65,7 @@ public:
     u32 getNodeCount() const { return lastElement; }
 
 private:
-    void subdivide(u32 index);
+    void subdivide();
     void updateNodeBounds(u32 index);
     float findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition);
 
@@ -132,6 +132,7 @@ Model BVHBuilder::generateDrawData(GfxContext& context,
     Model model;
     model.m_mesh = mesh;
     model.m_submeshes.push_back(submesh);
+    model.m_isInitialized = true;
     return model;
 }
 };

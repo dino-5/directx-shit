@@ -48,6 +48,7 @@ void Model::initDSH(system::Filepath path, GfxContext& context)
     m_submeshes.push_back(m_geometry.getSubmesh(-1));
 
     m_mesh.init(context, m_geometry);
+    m_isInitialized = true;
 }
 
 void Model::initOBJ(system::Filepath path, GfxContext& context)
@@ -111,6 +112,7 @@ void Model::initOBJ(system::Filepath path, GfxContext& context)
     }
     m_mesh.init(context, m_geometry);
     m_submeshes.push_back(m_geometry.getSubmesh());
+    m_isInitialized = true;
 }
 
 void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
@@ -189,6 +191,7 @@ void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
     m_materialBuffer.init(context, desc);
 
     m_context = nullptr;
+    m_isInitialized = true;
 }
 
 void Model::loadTextures()

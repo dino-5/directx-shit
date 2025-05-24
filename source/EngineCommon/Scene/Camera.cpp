@@ -1,4 +1,3 @@
-
 #include "Camera.h"
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/util/Timer.h"
@@ -74,8 +73,8 @@ void Camera::update()
     float time = (float)timer.getElapsedTime();
     timer.saveCurrentTime();
 
-    velocity *= time * m_cameraMovementSpeed * 0.1;
-    rotationVelocity *= time * m_cameraRotationSpeed * 0.1;
+    velocity *= (float)time * m_cameraMovementSpeed * 0.1;
+    rotationVelocity *= (float)time * m_cameraRotationSpeed * 0.1;
 
     auto inputManager = system::InputManager::GetInputManager();
 

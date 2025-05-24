@@ -51,7 +51,7 @@ public:
 protected:
     using TimeType = decltype(clock::now());
     static double getMiliseconds(TimeType t1, TimeType t2) { return getMicroseconds(t1, t2) / 1000.0; }
-    static double getMicroseconds(TimeType t1, TimeType t2) { return std::chrono::duration_cast<std::chrono::microseconds>(t1 - t2).count(); }
+    static double getMicroseconds(TimeType t1, TimeType t2) { return (double)std::chrono::duration_cast<std::chrono::microseconds>(t1 - t2).count(); }
     TimeType m_start;
     TimeType m_lastCheck;
     bool m_isFps = false;
@@ -118,9 +118,9 @@ public:
             else
             {
                 data.names.push_back(name);
-                data.indices.push_back(s_currentCallstack.size());
+                data.indices.push_back((u32)s_currentCallstack.size());
                 s_currentCallstack.push_back(ProfilerNode(name, 0, 0, s_currentNodeIndex));
-                s_currentNodeIndex = s_currentCallstack.size() - 1;
+                s_currentNodeIndex = (u32)s_currentCallstack.size() - 1;
             }
         }
         else 
@@ -164,7 +164,7 @@ public:
                     }
             if(!currentIndex)
                 break;
-            auto& node = s_currentCallstack[currentIndex];
+            node = s_currentCallstack[currentIndex];
             if(!printedNodes[currentIndex])
             {
                 node.print();

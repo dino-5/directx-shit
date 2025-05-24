@@ -49,11 +49,11 @@ void BVHBuilder::build(const Model& model)
     updateNodeBounds(0);
     m_minDim = m_nodes[0].aabb.diagonal() * 1e-20f;
 
-    subdivide(0);
+    subdivide();
     util::printInfo("{} elements of BVH", lastElement);
 }
 
-void BVHBuilder::subdivide(u32 index)
+void BVHBuilder::subdivide()
 {
     PROFILER("BVHBuilder::subdivide");
 	uint32_t task[256], taskCount = 0, nodeIdx = 0;
@@ -110,12 +110,12 @@ void BVHBuilder::subdivide(u32 index)
                                     currentLeftAABB.grow(binsAABB[i][j]);
                                     leftAABB[j] = currentLeftAABB;
                                     currentLeftCount += binsCount[i][j];
-                                    leftArea[j] = currentLeftCount == 0 ? 1e20 : currentLeftAABB.area() * currentLeftCount;
+                                    leftArea[j] = currentLeftCount == 0 ? (float)1e20 : currentLeftAABB.area() * currentLeftCount;
 
                                     currentRightAABB.grow(binsAABB[i][NUMBER_OF_BINS - j - 1]);
                                     rightAABB[NUMBER_OF_BINS - j - 2] = currentRightAABB;
                                     currentRightCount += binsCount[i][NUMBER_OF_BINS - j - 1];
-                                    rightArea[NUMBER_OF_BINS - j - 2] = currentRightCount == 0 ? 1e20 : currentRightAABB.area() * currentRightCount;
+                                    rightArea[NUMBER_OF_BINS - j - 2] = currentRightCount == 0 ? (float)1e20 : currentRightAABB.area() * currentRightCount;
                             }
                         }
 
@@ -149,7 +149,7 @@ void BVHBuilder::subdivide(u32 index)
                 PROFILER("sorting of triangles");
                 while (i < j)
                 {
-                    auto& triAABB = triangles[triIndices[i]].aabb;
+                    AABB& triAABB = triangles[triIndices[i]].aabb;
                     float centroid = (triAABB.aabbMin[bestSplitAxisIndex] + triAABB.aabbMax[bestSplitAxisIndex]) * 0.5;
                     i32 binDistr = (i32)((centroid - nodeMin[bestSplitAxisIndex]) * stepSize[bestSplitAxisIndex]);
                     binDistr = math::clamp(binDistr, 0, (i32)NUMBER_OF_BINS - 1);
@@ -176,13 +176,13 @@ void BVHBuilder::subdivide(u32 index)
             node.leftChild = leftChildIndex;
 
             {
-                BVHNode& node = m_nodes[leftChildIndex];
-                node.aabb = bestLeftAABB;
+                BVHNode& n = m_nodes[leftChildIndex];
+                n.aabb = bestLeftAABB;
             }
 
             {
-                BVHNode& node = m_nodes[rightChildIndex];
-                node.aabb = bestRightAABB;
+                BVHNode& n = m_nodes[rightChildIndex];
+                n.aabb = bestRightAABB;
             }
 
             task[taskCount++] = rightChildIndex;
