@@ -47,7 +47,7 @@ void Resource::initResource(ID3D12Device* device, ResourceDescription desc, Desc
     resourceDesc.Height = desc.height;
     resourceDesc.Dimension = desc.dimension;
     resourceDesc.Flags = CastType(desc.flags);
-    resourceDesc.DepthOrArraySize = desc.depthOrArraySize;
+    resourceDesc.DepthOrArraySize = (u32)desc.depthOrArraySize;
     resourceDesc.MipLevels = 1;
     resourceDesc.SampleDesc.Count = 1;
     resourceDesc.SampleDesc.Quality = 0;
@@ -67,7 +67,6 @@ void Resource::initResource(ID3D12Device* device, ResourceDescription desc, Desc
 
     m_descriptorProps = descriptorDesc;
     createViews(device, m_descriptorProps);
-    //util::printInfo("created resource {}", !name.empty() ? util::to_string(name) : "");
 }
 
 void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptorProps)

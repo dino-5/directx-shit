@@ -74,7 +74,7 @@ class PSO;
 struct RenderState
 {
     RenderState()=default;
-    PSO* compile(std::wstring name);
+    PSO compile(std::wstring name);
     void setBlendState       (BlendState blend=BlendState());
     void setDepthStencilState(DepthStencilState ds =DepthStencilState());
     void setRasterizerState  (RasterizerState raster = RasterizerState());
@@ -99,14 +99,7 @@ public:
     }
 
     // Warning: pointer can have dangling memory after adding new element
-    PSO(ID3D12Device* device, const RenderState& state);
-    static PSO CreatePSO(const RenderState& state);
-    static PSO* CreatePSO(std::wstring name, ID3D12Device* device, const RenderState& state);
-    static PSO* GetPSO(std::wstring name)
-    {
-        return util::FindElement(allPSO, name);
-    }
-    static inline Table<PSO> allPSO;
+    PSO(const RenderState& state);
 
     void reset() {
         if(m_pso)

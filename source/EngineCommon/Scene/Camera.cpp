@@ -54,7 +54,7 @@ void Camera::setDirection(math::Vector3 dir)
 void Camera::updateViewMatrix()
 {
     m_rotationMatrix = math::CreateViewRotationMatrix(m_viewDir, m_upDir, m_rightDir);
-    m_viewMatrix = math::Translate(m_position) * m_rotationMatrix;
+    m_viewMatrix = math::Translate(-m_position) * m_rotationMatrix;
 }
 
 void Camera::updateProjectionMatrix(math::ProjectionProps props)

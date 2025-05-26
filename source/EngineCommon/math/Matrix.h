@@ -218,4 +218,28 @@ inline Matrix4 GetProjectionMatrix(ProjectionProps props)
 		props.perspective.farZ);
 }
 
+struct Transformation
+{
+    math::Quartenion rotation;
+    math::Vector3 scale;
+    math::Vector3 translation;
+};
+
+inline Matrix4 GetTranformMatrix(Quartenion rotation, Vector3 scale, Vector3 translation)
+{
+    Matrix4 result;
+    result[0][0] = scale[0];
+    result[1][1] = scale[1];
+    result[2][2] = scale[2];
+
+    result = Matrix4(rotation) * result;
+    result = Translate(translation) * result;
+    return result;
+}
+
+inline Matrix4 GetTranformMatrix(const Transformation& transform)
+{
+    return GetTranformMatrix(transform.rotation, transform.scale, transform.translation);
+}
+
 };

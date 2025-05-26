@@ -2,9 +2,10 @@
 #include <unordered_map>
 #include "Texture.h"
 #include "EngineGfx/dx12/Buffers.h"
+#include "EngineGfx/GfxContext.h"
 #include "EngineCommon/util/Util.h"
 #include "EngineCommon/include/types.h"
-#include "EngineCommon/math/Vector.h"
+#include "EngineCommon/math/Matrix.h"
 
 namespace engine::graphics
 {
@@ -14,6 +15,7 @@ struct Submesh
     u32 StartIndexLocation = 0;
     u32 BaseVertexLocation = 0;
     i32 materialIndex = 0;
+    math::Transformation transform;
     Submesh(u32 indexCount, u32 startIndex, u32 baseVertexLoc, i32 matIndex) : IndexCount(indexCount), StartIndexLocation(startIndex),
         BaseVertexLocation(baseVertexLoc), materialIndex(matIndex) {}
     Submesh() = default;

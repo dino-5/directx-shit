@@ -9,6 +9,8 @@
 #include <array>
 #include <optional>
 
+using namespace magic_enum::bitwise_operators;
+
 namespace engine::graphics
 {
 enum class ResourceState
@@ -37,7 +39,6 @@ enum class DescriptorFlags : std::uint32_t
     UnorderedAccess = 1 << 3,
     ConstantBuffer = 1 << 4,
 };
-using namespace magic_enum::bitwise_operators;
 
 struct DescriptorProperties
 {

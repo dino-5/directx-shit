@@ -172,7 +172,7 @@ public:
     }
 
     T& operator[](int i) { return m_data[i]; }
-    T operator[](int i) const { return m_data[i]; }
+    const T& operator[](int i) const { return m_data[i]; }
     T* data() { return m_data.data(); }
     uint size() { return N * sizeof(float); }
     
@@ -185,6 +185,15 @@ using Vector3 = Vector<3>;
 using Vector4 = Vector<4>;
 using Int3 = Vector<3, int>;
 using Int4 = Vector<4, int>;
+
+template<int N, typename T=float>
+inline Vector<N,T> operator-(const Vector<N,T>& v)
+{
+    Vector<N,T> result;
+    for(u32 i = 0; i < N; ++i)
+        result[i] = -v[i];
+    return result;
+}
 
 template<int N, typename T=float>
 inline Vector<N,T> minVectorCoords(const Vector<N,T>& v1, const Vector<N,T>& v2)
@@ -215,6 +224,7 @@ class Quartenion
 public:
     Quartenion(Vector3 direction, float angle /*in degrees*/);
     Quartenion(Vector4 vec) :m_quarternion(vec) {}
+    Quartenion() {}
     Quartenion conjugated() const { return  Vector4(-1 * Vector3(m_quarternion), { m_quarternion[3] }); }
     float& operator[](i32 index) { return m_quarternion[index]; }
     float operator[](i32 index) const { return m_quarternion[index]; }

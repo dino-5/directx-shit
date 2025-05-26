@@ -41,9 +41,9 @@ namespace engine::math
     Matrix4 Translate(Vector3 vec)
     {
         Matrix4 res;
-        res[3][0] = -vec[0];
-        res[3][1] = -vec[1];
-        res[3][2] = -vec[2];
+        res[3][0] = vec[0];
+        res[3][1] = vec[1];
+        res[3][2] = vec[2];
         res[3][3] = 1;
         return res;
     }

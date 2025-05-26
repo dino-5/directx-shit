@@ -33,8 +33,10 @@ D3D12_SHADER_BYTECODE GetShader(std::wstring name)
     return getShader(shader);
 }
 
-PSO::PSO(ID3D12Device* device, const RenderState& state)
+PSO::PSO(const RenderState& state)
 {
+    ID3D12Device* device = Device::device->getDevice();
+    
     m_psoDesc.InputLayout = state.shader.desc;
     m_psoDesc.pRootSignature = *state.shader.rootSignature;
     m_psoDesc.VS = state.shader.vertexShader;
@@ -46,7 +48,7 @@ PSO::PSO(ID3D12Device* device, const RenderState& state)
     m_psoDesc.PrimitiveTopologyType = state.topology;
     if (state.renderTargets.size() >= 1)
     {
-        m_psoDesc.NumRenderTargets = (u32)state.renderTargets.size();
+        m_psoDesc.NumRenderTargets = (u32) state.renderTargets.size();
         uint index = 0;
         for(auto& format : state.renderTargets)
             m_psoDesc.RTVFormats[index++] = format;
@@ -60,13 +62,6 @@ PSO::PSO(ID3D12Device* device, const RenderState& state)
     m_psoDesc.SampleDesc.Quality = 0;
     m_psoDesc.DSVFormat = dsvBufferFormat;
     ThrowIfFailed(device->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
-}
-
-PSO* PSO::CreatePSO(std::wstring name, ID3D12Device* device, const RenderState& state)
-{
-    if (GetPSO(name) == nullptr)
-        allPSO.push_back({ name, PSO(device, state) });
-    return &(allPSO.back().second);
 }
 
 void RenderState::setBlendState(BlendState blendState)
@@ -89,14 +84,10 @@ void RenderState::setShaderInputGroup(ShaderInputGroup& s)
     shader = s;
 }
 
-PSO PSO::CreatePSO(const RenderState& state)
-{
-    return PSO(Device::device->getDevice(), state);
-}
 
-PSO* RenderState::compile(std::wstring name)
+PSO RenderState::compile(std::wstring name)
 {
-    return PSO::CreatePSO(name, Device::device->getDevice(), *this);
+    return PSO(*this);
 }
 
 std::wstring GetShaderTypeString(ShaderType type)

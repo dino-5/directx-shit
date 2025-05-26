@@ -26,8 +26,10 @@ struct GfxView
 
 };
 
-struct RenderContext
+struct GfxContext
 {
+    ID3D12Device* device = nullptr;
+    ID3D12GraphicsCommandList* cmdList= nullptr;
 };
 
 };

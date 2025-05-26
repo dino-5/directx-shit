@@ -194,7 +194,7 @@ void BaseDemo::compileShaders()
 
         RenderState renderState;
         renderState.setShaderInputGroup(sig);
-        m_pso = PSO::CreatePSO(renderState);
+        m_pso = PSO(renderState);
     }
     {
         RootParameters parameters = { RootParameter::CreateConstants(1, 0, 10) };
@@ -215,7 +215,7 @@ void BaseDemo::compileShaders()
         RenderState renderState;
         renderState.setShaderInputGroup(sig);
         renderState.topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-        m_bvhDebugDrawPSO = PSO::CreatePSO(renderState);
+        m_bvhDebugDrawPSO = PSO(renderState);
     }
 
 }
@@ -372,7 +372,7 @@ void BaseDemo::draw()
             if(m_renderModel.getData())
             for (auto& submesh : m_model.m_submeshes)
             {
-                /*cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);*/
+                cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
                 submesh.draw(cmdList);
             }
         }

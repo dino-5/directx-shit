@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 #include "EngineGfx/dx12/Device.h"
+#include "EngineGfx/GfxContext.h"
 #include "EngineGfx/dx12/d3dx12.h"
 #include "EngineGfx/dx12/Resource.h"
 #include "EngineGfx/dx12/dx12_includes.hpp"
