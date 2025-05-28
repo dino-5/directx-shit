@@ -46,7 +46,10 @@ namespace engine::graphics
         uploadDesc.flags = ResourceFlags::NONE;
         uploadDesc.heapType = D3D12_HEAP_TYPE_UPLOAD;
         uploadDesc.createState = ResourceState::GENERIC_READ_STATE;
-        textureUploadHeap.initResource(Device::device->getDevice(), uploadDesc, DescriptorProperties(DescriptorFlags::None));
+        textureUploadHeap.initResource(
+            Device::device->getDevice(),
+            uploadDesc,
+            DescriptorProperties(DescriptorFlags::None));
 
         D3D12_SUBRESOURCE_DATA textureData = {};
         textureData.pData = imData.data;
@@ -54,7 +57,11 @@ namespace engine::graphics
         textureData.RowPitch = imData.width * size;
         textureData.SlicePitch = textureData.RowPitch * imData.height;
 
-        UpdateSubresources(ctx.cmdList, resource(), textureUploadHeap, 0, 0, 1, &textureData);
+        UpdateSubresources(
+            ctx.cmdList,
+            resource(),
+            textureUploadHeap,
+            0, 0, 1, &textureData);
         Resource::transition(ctx.cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
     }
 

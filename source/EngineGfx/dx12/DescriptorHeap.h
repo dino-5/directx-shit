@@ -1,94 +1,93 @@
 #ifndef DESCRIPTOR_HEAP_H
 #define DESCRIPTOR_HEAP_H
+#include "EngineCommon/include/types.h"
+#include "EngineGfx/dx12/d3dx12.h"
 #include <d3d12.h>
 #include <memory>
-#include "EngineGfx/dx12/d3dx12.h"
-#include "EngineCommon/include/types.h"
 
-namespace engine::graphics
-{
-	enum class DescriptorHeapType
-	{
-		CBV_SRV_UAV = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		SAMPLER = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-		RTV = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-		DSV = D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 
-		Count = 4
-	};
-
-	using ViewID = u32;
-	class Resource;
-	struct DescriptorGPU
-	{
-		uint32_t HeapIndex;
-		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU { 0 };
-		D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU { 0 };
-
-		operator bool() const { return HandleCPU.ptr != 0; }
-		u32 getDescriptorIndex();
-		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
-		operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return HandleGPU; }
-	};
-
-	struct DescriptorCPU
-	{
-		D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU { 0 };
-
-		operator bool() const { return HandleCPU.ptr != 0; }
-		operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
-	};
-
-	class DescriptorHeap
-	{
-	public:
-		friend class DescriptorHeapManager;
-		DescriptorHeap() = default;
-		DescriptorHeap(ID3D12Device* device, UINT numDesc, DescriptorHeapType type);
-		void init(ID3D12Device* device, UINT numDesc, DescriptorHeapType type);
-
-		void createCBV(ID3D12Device* device, Resource& res, D3D12_CONSTANT_BUFFER_VIEW_DESC& desc);
-		void createSRV(ID3D12Device* device, Resource& res, D3D12_SHADER_RESOURCE_VIEW_DESC& desc);
-		void createUAV(ID3D12Device* device, Resource& res, D3D12_UNORDERED_ACCESS_VIEW_DESC& desc);
-
-		void createRTV(ID3D12Device* device, Resource& resource);
-		void createDSV(ID3D12Device* device, Resource& res, D3D12_DEPTH_STENCIL_VIEW_DESC desc);
-
-		D3D12_CPU_DESCRIPTOR_HANDLE getCPUHandle(ViewID index)const;
-		D3D12_GPU_DESCRIPTOR_HANDLE getGPUHandle(ViewID index)const;
-
-		ID3D12DescriptorHeap* getHeap();
-		ID3D12DescriptorHeap** getHeapAddress() { return m_heap.GetAddressOf(); }
-		u32 getDescriptorSize() { return descriptorSize; }
-
-		void reset()
-		{
-			m_heap.Reset();
-			heapSize = 0;
-			descriptorSize = 0;
-			currentDescriptorIndex = 0;
-		}
-
-	private:
-
-		ComPtr<ID3D12DescriptorHeap> m_heap;
-		u32 heapSize;
-		u32 descriptorSize;
-		u32 currentDescriptorIndex=0;
-	};
-
-	class DescriptorHeapManager
-	{
-	public:
-		static void CreateSRVHeap(uint n);
-		static void CreateRTVHeap(uint n);
-		static void CreateDSVHeap(uint n);
-		static inline DescriptorHeap CurrentSRVHeap;
-		static inline DescriptorHeap CurrentRTVHeap;
-		static inline DescriptorHeap CurrentDSVHeap;
-	};
-
-	void PopulateDescriptorHeaps();
-
+namespace engine::graphics {
+enum class DescriptorHeapType {
+  CBV_SRV_UAV = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+  SAMPLER = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
+  RTV = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+  DSV = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+  Count = 4
 };
-#endif 
 
+using ViewID = u32;
+class Resource;
+struct DescriptorGPU {
+  uint32_t HeapIndex;
+  D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU{0};
+  D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU{0};
+
+  operator bool() const { return HandleCPU.ptr != 0; }
+  u32 getDescriptorIndex();
+  operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
+  operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return HandleGPU; }
+};
+
+struct DescriptorCPU {
+  D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU{0};
+
+  operator bool() const { return HandleCPU.ptr != 0; }
+  operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return HandleCPU; }
+};
+
+class DescriptorHeap {
+public:
+  friend class DescriptorHeapManager;
+  DescriptorHeap() = default;
+  DescriptorHeap(ID3D12Device *device,
+                 UINT numDesc,
+                 DescriptorHeapType type);
+  void init(ID3D12Device *device,
+            UINT numDesc,
+            DescriptorHeapType type);
+
+  void createCBV(ID3D12Device *device, Resource &res,
+                 D3D12_CONSTANT_BUFFER_VIEW_DESC &desc);
+  void createSRV(ID3D12Device *device, Resource &res,
+                 D3D12_SHADER_RESOURCE_VIEW_DESC &desc);
+  void createUAV(ID3D12Device *device, Resource &res,
+                 D3D12_UNORDERED_ACCESS_VIEW_DESC &desc);
+
+  void createRTV(ID3D12Device *device, Resource &resource);
+  void createDSV(ID3D12Device *device, Resource &res,
+                 D3D12_DEPTH_STENCIL_VIEW_DESC desc);
+
+  D3D12_CPU_DESCRIPTOR_HANDLE getCPUHandle(ViewID index) const;
+  D3D12_GPU_DESCRIPTOR_HANDLE getGPUHandle(ViewID index) const;
+
+  ID3D12DescriptorHeap *getHeap();
+  ID3D12DescriptorHeap **getHeapAddress() { return m_heap.GetAddressOf(); }
+  u32 getDescriptorSize() { return descriptorSize; }
+
+  void reset() {
+    m_heap.Reset();
+    heapSize = 0;
+    descriptorSize = 0;
+    currentDescriptorIndex = 0;
+  }
+
+private:
+  ComPtr<ID3D12DescriptorHeap> m_heap;
+  u32 heapSize;
+  u32 descriptorSize;
+  u32 currentDescriptorIndex = 0;
+};
+
+class DescriptorHeapManager {
+public:
+  static void CreateSRVHeap(uint n);
+  static void CreateRTVHeap(uint n);
+  static void CreateDSVHeap(uint n);
+  static inline DescriptorHeap CurrentSRVHeap;
+  static inline DescriptorHeap CurrentRTVHeap;
+  static inline DescriptorHeap CurrentDSVHeap;
+};
+
+void PopulateDescriptorHeaps();
+
+}; // namespace engine::graphics
+#endif

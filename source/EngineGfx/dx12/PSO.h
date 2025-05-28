@@ -46,19 +46,11 @@ struct ShaderInfo
 
 namespace ShaderManager
 {
-    extern std::vector< TableEntry< DxBlob*>> allShaders;
-    extern std::vector< TableEntry<std::vector<D3D12_INPUT_ELEMENT_DESC> >> allDescriptions;
     extern DxCompiler* s_compiler;
     extern DxUtils* s_utils;
     extern DxIncludeHandler* s_includer;
     void InitializeCompiler();
-    inline void Reset()
-    {
-        allShaders.clear();
-        allDescriptions.clear();
-    }
     TableEntry< DxBlob*> CreateShader(const ShaderInfo& info);
-    DxBlob* GetShader(std::wstring name);
     void Clear();
 };
 

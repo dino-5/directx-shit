@@ -5,40 +5,44 @@
 namespace engine::graphics
 {
 
-	struct CommandQueueDesc
-	{
-		D3D12_COMMAND_LIST_TYPE  type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	};
+struct CommandQueueDesc
+{
+    D3D12_COMMAND_LIST_TYPE  type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+};
 
-	class CommandQueue
-	{
-	public:
-		CommandQueue() = default;
-		CommandQueue(ID3D12Device* device, CommandQueueDesc desc = CommandQueueDesc())
-		{
-			init(device, desc);
-		}
+class CommandQueue
+{
+public:
+    CommandQueue() = default;
+    CommandQueue(
+        ID3D12Device* device,
+        CommandQueueDesc desc = CommandQueueDesc())
+    {
+        init(device, desc);
+    }
 
-		void init(ID3D12Device* device, CommandQueueDesc desc = CommandQueueDesc())
-		{
-			D3D12_COMMAND_QUEUE_DESC descQ{
-				.Type = desc.type,
-				.Priority = 0,
-				.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
-				.NodeMask = 0
-			};
-			device->CreateCommandQueue(&descQ, IID_PPV_ARGS(&m_queue));
-		}
+    void init(
+        ID3D12Device* device,
+        CommandQueueDesc desc = CommandQueueDesc())
+    {
+        D3D12_COMMAND_QUEUE_DESC descQ{
+            .Type = desc.type,
+            .Priority = 0,
+            .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+            .NodeMask = 0
+        };
+        device->CreateCommandQueue(&descQ, IID_PPV_ARGS(&m_queue));
+    }
 
-		ID3D12CommandQueue* operator->() { return m_queue; }
+    ID3D12CommandQueue* operator->() { return m_queue; }
 
-		SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12CommandQueue, Queue, m_queue);
-		SHIT_ENGINE_NON_COPYABLE(CommandQueue);
+    SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12CommandQueue, Queue, m_queue);
+    SHIT_ENGINE_NON_COPYABLE(CommandQueue);
 
-		void reset() { m_queue->Release(); }
+    void reset() { m_queue->Release(); }
 
-	private:
-		ID3D12CommandQueue* m_queue = nullptr;
-	};
+private:
+    ID3D12CommandQueue* m_queue = nullptr;
+};
 };
 

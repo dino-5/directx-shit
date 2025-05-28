@@ -14,8 +14,12 @@ using namespace gfx;
 using namespace util;
 using namespace DirectX;
 
-void locGenerateTinyBVHCompatibleGeometry(std::vector<tinybvh::bvhvec4>& outVertices, std::vector<u32>& outIndices,
-                                          const std::vector<Vertex>& vertices, const std::vector<u32>& indices, const std::vector<Submesh>& submeshes)
+void locGenerateTinyBVHCompatibleGeometry(
+    std::vector<tinybvh::bvhvec4>& outVertices,
+    std::vector<u32>& outIndices,
+    const std::vector<Vertex>& vertices,
+    const std::vector<u32>& indices,
+    const std::vector<Submesh>& submeshes)
 {
     u32 currentIndex = 0;
     auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
@@ -34,7 +38,9 @@ void locGenerateTinyBVHCompatibleGeometry(std::vector<tinybvh::bvhvec4>& outVert
     {
         for(auto& submesh : submeshes)
         {
-            for(u32 i = submesh.StartIndexLocation; i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
+            u32 start = submesh.StartIndexLocation,
+            end = start + submesh.IndexCount;
+            for(u32 i = start; i < end; i+=3)
             {
                 auto ind = &indices[i];
                 outIndices[currentIndex++] = ind[0] + submesh.BaseVertexLocation;
@@ -46,16 +52,23 @@ void locGenerateTinyBVHCompatibleGeometry(std::vector<tinybvh::bvhvec4>& outVert
 }
 
 
-Light::Light(math::Vector3 vec)
+Light::Light(
+    math::Vector3 vec)
     : m_position(vec)
 {
 }
 
-BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
+BaseDemo::BaseDemo(
+    u32 width,
+    u32 height,
+    std::string_view name) :
     WindowApp(width, height, name),
     m_cmdList(m_device),
     m_cmdQueue(m_device.native()),
-    m_swapChain(getCurrentWindowSettings(), m_device, m_cmdQueue.getQueue()),
+    m_swapChain(
+        getCurrentWindowSettings(),
+        m_device,
+        m_cmdQueue.getQueue()),
     m_renderModel(*this, true, "render model"),
     m_drawBVHDebugView(*this, true, "draw BVH debug view")
 {
@@ -76,7 +89,9 @@ BaseDemo::BaseDemo(u32 width, u32 height, std::string_view name) :
     onResize(width, height);
 }
 
-void BaseDemo::onResize(uint width, uint height)
+void BaseDemo::onResize(
+    uint width,
+    uint height)
 {
     flushGPU();
     if(width==0 && height==0)
@@ -110,11 +125,13 @@ void BaseDemo::onResize(uint width, uint height)
                 .createState = ResourceState::DEPTH_WRITE ,
                 .heapType = D3D12_HEAP_TYPE_DEFAULT,
                 .name = "depthStencil"
-       };
+        };
         D3D12_CLEAR_VALUE val;
         val.DepthStencil = { 1.0f, 0 };
         val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-        m_depthStencil.initResource(m_device.getDevice(), desc, viewProps, &val);
+        m_depthStencil.initResource(
+            m_device.getDevice(),
+            desc, viewProps, &val);
     }
 
     math::ProjectionProps perspectiveProps;
@@ -131,13 +148,33 @@ void BaseDemo::onResize(uint width, uint height)
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
 {
-    return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM, getWindowHandle(), m_device.checkForFeatureSupport(), false};
+    return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM,
+        getWindowHandle(), m_device.checkForFeatureSupport(), false};
 }
 
 void BaseDemo::compileShaders()
 {
     // shaders
     m_shaders.clear();
+    auto getType = [](u32 type) -> DXGI_FORMAT
+        {
+            if(type == 3)
+                return DXGI_FORMAT_R32G32B32_FLOAT;
+            if(type == 4)
+                return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            return DXGI_FORMAT_R32G32_FLOAT;
+        };
+    auto getInputElement = [getType](const char* name, 
+                              u32& offset, 
+                              u32 type) -> D3D12_INPUT_ELEMENT_DESC
+        {
+            u32 oldOffset = offset * sizeof(float);
+            offset += type;
+            return {
+                name,
+                0,
+                getType(type), 0, oldOffset,  
+                D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};    };
     auto createShader = [this](TableEntry<DxBlob*>& entry)
     {
         if (entry.second != nullptr)
@@ -173,16 +210,21 @@ void BaseDemo::compileShaders()
     }
 
     {
-        RootParameters parameters = { RootParameter::CreateConstants(2, 0, 10) };
-                                      /*RootParameter::CreateConstants(1, 1, 10) };*/
+        RootParameters parameters = {
+            RootParameter::CreateConstants(2, 0, 10) };
+          /*RootParameter::CreateConstants(1, 1, 10) };*/
 
-        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+        auto rootSignFlags = 
+            RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+            RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+
         m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+        u32 offset = 0;
         D3D12_INPUT_ELEMENT_DESC inputElements[] ={
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TANGENT",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "UV",       0, DXGI_FORMAT_R32G32_FLOAT,       0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            getInputElement("POSITION", offset, 3),
+            getInputElement("NORMAL", offset, 3),
+            getInputElement("TANGENT", offset, 4),
+            getInputElement("UV", offset, 2),
         };
         D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 4};
 
@@ -199,10 +241,13 @@ void BaseDemo::compileShaders()
     {
         RootParameters parameters = { RootParameter::CreateConstants(1, 0, 10) };
 
-        auto rootSignFlags = RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+        auto rootSignFlags = 
+            RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+            RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
         m_bvhDebugDrawRS.init(m_device.getDevice(), parameters, rootSignFlags);
+        u32 offset = 0;
         D3D12_INPUT_ELEMENT_DESC inputElements[] ={
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+            getInputElement("POSITION", offset, 3)
         };
         D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 1};
 
@@ -220,7 +265,10 @@ void BaseDemo::compileShaders()
 
 }
 
-u64 BaseDemo::signal(graphics::CommandQueue& queue, ID3D12Fence* fence, u64& value)
+u64 BaseDemo::signal(
+    graphics::CommandQueue& queue,
+    ID3D12Fence* fence,
+    u64& value)
 {
     u64 valueForSignal = ++value;
     ThrowIfFailed(queue->Signal(fence, valueForSignal));
@@ -265,7 +313,8 @@ bool BaseDemo::initialize()
     m_lightSettingsResource= ConstantBuffer(context, &lightSettings, 1);
 
     if(1)
-        m_model.initGLTF(config::g_state.homeDir/ "data/Sponza/glTF/Sponza.gltf", context);
+        m_model.initGLTF(config::g_state.homeDir/"data/Sponza/glTF/Sponza.gltf",
+                         context);
     else if (0)
         m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
 
@@ -274,9 +323,17 @@ bool BaseDemo::initialize()
         Profiler::StartProfiling();
         m_bvhBuilder.build(m_model);
         Profiler::EndProfiling();
-        std::function<Vector3(const BVHNode&)> diagonalF = [](const BVHNode& node) -> Vector3 { return node.aabb.diagonal();};
-        std::function<Vector3(const BVHNode&)> aabbF = [](const BVHNode& node) -> Vector3 { return node.aabb.aabbMin;};
-        m_bvhModel = BVHBuilder::generateDrawData(context, m_bvhBuilder.getRootNode(), m_bvhBuilder.getNodeCount(), diagonalF, aabbF);
+
+        using func = std::function<Vector3(const BVHNode&)>;
+        func diagonalF = [](const BVHNode& node) {
+            return node.aabb.diagonal(); };
+
+        std::function<Vector3(const BVHNode&)> aabbF = [](const BVHNode& node){
+            return node.aabb.aabbMin;};
+        m_bvhModel = BVHBuilder::generateDrawData(context,
+                                                  m_bvhBuilder.getRootNode(),
+                                                  m_bvhBuilder.getNodeCount(),
+                                                  diagonalF, aabbF);
     }
 
     if(m_model.isInitialized())
@@ -290,17 +347,28 @@ bool BaseDemo::initialize()
         Profiler::StartProfiling();
         {
             PROFILER("tiny BVH state of art");
-            bvh.Build(vertices.data(), indices.data(), (u32)geometry.indices.size() / 3);
+            bvh.Build(vertices.data(), indices.data(),
+                      (u32)geometry.indices.size() / 3);
         }
         Profiler::EndProfiling();
         util::printInfo("tiny bvh node number {}", bvh.NodeCount());
 
-        auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) -> Vector3 { return Vector3({vec.x, vec.y, vec.z}); };
-        std::function<Vector3(const tinybvh::BVH::BVHNode&)> diagonalF = [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) -> Vector3 {
+        using func = std::function<Vector3(const tinybvh::BVH::BVHNode&)>;
+        auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) -> Vector3 
+            { return Vector3({vec.x, vec.y, vec.z}); };
+
+        func diagonalF =
+            [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) {
             return from_tinyV3_to_mathV3(node.aabbMax - node.aabbMin);};
-        std::function<Vector3(const tinybvh::BVH::BVHNode&)> aabbF = [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) -> Vector3 {
+
+        func aabbF = 
+            [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node)  {
             return from_tinyV3_to_mathV3(node.aabbMin);};
-        m_tinybvhModel = BVHBuilder::generateDrawData(context, bvh.bvhNode, bvh.NodeCount(), diagonalF, aabbF);
+
+        m_tinybvhModel = BVHBuilder::generateDrawData(context,
+                                                      bvh.bvhNode,
+                                                      bvh.NodeCount(),
+                                                      diagonalF, aabbF);
     }
 
     m_camera.addChangeCallback([this](const Camera* camera)
@@ -333,7 +401,8 @@ void BaseDemo::draw()
     m_graphicsContext.cmdList = cmdList;
     m_graphicsContext.device = m_device.getDevice();
 
-    u32 swapChainBufferIndex = m_swapChain.changeState(cmdList, ResourceState::RENDER_TARGET);
+    u32 swapChainBufferIndex = m_swapChain.changeState(cmdList,
+                                               ResourceState::RENDER_TARGET);
 
     // forward rendering 
     {
@@ -343,11 +412,16 @@ void BaseDemo::draw()
         cmdList->RSSetViewports(1, &m_viewPort);
         cmdList->RSSetScissorRects(1, &m_scissorRect);
 
-        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU, true, &m_depthStencil.dsv.HandleCPU);
-        cmdList->ClearRenderTargetView(renderTarget.HandleCPU, clearColor, 0, nullptr);
-        cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, nullptr);
+        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
+                                    true, &m_depthStencil.dsv.HandleCPU);
+        cmdList->ClearRenderTargetView(renderTarget.HandleCPU,
+                                       clearColor, 0, nullptr);
+        cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, 
+                           D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+                           1.f, 0, 0, nullptr);
 
-        cmdList->SetDescriptorHeaps(1, gfx::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
+        cmdList->SetDescriptorHeaps(1, 
+                gfx::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
         cmdList->SetGraphicsRootSignature(m_rootSignature);
         cmdList->SetPipelineState(m_pso);
 
@@ -382,7 +456,8 @@ void BaseDemo::draw()
     {
         cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
         cmdList->SetPipelineState(m_bvhDebugDrawPSO);
-        cmdList->SetGraphicsRoot32BitConstant(0, m_constBuffer.getDescriptorHeapIndex(), 0);
+        cmdList->SetGraphicsRoot32BitConstant(
+            0, m_constBuffer.getDescriptorHeapIndex(), 0);
         cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
         auto mesh = m_bvhModel.m_mesh;
@@ -397,7 +472,9 @@ void BaseDemo::draw()
     {
         cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
         cmdList->SetPipelineState(m_bvhDebugDrawPSO);
-        cmdList->SetGraphicsRoot32BitConstant(0, m_constBuffer.getDescriptorHeapIndex(), 0);
+        cmdList->SetGraphicsRoot32BitConstant(0,
+                                              m_constBuffer.getDescriptorHeapIndex(),
+                                              0);
         cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
         auto mesh = m_tinybvhModel.m_mesh;

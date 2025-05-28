@@ -9,18 +9,33 @@
 
 namespace engine::graphics
 {
+
 struct Submesh
 {
     u32 IndexCount = 0;
     u32 StartIndexLocation = 0;
     u32 BaseVertexLocation = 0;
     i32 materialIndex = 0;
-    math::Transformation transform;
-    Submesh(u32 indexCount, u32 startIndex, u32 baseVertexLoc, i32 matIndex) : IndexCount(indexCount), StartIndexLocation(startIndex),
+    // TODO : investigate what is good way to upload custom properties of object 
+    math::Transform transform;
+    Submesh(u32 indexCount, u32 startIndex, u32 baseVertexLoc, i32 matIndex) :
+        IndexCount(indexCount), StartIndexLocation(startIndex),
         BaseVertexLocation(baseVertexLoc), materialIndex(matIndex) {}
     Submesh() = default;
 
-    void draw(ID3D12GraphicsCommandList* cmList) const;
+    void draw(ID3D12GraphicsCommandList* cmdList, i32 materialIdx=-1) const
+    {
+        if (IndexCount)
+        {
+            if(materialIdx != -1)
+                cmdList->SetGraphicsRoot32BitConstant(materialIdx,
+                                                      materialIndex, 0);
+            cmdList->DrawIndexedInstanced(IndexCount, 
+                                         1, 
+                                         StartIndexLocation,
+                                         BaseVertexLocation, 0);
+        }
+    }
 };
 
 struct Vertex

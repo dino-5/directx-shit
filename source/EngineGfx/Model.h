@@ -84,7 +84,7 @@ public:
     Buffer m_materialBuffer;
     GfxContext* m_context = nullptr;
 
-    math::Transformation m_transform;
+    math::Transform m_transform;
 
     system::Filepath m_directory;
     std::unique_ptr<tinygltf::Model> m_model;

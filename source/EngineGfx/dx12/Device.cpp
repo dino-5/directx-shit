@@ -21,7 +21,8 @@ void Device::getHardwareAdapter(
         DXGI_GPU_PREFERENCE preference = requestHighPerformanceAdapter == true ?
              DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED;
         CommandLine& cmdLine = CommandLine::GetCommandLine();
-        bool listDevices = cmdLine.getValue(CommandLineOption::LIST_ADAPTER) == -1 ? false : true;
+        bool listDevices = cmdLine.getValue(CommandLineOption::LIST_ADAPTER) == -1 
+            ? false : true;
         i32 deviceIndex = cmdLine.getValue(CommandLineOption::ADAPTER);
         std::function<bool(u32)> selector;
         DXGI_ADAPTER_DESC1 desc;
@@ -49,12 +50,16 @@ void Device::getHardwareAdapter(
         {
             auto adapterSelector = [&adapter, this, &desc](u32 i) -> bool
             {
-                   if (!SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0,
-                             __uuidof(ID3D12Device), reinterpret_cast<void**>(&m_device))))
+                   if (!SUCCEEDED(D3D12CreateDevice(
+                        adapter,
+                        D3D_FEATURE_LEVEL_12_0,
+                         __uuidof(ID3D12Device),
+                        reinterpret_cast<void**>(&m_device))))
                    {
                         return false;
                    }
-                   engine::util::printInfo("Selected GPU -> {}", engine::util::to_string(desc.Description));
+                   engine::util::printInfo("Selected GPU -> {}",
+                                   engine::util::to_string(desc.Description));
                    return true;
             };
             selector = adapterSelector;
@@ -122,19 +127,19 @@ void Device::initialize()
 
 bool Device::checkForFeatureSupport(DXGI_FEATURE feature)
 {
-	BOOL result = FALSE;
-	ComPtr<IDXGIFactory5> factory5;
+    BOOL result = FALSE;
+    ComPtr<IDXGIFactory5> factory5;
 
-	if (m_factory && SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory5))))
-	{
-		if (FAILED(factory5->CheckFeatureSupport(
-			feature, 
-			&result, sizeof(result))))
-		{
-			result = FALSE;
-		}
-	}
-	return result == TRUE;
+    if (m_factory && SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory5))))
+    {
+        if (FAILED(factory5->CheckFeatureSupport(
+            feature, 
+            &result, sizeof(result))))
+        {
+            result = FALSE;
+        }
+    }
+    return result == TRUE;
 }
 
 void Device::createCommandAllocator(ID3D12CommandAllocator* &alloc)
@@ -142,19 +147,20 @@ void Device::createCommandAllocator(ID3D12CommandAllocator* &alloc)
     ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)));
 }
 
-void Device::createCommandList(ID3D12GraphicsCommandList* &list, ID3D12CommandAllocator* &allocator)
+void Device::createCommandList(ID3D12GraphicsCommandList* &list,
+                               ID3D12CommandAllocator* &allocator)
 {
-	ThrowIfFailed(m_device->CreateCommandList(
-		0,
-		D3D12_COMMAND_LIST_TYPE_DIRECT,
+    ThrowIfFailed(m_device->CreateCommandList(
+        0,
+        D3D12_COMMAND_LIST_TYPE_DIRECT,
         allocator,
-		nullptr,                   // Initial PipelineStateObject
-		IID_PPV_ARGS(&list)) );
+        nullptr,                   // Initial PipelineStateObject
+        IID_PPV_ARGS(&list)) );
     ThrowIfFailed(list->Close());
 }
 
 void Device::createFence(ID3D12Fence** fence)
 {
-	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
+    ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
         __uuidof(**fence), reinterpret_cast<void**>(fence)));
 }

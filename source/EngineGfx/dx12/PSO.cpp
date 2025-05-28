@@ -27,12 +27,6 @@ D3D12_SHADER_BYTECODE getShader(DxBlob* blob)
     return ret;
 }
 
-D3D12_SHADER_BYTECODE GetShader(std::wstring name)
-{
-    auto shader = ShaderManager::GetShader(name);
-    return getShader(shader);
-}
-
 PSO::PSO(const RenderState& state)
 {
     ID3D12Device* device = Device::device->getDevice();
@@ -61,7 +55,8 @@ PSO::PSO(const RenderState& state)
     m_psoDesc.SampleDesc.Count =  1;
     m_psoDesc.SampleDesc.Quality = 0;
     m_psoDesc.DSVFormat = dsvBufferFormat;
-    ThrowIfFailed(device->CreateGraphicsPipelineState(&m_psoDesc, IID_PPV_ARGS(&m_pso)));
+    ThrowIfFailed(device->CreateGraphicsPipelineState(
+        &m_psoDesc, IID_PPV_ARGS(&m_pso)));
 }
 
 void RenderState::setBlendState(BlendState blendState)
@@ -113,15 +108,15 @@ ShaderInfo::~ShaderInfo()
 
 namespace ShaderManager
 {
-    std::vector< TableEntry< DxBlob*>> allShaders;
-    std::vector< TableEntry<std::vector<D3D12_INPUT_ELEMENT_DESC> >> allDescriptions;
     DxCompiler* s_compiler = nullptr;
     DxUtils* s_utils = nullptr;
     DxIncludeHandler* s_includer = nullptr;
     void InitializeCompiler()
     {
-        ThrowIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&s_compiler)));
-        ThrowIfFailed(::DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&s_utils)));
+        ThrowIfFailed(::DxcCreateInstance(CLSID_DxcCompiler,
+                                          IID_PPV_ARGS(&s_compiler)));
+        ThrowIfFailed(::DxcCreateInstance(CLSID_DxcUtils,
+                                          IID_PPV_ARGS(&s_utils)));
         s_utils->CreateDefaultIncludeHandler(&s_includer);
     }
 
@@ -139,7 +134,8 @@ namespace ShaderManager
         sourceBlob->GetEncoding(&fl, &sourceBuffer.Encoding);
         std::wstring type = GetShaderTypeString(info.type);
         
-        auto path = config::g_state.shaderDir / L"pdb" / system::Filepath(info.path).filename();
+        auto path = config::g_state.shaderDir / L"pdb" /
+                    system::Filepath(info.path).filename();
         system::Filepath pdbPath(std::filesystem::absolute(path.getPath()));
         std::wstring pdbPathWstr = pdbPath.wstr() + info.entryPoint + L".pdb";
         std::vector<const wchar_t*> args= 
@@ -167,7 +163,12 @@ namespace ShaderManager
                 IDxcBlobEncoding* errorBuffer;
                 result->GetErrorBuffer(&errorBuffer);
                 char* str = new char[errorBuffer->GetBufferSize()];
-                std::memcpy(str, errorBuffer->GetBufferPointer(), errorBuffer->GetBufferSize());
+
+                std::memcpy(
+                    str,
+                    errorBuffer->GetBufferPointer(),
+                    errorBuffer->GetBufferSize());
+
                 engine::util::printError("{}",std::string(str));
                 delete[] str;
             }
@@ -192,22 +193,12 @@ namespace ShaderManager
         }
 
     }
-
-    DxBlob* GetShader(std::wstring name)
-    {
-        return *util::FindElement(allShaders, name);
-    }
-
-    void Clear()
-    {
-        allShaders.clear();
-    }
 }
 
 ComputePSO::ComputePSO(ComputeShaderInputGroup shaderGroup)
 {
     D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
-    desc.CS = GetShader(shaderGroup.computeShader);
+    //desc.CS = GetShader(shaderGroup.computeShader);
     desc.pRootSignature = *shaderGroup.rootSignature;
 
     ThrowIfFailed(Device::device->getDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
