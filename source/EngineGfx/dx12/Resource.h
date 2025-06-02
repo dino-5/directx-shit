@@ -5,6 +5,7 @@
 #include "EngineCommon/System/config.h"
 #include "EngineCommon/util/Logger.h"
 #include "EngineGfx/dx12/dx12_includes.hpp"
+#include "EngineGfx/dx12/Device.h"
 
 #include <array>
 #include <optional>
@@ -84,7 +85,10 @@ class Resource
 public:
     Resource() = default;
 
-    void initResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val=nullptr);
+    void initResource(const Device& device,
+                      ResourceDescription desc,
+                      DescriptorProperties descriptorDesc,
+                      D3D12_CLEAR_VALUE* val=nullptr);
     void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
 
     void reset()

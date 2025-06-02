@@ -16,7 +16,7 @@ void Device::getHardwareAdapter(
     IDXGIAdapter1* adapter;
 
     IDXGIFactory6* factory6;
-    if (SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory6))))
+    if (SUCCEEDED(factory->QueryInterface(IID_PPV_ARGS(&factory6))))
     {
         DXGI_GPU_PREFERENCE preference = requestHighPerformanceAdapter == true ?
              DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED;
@@ -34,7 +34,7 @@ void Device::getHardwareAdapter(
                if (i == static_cast<u32>(deviceIndex))
                {
                    if (!SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0,
-                                 __uuidof(ID3D12Device), reinterpret_cast<void**>(&m_device))))
+                                 __uuidof(ID3D12Device), reinterpret_cast<void**>(&device))))
                    {
                         engine::util::printError("can't create D3D12 device");
                         return false;
@@ -54,7 +54,7 @@ void Device::getHardwareAdapter(
                         adapter,
                         D3D_FEATURE_LEVEL_12_0,
                          __uuidof(ID3D12Device),
-                        reinterpret_cast<void**>(&m_device))))
+                        reinterpret_cast<void**>(&device))))
                    {
                         return false;
                    }
@@ -94,7 +94,7 @@ void Device::getHardwareAdapter(
     *ppAdapter = adapter;
 }
 
-void Device::initialize()
+Device::Device()
 {
     UINT dxgiFactoryFlags = 0;
     LogScope("Device::Initialize");
@@ -116,12 +116,12 @@ void Device::initialize()
         }
     }
 
-    ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
+    ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
     {
         IDXGIAdapter1* adapter;
         getHardwareAdapter(&adapter);
     }
-    device = this;
+    s_device = this;
     engine::util::printInfo("device initialized");
 }
 
@@ -130,7 +130,7 @@ bool Device::checkForFeatureSupport(DXGI_FEATURE feature)
     BOOL result = FALSE;
     ComPtr<IDXGIFactory5> factory5;
 
-    if (m_factory && SUCCEEDED(m_factory->QueryInterface(IID_PPV_ARGS(&factory5))))
+    if (factory && SUCCEEDED(factory->QueryInterface(IID_PPV_ARGS(&factory5))))
     {
         if (FAILED(factory5->CheckFeatureSupport(
             feature, 
@@ -144,13 +144,13 @@ bool Device::checkForFeatureSupport(DXGI_FEATURE feature)
 
 void Device::createCommandAllocator(ID3D12CommandAllocator* &alloc)
 {
-    ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)));
+    ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&alloc)));
 }
 
 void Device::createCommandList(ID3D12GraphicsCommandList* &list,
                                ID3D12CommandAllocator* &allocator)
 {
-    ThrowIfFailed(m_device->CreateCommandList(
+    ThrowIfFailed(device->CreateCommandList(
         0,
         D3D12_COMMAND_LIST_TYPE_DIRECT,
         allocator,
@@ -161,6 +161,6 @@ void Device::createCommandList(ID3D12GraphicsCommandList* &list,
 
 void Device::createFence(ID3D12Fence** fence)
 {
-    ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
+    ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, 
         __uuidof(**fence), reinterpret_cast<void**>(fence)));
 }

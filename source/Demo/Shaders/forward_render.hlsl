@@ -30,7 +30,6 @@ struct Material
 // indices to resources which are constant along the draw call
 struct PassIndices
 {
-    int viewSettingsIndex;
     int materialArrayIndex;
 };
 
@@ -40,6 +39,7 @@ struct ObjectIndices
     int materialIndex;
 };
 
+ConstantBuffer<ViewSettings> g_view : register(b0);
 ConstantBuffer<PassIndices> g_passIndices : register (b0, space10);
 ConstantBuffer<ObjectIndices> g_objectIndices : register (b1, space10);
 
@@ -47,9 +47,9 @@ sampler texture_sampler : register(s0);
 
 PS_Input VertexMain(Vertex vertex)
 {
-    ConstantBuffer<ViewSettings> viewSettings = ResourceDescriptorHeap[g_passIndices.viewSettingsIndex];
     PS_Input result;
-    result.pos = mul(viewSettings.projection, mul(viewSettings.cameraMatrix, float4(vertex.pos, 1.f) ));
+    result.pos = mul(g_view.projection,
+                     mul(g_view.cameraMatrix, float4(vertex.pos, 1.f) ));
     result.normal = vertex.normal;
     result.tangent = vertex.tangent.xyz;
     result.bitangent = cross(vertex.normal, vertex.tangent.xyz)*vertex.tangent.w;

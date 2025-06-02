@@ -103,18 +103,18 @@ ID3D12DescriptorHeap* DescriptorHeap::getHeap()
 
 void DescriptorHeapManager::CreateSRVHeap(uint n)
 {
-    CurrentSRVHeap.init(Device::device->getDevice(), 
+    CurrentSRVHeap.init(Device::s_device->device, 
                         n, DescriptorHeapType::CBV_SRV_UAV);
 }
 
 void DescriptorHeapManager::CreateRTVHeap(uint n)
 {
-    CurrentRTVHeap.init(Device::device->getDevice(), n, DescriptorHeapType::RTV);
+    CurrentRTVHeap.init(Device::s_device->device, n, DescriptorHeapType::RTV);
 }
 
 void DescriptorHeapManager::CreateDSVHeap(uint n)
 {
-    CurrentDSVHeap.init(Device::device->getDevice(), n, DescriptorHeapType::DSV);
+    CurrentDSVHeap.init(Device::s_device->device, n, DescriptorHeapType::DSV);
 }
 
 void PopulateDescriptorHeaps()

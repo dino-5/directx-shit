@@ -17,7 +17,7 @@ enum class DescriptorHeapType {
 using ViewID = u32;
 class Resource;
 struct DescriptorGPU {
-  uint32_t HeapIndex;
+  uint32_t HeapIndex{0};
   D3D12_CPU_DESCRIPTOR_HANDLE HandleCPU{0};
   D3D12_GPU_DESCRIPTOR_HANDLE HandleGPU{0};
 

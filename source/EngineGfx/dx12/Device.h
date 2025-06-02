@@ -10,42 +10,34 @@
 #include "EngineGfx/dx12/d3dx12.h"
 #include "EngineGfx/dx12/dx12_includes.hpp"
 
-class Texture;
-class DescriptorHeap;
-
 namespace engine::graphics {
 
 class Device
 {
 public:
-    static inline Device* device = nullptr;
-    Device() { initialize(); }
-    void initialize();
-    SHIT_ENGINE_GET_D3D12COMPONENT(IDXGIFactory4, Factory, m_factory);
-    SHIT_ENGINE_GET_D3D12COMPONENT(ID3D12Device, Device, m_device);
-
-    void createCommandList(ID3D12GraphicsCommandList*& list, ID3D12CommandAllocator*& allocator);
+    static inline Device* s_device = nullptr;
+    Device() ;
+    void createCommandList(ID3D12GraphicsCommandList*& list,
+                           ID3D12CommandAllocator*& allocator);
     void createCommandAllocator(ID3D12CommandAllocator*&);
     void createFence(ID3D12Fence**);
 
-    bool checkForFeatureSupport(DXGI_FEATURE feature=DXGI_FEATURE_PRESENT_ALLOW_TEARING);
+    bool checkForFeatureSupport(DXGI_FEATURE feature=
+                                DXGI_FEATURE_PRESENT_ALLOW_TEARING);
 
     void reset() { 
-        m_factory->Release(); m_factory = nullptr;
-        m_device->Release(); m_device = nullptr;
+        factory->Release(); factory = nullptr;
+        device->Release(); device = nullptr;
     }
 
-    ID3D12Device* native() { return m_device; }
-
-private:
+    ID3D12Device* operator()() { return device; }
 
     void getHardwareAdapter(
         IDXGIAdapter1** ppAdapter,
         bool requestHighPerformanceAdapter = true);
 
-private:
-    IDXGIFactory4* m_factory = nullptr;
-    ID3D12Device* m_device = nullptr;
+    IDXGIFactory4* factory = nullptr;
+    ID3D12Device* device = nullptr;
 };
 
 };

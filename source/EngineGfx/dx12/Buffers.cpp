@@ -9,7 +9,7 @@ std::vector<Buffer::UploadBufferInfo> Buffer::s_uploadBufferInfo;
 
 inline void Buffer::copyDataToGPU(
     const void* data,
-    const GfxContext& context,
+    Device& device, CommandList& cmdList,
     ResourceState state)
 {
     D3D12_SUBRESOURCE_DATA subresData = {};
@@ -17,15 +17,19 @@ inline void Buffer::copyDataToGPU(
     subresData.RowPitch = m_bufferSize;
     subresData.SlicePitch = 1;
 
-    BufferHandle uploadBufferHandle = GetUploadBufferHandle(context, m_bufferSize);
+    BufferHandle uploadBufferHandle = GetUploadBufferHandle(
+        device, cmdList, m_bufferSize);
 
-    transition(context.cmdList, ResourceState::COPY_DEST);
-    UpdateSubresources(context.cmdList, resource(), GetUploadBuffer(uploadBufferHandle).resource(), 0, 0, 1, &subresData);
-    transition(context.cmdList, state);
+    transition(cmdList.list, ResourceState::COPY_DEST);
+    UpdateSubresources(cmdList.list,
+                       resource(),
+                       GetUploadBuffer(uploadBufferHandle).resource(),
+                       0, 0, 1, &subresData);
+    transition(cmdList.list, state);
 }
 
 void Buffer::init(
-    const GfxContext& context,
+    Device& device, CommandList& cmdList,
     const BufferDescription& bufferDesc)
 {
     m_type = bufferDesc.type;
@@ -48,19 +52,22 @@ void Buffer::init(
     };
 
     DescriptorProperties descriptorProps;
-    if(bufferDesc.type == BufferType::CONSTANT || bufferDesc.type == BufferType::CUSTOM)
+    if(bufferDesc.type == BufferType::CONSTANT 
+        || bufferDesc.type == BufferType::CUSTOM)
     {
         descriptorProps = {
-            .descriptor = bufferDesc.type == BufferType::CUSTOM ? DescriptorFlags::ShaderResource : DescriptorFlags::ConstantBuffer,
+            .descriptor = bufferDesc.type == BufferType::CUSTOM 
+              ? DescriptorFlags::ShaderResource : DescriptorFlags::ConstantBuffer,
             .viewDimension = D3D12_SRV_DIMENSION_BUFFER,
             .bufferStride = m_elementSize,
             .numElements = bufferDesc.elementCount
         };
     }
-    Resource::initResource(context.device, desc, descriptorProps);
+    Resource::initResource(device, desc, descriptorProps);
 
     if(bufferDesc.data)
-        copyDataToGPU(bufferDesc.data, context, bufferDesc.state);
+        copyDataToGPU(bufferDesc.data,
+                      device, cmdList, bufferDesc.state);
 }
 
 };

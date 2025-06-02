@@ -30,11 +30,12 @@ namespace engine::graphics
         desc.name = imData.name;
 
         DescriptorProperties descriptorProps{
-        	.descriptor = DescriptorFlags::ShaderResource,
-        	.viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D
+            .descriptor = DescriptorFlags::ShaderResource,
+            .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D
         };
 
-        Resource::initResource(ctx.device, desc, descriptorProps);
+        Resource::initResource(
+            ctx.device, desc, descriptorProps);
 
         const UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource(), 0, 1);
 
@@ -47,7 +48,7 @@ namespace engine::graphics
         uploadDesc.heapType = D3D12_HEAP_TYPE_UPLOAD;
         uploadDesc.createState = ResourceState::GENERIC_READ_STATE;
         textureUploadHeap.initResource(
-            Device::device->getDevice(),
+            ctx.device,
             uploadDesc,
             DescriptorProperties(DescriptorFlags::None));
 
@@ -58,11 +59,11 @@ namespace engine::graphics
         textureData.SlicePitch = textureData.RowPitch * imData.height;
 
         UpdateSubresources(
-            ctx.cmdList,
+            ctx.cmdList.list,
             resource(),
-            textureUploadHeap,
-            0, 0, 1, &textureData);
-        Resource::transition(ctx.cmdList, ResourceState::PIXEL_SHADER_RESOURCE);
+        textureUploadHeap, 0, 0, 1, &textureData);
+        Resource::transition(ctx.cmdList.list,
+                             ResourceState::PIXEL_SHADER_RESOURCE);
     }
 
 };

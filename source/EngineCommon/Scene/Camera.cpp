@@ -6,7 +6,7 @@
 using namespace DirectX;
 using namespace engine;
 
-using namespace engine::graphics;
+using namespace engine::math;
 
 Camera::Camera() 
     : m_cameraMovementSpeedButton(*this, defaultCameraMovementSpeed, "CameraMovementSpeed", 100),
@@ -79,22 +79,22 @@ void Camera::update()
     auto inputManager = system::InputManager::GetInputManager();
 
     if (inputManager.getKeyState(system::Key::D).isPressed())
-        translate(graphics::MovementDirection::SideDirection, velocity);
+        translate(MovementDirection::SideDirection, velocity);
 
     if(inputManager.getKeyState(system::Key::A).isPressed())
-        translate(graphics::MovementDirection::SideDirection, -velocity);
+        translate(MovementDirection::SideDirection, -velocity);
 
     if(inputManager.getKeyState(system::Key::W).isPressed())
-        translate(graphics::MovementDirection::ViewDirection, velocity);
+        translate(MovementDirection::ViewDirection, velocity);
 
     if(inputManager.getKeyState(system::Key::S).isPressed())
-        translate(graphics::MovementDirection::ViewDirection, -velocity);
+        translate(MovementDirection::ViewDirection, -velocity);
 
     if(inputManager.getKeyState(system::Key::E).isPressed())
-        translate(graphics::MovementDirection::TopDirection, velocity);
+        translate(MovementDirection::TopDirection, velocity);
 
     if(inputManager.getKeyState(system::Key::Q).isPressed())
-        translate(graphics::MovementDirection::TopDirection, -velocity);
+        translate(MovementDirection::TopDirection, -velocity);
 
     if(inputManager.getKeyState(system::Key::UP).isPressed())
         rotate(-rotationVelocity, 0);
@@ -153,9 +153,9 @@ void Camera::rotate(float vertical, float horizontal)
     auto rotationMatrixY = math::Matrix4(rotationY);
     auto rotationMatrixXY = rotationMatrixX * rotationMatrixY;
 
-    m_viewDir = (rotationMatrixXY * math::Vector4(m_viewDir, { 1.f }));
+    m_viewDir = (rotationMatrixXY * Vector4(m_viewDir, { 1.f }));
     m_viewDir.normalizeSelf();
-    m_rightDir = (rotationMatrixY * math::Vector4(m_rightDir, { 1.f }));
+    m_rightDir = (rotationMatrixY * Vector4(m_rightDir, { 1.f }));
     m_rightDir.normalizeSelf();
     m_upDir = (rotationMatrixX * math::Vector4(m_upDir, { 1.f }));
     m_upDir.normalizeSelf();

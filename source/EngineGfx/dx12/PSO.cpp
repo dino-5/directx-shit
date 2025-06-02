@@ -29,7 +29,7 @@ D3D12_SHADER_BYTECODE getShader(DxBlob* blob)
 
 PSO::PSO(const RenderState& state)
 {
-    ID3D12Device* device = Device::device->getDevice();
+    ID3D12Device* device = Device::s_device->device;
     
     m_psoDesc.InputLayout = state.shader.desc;
     m_psoDesc.pRootSignature = *state.shader.rootSignature;
@@ -201,7 +201,9 @@ ComputePSO::ComputePSO(ComputeShaderInputGroup shaderGroup)
     //desc.CS = GetShader(shaderGroup.computeShader);
     desc.pRootSignature = *shaderGroup.rootSignature;
 
-    ThrowIfFailed(Device::device->getDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pso)));
+    ID3D12Device* device = Device::s_device->device;
+    ThrowIfFailed(device->CreateComputePipelineState(&desc,
+                                                     IID_PPV_ARGS(&m_pso)));
 }
 
 };

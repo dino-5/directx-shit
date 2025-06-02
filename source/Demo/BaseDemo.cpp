@@ -1,4 +1,5 @@
 #include <dxgiformat.h>
+#include <format>
 #include <functional>
 #include <ostream>
 #include <string_view>
@@ -10,7 +11,6 @@
 #include "EngineGfx/tiny_bvh.h"
 
 using namespace std;
-using namespace gfx;
 using namespace util;
 using namespace DirectX;
 
@@ -63,27 +63,15 @@ BaseDemo::BaseDemo(
     u32 height,
     std::string_view name) :
     WindowApp(width, height, name),
-    m_cmdList(m_device),
-    m_cmdQueue(m_device.native()),
-    m_swapChain(
-        getCurrentWindowSettings(),
-        m_device,
-        m_cmdQueue.getQueue()),
     m_renderModel(*this, true, "render model"),
     m_drawBVHDebugView(*this, true, "draw BVH debug view")
 {
+    initGfxContext(width, height);
+    m_swapChain = SwapChain(
+        getCurrentWindowSettings(),
+        globalContext.device,
+        globalContext.cmdQueue.queue),
     m_inputManager = &system::InputManager::GetInputManager();
-    m_device.createFence(&m_fence);
-
-    DescriptorHeapManager::CreateDSVHeap(20);
-    DescriptorHeapManager::CreateRTVHeap(100);
-    DescriptorHeapManager::CreateSRVHeap(200);
-
-    m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    if (m_fenceEvent == nullptr)
-    {
-        ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-    }
 
     m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
     onResize(width, height);
@@ -94,21 +82,12 @@ void BaseDemo::onResize(
     uint height)
 {
     flushGPU();
+    setWindowSize(width, height);
     if(width==0 && height==0)
         return;
 
     WindowApp::onResize(width, height);
     m_swapChain.onResize(getCurrentWindowSettings());
-
-    m_viewPort.TopLeftX = 0;
-    m_viewPort.TopLeftY = 0;
-    m_viewPort.Width = (float)width;
-    m_viewPort.Height = (float)height;
-    m_viewPort.MaxDepth = 1.0;
-    m_viewPort.MinDepth = .0;
-
-    m_scissorRect = { 0, 0, static_cast<long>(width), static_cast<long>(height) };
-
     // depth
     {
         DescriptorProperties viewProps{
@@ -130,7 +109,7 @@ void BaseDemo::onResize(
         val.DepthStencil = { 1.0f, 0 };
         val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
         m_depthStencil.initResource(
-            m_device.getDevice(),
+            globalContext.device,
             desc, viewProps, &val);
     }
 
@@ -149,7 +128,7 @@ void BaseDemo::onResize(
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
 {
     return { getWidth(), getHeight(), DXGI_FORMAT_R8G8B8A8_UNORM,
-        getWindowHandle(), m_device.checkForFeatureSupport(), false};
+             getWindowHandle(), false, false};
 }
 
 void BaseDemo::compileShaders()
@@ -211,14 +190,15 @@ void BaseDemo::compileShaders()
 
     {
         RootParameters parameters = {
-            RootParameter::CreateConstants(2, 0, 10) };
+            RootParameter::CreateDescriptor(0),
+            RootParameter::CreateConstants(1, 0, 10) };
           /*RootParameter::CreateConstants(1, 1, 10) };*/
 
         auto rootSignFlags = 
             RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
             RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
 
-        m_rootSignature.init(m_device.getDevice(), parameters, rootSignFlags);
+        m_rootSignature.init(globalContext.device(), parameters, rootSignFlags);
         u32 offset = 0;
         D3D12_INPUT_ELEMENT_DESC inputElements[] ={
             getInputElement("POSITION", offset, 3),
@@ -244,7 +224,7 @@ void BaseDemo::compileShaders()
         auto rootSignFlags = 
             RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
             RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-        m_bvhDebugDrawRS.init(m_device.getDevice(), parameters, rootSignFlags);
+        m_bvhDebugDrawRS.init(globalContext.device(), parameters, rootSignFlags);
         u32 offset = 0;
         D3D12_INPUT_ELEMENT_DESC inputElements[] ={
             getInputElement("POSITION", offset, 3)
@@ -265,58 +245,35 @@ void BaseDemo::compileShaders()
 
 }
 
-u64 BaseDemo::signal(
-    graphics::CommandQueue& queue,
-    ID3D12Fence* fence,
-    u64& value)
-{
-    u64 valueForSignal = ++value;
-    ThrowIfFailed(queue->Signal(fence, valueForSignal));
-
-    return valueForSignal;
-}
-
-void BaseDemo::waitForFence(ID3D12Fence* fence, HANDLE& fenceEvent, u64 fenceValue)
-{
-    fence->SetEventOnCompletion(fenceValue, fenceEvent);
-    WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
-}
-
-void BaseDemo::flushGPU()
-{
-    waitForFence(m_fence, m_fenceEvent, m_fenceValue);
-}
-
-
 bool BaseDemo::initialize()
 {
     LogScope("BaseDemo");
 
-    imgui::Init(getWindowHandle(), m_device.getDevice(), config::NumFrames);
+    imgui::Init(getWindowHandle(), globalContext.device(), config::NumFrames);
 
     ShaderManager::InitializeCompiler();
     compileShaders();
-
-    GfxContext context;
-    context.cmdList = m_cmdList.reset(0);
-    context.device = m_device.getDevice();
+    
+    resetList(0);
 
     // setup data 
     ConstandBufferData data;
     data.projection = m_camera.getProjectionMatrix();
     data.view = m_camera.getViewMatrix();
-    m_constBuffer = ConstantBuffer(context, &data, 1);
+    m_constBuffer = ConstantBuffer(globalContext.device,
+                                   globalContext.cmdList, &data, 1);
 
     LightSettings lightSettings;
     lightSettings.cameraPosition = m_camera.getPos();
     lightSettings.viewDirection = m_camera.getDir();
-    m_lightSettingsResource= ConstantBuffer(context, &lightSettings, 1);
+    m_lightSettingsResource= ConstantBuffer(globalContext.device,
+                                   globalContext.cmdList, &lightSettings, 1);
 
     if(1)
         m_model.initGLTF(config::g_state.homeDir/"data/Sponza/glTF/Sponza.gltf",
-                         context);
+                         globalContext);
     else if (0)
-        m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", context);
+        m_model.initOBJ(config::g_state.homeDir/ "data/teapot.obj", globalContext);
 
     if(m_model.isInitialized())
     {
@@ -330,7 +287,7 @@ bool BaseDemo::initialize()
 
         std::function<Vector3(const BVHNode&)> aabbF = [](const BVHNode& node){
             return node.aabb.aabbMin;};
-        m_bvhModel = BVHBuilder::generateDrawData(context,
+        m_bvhModel = BVHBuilder::generateDrawData(globalContext,
                                                   m_bvhBuilder.getRootNode(),
                                                   m_bvhBuilder.getNodeCount(),
                                                   diagonalF, aabbF);
@@ -365,7 +322,7 @@ bool BaseDemo::initialize()
             [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node)  {
             return from_tinyV3_to_mathV3(node.aabbMin);};
 
-        m_tinybvhModel = BVHBuilder::generateDrawData(context,
+        m_tinybvhModel = BVHBuilder::generateDrawData(globalContext,
                                                       bvh.bvhNode,
                                                       bvh.NodeCount(),
                                                       diagonalF, aabbF);
@@ -384,12 +341,10 @@ bool BaseDemo::initialize()
         this->m_lightSettingsResource.update(&lightSettings);
     });
 
-    ThrowIfFailed(context.cmdList->Close());
-    ID3D12CommandList* ppCommandLists[] = { context.cmdList };
-    m_cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    executeAll();
 
-    m_swapChain.m_fence[0] = signal(m_cmdQueue, m_fence, m_fenceValue);
-    waitForFence(m_fence, m_fenceEvent, m_swapChain.m_fence[0]);
+    signal(0);
+    waitForFence(0);
 
     return true;
 }
@@ -397,20 +352,16 @@ bool BaseDemo::initialize()
 void BaseDemo::draw()
 {
     Timer timer("draw");
-    ID3D12GraphicsCommandList* cmdList = m_cmdList.reset(m_currentFrameIndex);
-    m_graphicsContext.cmdList = cmdList;
-    m_graphicsContext.device = m_device.getDevice();
+    startFrame();
+    ID3D12GraphicsCommandList* cmdList = globalContext.currentCmdList;
 
-    u32 swapChainBufferIndex = m_swapChain.changeState(cmdList,
-                                               ResourceState::RENDER_TARGET);
-
+    u32 swapChainBufferIndex = m_swapChain.changeState(
+                                cmdList,
+                                ResourceState::RENDER_TARGET);
     // forward rendering 
     {
         const float clearColor[] = { .0f, 0.0f, .0f, 1.0f };
         auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
-
-        cmdList->RSSetViewports(1, &m_viewPort);
-        cmdList->RSSetScissorRects(1, &m_scissorRect);
 
         cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
                                     true, &m_depthStencil.dsv.HandleCPU);
@@ -421,20 +372,22 @@ void BaseDemo::draw()
                            1.f, 0, 0, nullptr);
 
         cmdList->SetDescriptorHeaps(1, 
-                gfx::DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
+                DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
         cmdList->SetGraphicsRootSignature(m_rootSignature);
         cmdList->SetPipelineState(m_pso);
 
         cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        struct 
-        {
-            int viewSettingsIndex;
-            int materialArrayIndex;
-        } passIndices;
-        passIndices.viewSettingsIndex = m_constBuffer.getDescriptorHeapIndex();
-        passIndices.materialArrayIndex = m_model.m_materialBuffer.getDescriptorHeapIndex();
-        cmdList->SetGraphicsRoot32BitConstants(0, 2, &passIndices, 0);
+        /*struct */
+        /*{*/
+        /*    int materialArrayIndex;*/
+        /*} passIndices;*/
+        u32 passIndices =
+            m_model.m_materialBuffer.getDescriptorHeapIndex();
+        cmdList->SetGraphicsRootConstantBufferView(
+            0,
+            m_constBuffer->GetGPUVirtualAddress());
+        cmdList->SetGraphicsRoot32BitConstant(1, passIndices, 0);
 
         if(m_model.isInitialized())
         {
@@ -500,29 +453,20 @@ void BaseDemo::draw()
     imgui::EndFrame(cmdList);
 
     m_swapChain.changeState(cmdList, ResourceState::PRESENT);
-    ThrowIfFailed(cmdList->Close());
-    ID3D12CommandList* ppCommandLists[] = { cmdList};
-    m_cmdQueue->ExecuteCommandLists(1, ppCommandLists);
 
+    executeAll();
     m_swapChain.Present();
 
     // sync
-    m_swapChain.m_fence[m_currentFrameIndex] = signal(m_cmdQueue, m_fence, m_fenceValue);
-}
-
-void BaseDemo::waitForFrame(u32 index)
-{
-    u64 fenceValue = m_fence->GetCompletedValue();
-    if (fenceValue < m_swapChain.m_fence[index])
-        waitForFence(m_fence, m_fenceEvent, m_swapChain.m_fence[index]);
+    signal();
 }
 
 void BaseDemo::update()
 {
     Timer timer("update");
 
-    m_currentFrameIndex = m_swapChain.getCurrentIndex();
-    waitForFrame(m_currentFrameIndex);
+    nextFrame(m_swapChain.getCurrentIndex());
+    waitForFrame();
 
     m_camera.update();
 

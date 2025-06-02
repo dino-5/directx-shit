@@ -115,7 +115,7 @@ void Model::initOBJ(system::Filepath path, GfxContext& context)
     m_isInitialized = true;
 }
 
-void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
+void Model::initGLTF(system::Filepath path, GfxContext& context)
 {
     LogScope(std::format("loading of gltf model {}", path.str()));
     m_context = &context;
@@ -188,7 +188,7 @@ void Model::initGLTF(system::Filepath path, graphics::GfxContext& context)
 
     BufferDescription desc(materialData.data(), (u32)materialData.size(), "model submesh data", ResourceState::PIXEL_SHADER_RESOURCE, BufferType::CUSTOM);
 
-    m_materialBuffer.init(context, desc);
+    m_materialBuffer.init(context.device, context.cmdList, desc);
 
     m_context = nullptr;
     m_isInitialized = true;

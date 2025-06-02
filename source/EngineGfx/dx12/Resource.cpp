@@ -31,7 +31,7 @@ D3D12_RESOURCE_STATES CastEnum(ResourceState state)
     return static_cast<D3D12_RESOURCE_STATES>(state);
 }
 
-void Resource::initResource(ID3D12Device* device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val)
+void Resource::initResource(const Device& device, ResourceDescription desc, DescriptorProperties descriptorDesc, D3D12_CLEAR_VALUE* val)
 {
     m_id = ++s_counter;
     m_bufferSize = desc.dimension== D3D12_RESOURCE_DIMENSION_BUFFER ? desc.width : 0;
@@ -63,10 +63,10 @@ void Resource::initResource(ID3D12Device* device, ResourceDescription desc, Desc
         name = std::to_wstring(s_counter);
     }
     D3D12_CLEAR_VALUE* clearValue = m_clearValue.has_value() ? &m_clearValue.value() : nullptr;
-    locCreateResource(device, resourceDesc, desc.createState, m_heapType, name, m_resource.ReleaseAndGetAddressOf(), clearValue);
+    locCreateResource(device.device, resourceDesc, desc.createState, m_heapType, name, m_resource.ReleaseAndGetAddressOf(), clearValue);
 
     m_descriptorProps = descriptorDesc;
-    createViews(device, m_descriptorProps);
+    createViews(device.device, m_descriptorProps);
 }
 
 void Resource::createViews(ID3D12Device* device, DescriptorProperties descriptorProps)

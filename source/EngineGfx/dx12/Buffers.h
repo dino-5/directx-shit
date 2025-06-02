@@ -1,15 +1,15 @@
 #pragma once
-#include "EngineCommon/System/config.h"
-#include "EngineCommon/include/types.h"
-#include "EngineGfx/GfxContext.h"
-#include "EngineGfx/dx12/Device.h"
-#include "EngineGfx/dx12/Resource.h"
-#include "EngineGfx/dx12/d3dx12.h"
-#include "EngineGfx/dx12/dx12_includes.hpp"
 #include <cstring>
 #include <d3d12.h>
 #include <string_view>
 #include <vector>
+#include "EngineCommon/System/config.h"
+#include "EngineCommon/include/types.h"
+#include "Device.h"
+#include "Resource.h"
+#include "CommandList.h"
+#include "d3dx12.h"
+#include "dx12_includes.hpp"
 
 #include "third_party/magic_enum/include/magic_enum.hpp"
 
@@ -28,14 +28,17 @@ enum class BufferType : u16 {
 
 struct BufferDescription {
   template <typename T>
-  BufferDescription(T *aData, u32 aElementCount, std::string_view aName,
-                    ResourceState aState = ResourceState::GENERIC_READ_STATE,
+  BufferDescription(T *aData, u32 aElementCount,
+                    std::string_view aName,
+                    ResourceState aState =
+                        ResourceState::GENERIC_READ_STATE,
                     BufferType aType = BufferType::CUSTOM)
       : data((void *)aData), elementCount(aElementCount),
         elementSize(sizeof(T)), name(aName), state(aState), type(aType) {}
 
   BufferDescription(u32 aSize, std::string_view aName,
-                    ResourceState aState = ResourceState::GENERIC_READ_STATE,
+                    ResourceState aState =
+                        ResourceState::GENERIC_READ_STATE,
                     BufferType aType = BufferType::CUSTOM)
       : data(nullptr), elementCount(1), elementSize(aSize), name(aName),
         state(aState), type(aType) {}
@@ -60,50 +63,72 @@ public:
   Buffer() = default;
 
   template <typename T>
-  Buffer(GfxContext &context, T *data, u32 elementCount,
-         std::string_view name) {
-    init(context, BufferDescription(data, elementCount, name));
+  Buffer(Device& device,
+         CommandList& cmdList,
+         T *data,
+         u32 elementCount,
+         std::string_view name)
+  {
+    init(device, cmdList, BufferDescription(data, elementCount, name));
   }
 
-  Buffer(const GfxContext &context, const BufferDescription &desc) {
-    init(context, desc);
+  Buffer(Device& device,
+         CommandList& cmdList,
+         const BufferDescription &desc) {
+    init(device, cmdList, desc);
   }
 
-  static Buffer CreateIndexBuffer(GfxContext &context, u32 *data,
-                                  u32 elementCount) {
-    return CreateBuffer(context,
-                        BufferDescription(data, elementCount, "IndexBuffer",
-                                          ResourceState::INDEX_BUFFER,
-                                          BufferType::INDEX));
+  static Buffer CreateIndexBuffer(Device& device,
+                                  CommandList& cmdList,
+                                  u32 *data,
+                                  u32 elementCount)
+  {
+    return CreateBuffer(device, cmdList,
+                BufferDescription(
+                        data,
+                        elementCount,
+                        "IndexBuffer",
+                        ResourceState::INDEX_BUFFER,
+                        BufferType::INDEX));
   }
 
   template <typename T>
-  static Buffer CreateVertexBuffer(GfxContext &context, T *data,
+  static Buffer CreateVertexBuffer(Device& device,
+                                   CommandList& cmdList,
+                                   T *data,
                                    u32 elementCount)
   {
-    return CreateBuffer(
-            context,
-            BufferDescription(data, elementCount, "VertexBuffer",
-                              ResourceState::VERTEX_CONSTANT_BUFFER,
-                              BufferType::VERTEX));
+    return CreateBuffer(device, cmdList,
+                BufferDescription(
+                    data,
+                    elementCount,
+                    "VertexBuffer",
+                    ResourceState::VERTEX_CONSTANT_BUFFER,
+                    BufferType::VERTEX));
   }
 
   template <typename T>
-  static Buffer CreateCustomBuffer(GfxContext &context,
+  static Buffer CreateCustomBuffer(Device& device,
+                                   CommandList& cmdList,
                                    T *data,
                                    u32 elementCount)
   {
     return CreateBuffer(
-        context, BufferDescription(data, elementCount, "CustomBuffer",
-                                   ResourceState::COMMON, BufferType::CUSTOM));
+                device, cmdList,
+                BufferDescription(
+                    data,
+                    elementCount,
+                    "CustomBuffer",
+                    ResourceState::COMMON,
+                    BufferType::CUSTOM));
   }
 
   static Buffer CreateUploadBuffer(
-        const GfxContext &context,
+        Device& device, CommandList& cmdList,
         u32 bufferSize)
   {
     return CreateBuffer(
-            context,
+            device, cmdList,
             BufferDescription(
                 bufferSize,
                 "UploadBuffer",
@@ -111,18 +136,21 @@ public:
   }
 
   static Buffer CreateBuffer(
-        const GfxContext &context,
+        Device& device, CommandList& cmdList,
         const BufferDescription &bufferDesc) {
-    return Buffer(context, bufferDesc);
+    return Buffer(device, cmdList, bufferDesc);
   }
 
-  void init(const GfxContext &context, const BufferDescription &desc);
+  void init(Device& device,
+            CommandList& cmdList, const BufferDescription &desc);
 
   u32 getDescriptorHeapIndex() { return srv.getDescriptorIndex(); }
   u32 getBufferSize() const { return m_bufferSize; }
   u32 getElementSize() const { return m_elementSize; }
 
-  void copyDataToGPU(const void *data, const GfxContext &context,
+  void copyDataToGPU(const void *data,
+                     Device& device,
+                     CommandList& cmdList,
                      ResourceState state);
 
 protected:
@@ -131,7 +159,8 @@ protected:
     bool isUsed;
   };
   using BufferHandle = u32;
-  static BufferHandle GetUploadBufferHandle(const GfxContext &ctx,
+  static BufferHandle GetUploadBufferHandle(Device& device, 
+                                            CommandList& cmdList,
                                             u32 bufferSize) {
     for (u32 i = 0; i < (u32)s_uploadBufferInfo.size(); ++i) {
       auto &buffer = s_uploadBufferInfo[i];
@@ -140,7 +169,8 @@ protected:
         return i;
       }
     }
-    s_uploadBuffers.push_back(CreateUploadBuffer(ctx, bufferSize));
+    s_uploadBuffers.push_back(CreateUploadBuffer(
+            device, cmdList, bufferSize));
     s_uploadBufferInfo.push_back({bufferSize, true});
     return (u32)s_uploadBuffers.size() - 1;
   }
@@ -161,8 +191,8 @@ protected:
 class ConstantBuffer : public Buffer {
 public:
   template <typename T>
-  ConstantBuffer(GfxContext &context, T *data, u32 elementCount)
-      : Buffer(CreateConstantBuffer(context, elementCount, sizeof(T))) {
+  ConstantBuffer(Device& device, CommandList& cmdList, T *data, u32 elementCount)
+      : Buffer(CreateConstantBuffer(device, cmdList, elementCount, sizeof(T))) {
     CD3DX12_RANGE readRange(0, 0);
     ThrowIfFailed(
         resource()->Map(0, &readRange, reinterpret_cast<void **>(&m_buffer)));
@@ -179,10 +209,10 @@ public:
   }
 
 private:
-  static Buffer CreateConstantBuffer(GfxContext &context, u32 elementCount,
+  static Buffer CreateConstantBuffer(Device& device, CommandList& cmdList, u32 elementCount,
                                      u32 elementSize) {
     return CreateBuffer(
-        context, BufferDescription(elementCount, elementSize, "ConstantBuffer",
+        device, cmdList, BufferDescription(elementCount, elementSize, "ConstantBuffer",
                                    ResourceState::VERTEX_CONSTANT_BUFFER,
                                    BufferType::CONSTANT));
   }
@@ -191,16 +221,18 @@ private:
 
 struct BufferObject {
   template <typename T>
-  void create(GfxContext &ctx, const BufferDescription &aDesc) {
+  void create(Device& device,
+              CommandList& cmdList,
+              const BufferDescription &aDesc) {
     assert(aDesc.type != BufferType::NONE);
 
     data.resize(aDesc.elementSize * aDesc.elementCount);
     memcpy(aDesc.data, data.data(), aDesc.elementSize * aDesc.elementCount);
 
-    buffer.init(ctx, aDesc);
+    buffer.init(device, cmdList, aDesc);
   }
-  void update(GfxContext &ctx) {
-    buffer.copyDataToGPU(data.data(), ctx, buffer.getCurrentState());
+  void update(Device& device, CommandList& cmdList) {
+    buffer.copyDataToGPU(data.data(), device, cmdList, buffer.getCurrentState());
   }
 
   Buffer buffer;

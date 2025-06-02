@@ -9,7 +9,7 @@
 #include <functional>
 #include <vector>
 
-namespace engine::graphics
+namespace engine
 {
 
 enum class MovementDirection : u8
