@@ -32,15 +32,15 @@ enum class ShaderType
 };
 std::wstring GetShaderTypeString(ShaderType type);
 
+
 struct ShaderInfo
 {
-    ShaderInfo() = default;
-    ShaderInfo(std::function<void(TableEntry<DxBlob*>&)> deleter) : onDestoy(deleter) {}
-    std::function<void(TableEntry<DxBlob*>&)> onDestoy;
+    ShaderInfo(Table<DxBlob*>* aShaderTable=nullptr) : shaderTable(aShaderTable) {}
+    Table<DxBlob*>* shaderTable;
     std::wstring shaderName{};
     std::wstring path{};
     std::wstring entryPoint{};
-    ShaderType  type{};
+    ShaderType   type{};
     ~ShaderInfo();
 };
 
@@ -129,6 +129,28 @@ public:
 private:
     ID3D12PipelineState* m_pso=nullptr;
 };
+
+inline DXGI_FORMAT getType(u32 type)
+{
+    if(type == 3)
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    if(type == 4)
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    return DXGI_FORMAT_R32G32_FLOAT;
+}
+
+inline D3D12_INPUT_ELEMENT_DESC getInputElement(const char* name, 
+                              u32& offset, 
+                              u32 type)
+{
+    u32 oldOffset = offset * sizeof(float);
+    offset += type;
+    return {
+        name,
+        0,
+        getType(type), 0, oldOffset,  
+        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
+}    
 
 };
 #endif

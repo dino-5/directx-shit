@@ -74,7 +74,7 @@ void waitForFrame(u32 index)
 
 void waitForFence(u32 index)
 {
-    globalContext.fence.waitForFence(globalContext.fenceValues[index]); 
+    globalContext.fence.waitForFence(globalContext.fenceValues[index]);
 }
 
 void signal(u32 index)
@@ -89,4 +89,16 @@ void nextFrame(u32 nextFrameIndex)
 {
     globalContext.currentFrameIndex = nextFrameIndex;
     waitForFrame();
+}
+
+void createView(GfxViewData data)
+{
+    globalContext.view.data = data;
+    globalContext.view.buffer = ConstantBuffer(globalContext.device,
+                                   globalContext.cmdList, &data, 1);
+}
+
+void updateView(GfxViewData data)
+{
+    globalContext.view.buffer.update(&data);
 }

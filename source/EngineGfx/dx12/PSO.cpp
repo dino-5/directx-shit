@@ -103,7 +103,8 @@ std::wstring GetShaderTypeString(ShaderType type)
 ShaderInfo::~ShaderInfo()
 {
     auto obj = ShaderManager::CreateShader(*this);
-    onDestoy(obj);
+    if(shaderTable)
+        shaderTable->push_back(obj);
 }
 
 namespace ShaderManager

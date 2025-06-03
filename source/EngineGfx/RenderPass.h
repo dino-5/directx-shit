@@ -1,0 +1,68 @@
+#pragma once
+#include "GfxContext.h"
+#include "dx12/PSO.h"
+#include "dx12/RootSignature.h"
+#include <array>
+
+using namespace engine::graphics;
+
+namespace engine::graphics
+{
+class Model;
+};
+
+enum class InputType : u32
+{ 
+    // per model
+    ModelTransform, // TODO : implement transforms 
+    // per submesh
+    Material,
+    ObjectTransform, // unused
+    Count
+};
+
+struct Input
+{
+    InputType type;
+    u32 index;
+};
+
+struct RenderPass;
+typedef void (*RenderPassDraw)(GfxContext&, Model&, RenderPass&,
+                               void*);
+typedef void (*RenderPassInit)(GfxContext&, RenderPass&);
+
+struct RenderPass
+{
+    PSO pso;
+    RootSignature rs;
+    std::array<Input, (u32)InputType::Count> inputs;
+    Table<DxBlob*> shaders;
+    RenderPassDraw _execute;
+    RenderPassInit _init;
+    bool enabled = true;
+
+    void execute(GfxContext& context, Model& model,
+                 void* passData = nullptr)
+    {
+        if(enabled)
+            _execute(context, model, *this, passData);
+    }
+    void init(GfxContext& context)
+    {
+        if(enabled)
+            _init(context, *this);
+    }
+};
+
+inline RenderPass CreateRenderPass(RenderPassInit init,
+                            RenderPassDraw exec,
+                            bool enable)
+{
+    RenderPass pass;
+    pass._init = init;
+    pass._execute = exec;
+    pass.enabled = enable;
+    return pass;
+}
+

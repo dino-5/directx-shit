@@ -4,13 +4,14 @@
 #include "EngineCommon/include/defines.h"
 #include "EngineCommon/System/Window.h"
 #include "EngineCommon/System/InputManager.h"
+#include "EngineCommon/Scene/Camera.h"
 
 #include "EngineGfx/dx12/PSO.h"
 #include "EngineGfx/dx12/Buffers.h"
 #include "EngineGfx/Model.h"
 #include "EngineGfx/BVH_Builder.h"
 #include "EngineGfx/GfxContext.h"
-#include "EngineCommon/Scene/Camera.h"
+#include "EngineGfx/RenderPass.h"
 
 #include "third_party/magic_enum/include/magic_enum.hpp"
 
@@ -91,10 +92,8 @@ public:
         m_renderModel(*this, true, "render model"),
         m_drawBVHDebugView(*this, true, "draw BVH debug view"){}
     bool initialize()override;
-    void compileShaders();
+    void createRenderPasses();
     SHIT_ENGINE_SINGLETONE(BaseDemo);
-
-    auto& getLightBuffer() { return m_lightBuffer; }
 
 protected:
     void onResize(uint width, uint height) override;
@@ -124,24 +123,14 @@ private:
     Camera m_camera;
 
     Buffer m_buffer;
-    BufferObject m_lightBuffer;
-    ConstantBuffer m_constBuffer;
-
-    ConstantBuffer m_lightSettingsResource;
 
     BVHBuilder m_bvhBuilder;
 
-    // forward rendering -
-    PSO m_pso;
-    RootSignature m_rootSignature;
     Model m_model;
-
-    // BVH debug draw
-    PSO m_bvhDebugDrawPSO;
-    RootSignature m_bvhDebugDrawRS;
-
     Model m_bvhModel;
     Model m_tinybvhModel;
+    RenderPass m_forwardPass;
+    RenderPass m_bvhDebugDrawPass;
 
     UI_CheckBox<BaseDemo> m_renderModel;
     UI_CheckBox<BaseDemo> m_drawBVHDebugView;

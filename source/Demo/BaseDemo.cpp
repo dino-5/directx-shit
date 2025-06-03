@@ -9,6 +9,7 @@
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/util/Timer.h"
 #include "EngineGfx/tiny_bvh.h"
+#include "RenderPasses.h"
 
 using namespace std;
 using namespace util;
@@ -115,7 +116,8 @@ void BaseDemo::onResize(
 
     math::ProjectionProps perspectiveProps;
     perspectiveProps.perspective.fov = 90;
-    perspectiveProps.perspective.aspectRatio = m_swapChain.getAspectRatio();
+    perspectiveProps.perspective.aspectRatio = 
+        m_swapChain.getAspectRatio();
     perspectiveProps.perspective.nearZ = 0.1f;
     perspectiveProps.perspective.farZ = 10000.f;
     perspectiveProps.type = math::ProjectionType::Perspective;
@@ -131,143 +133,36 @@ SwapChainSettings BaseDemo::getCurrentWindowSettings()
              getWindowHandle(), false, false};
 }
 
-void BaseDemo::compileShaders()
+void BaseDemo::createRenderPasses()
 {
-    // shaders
-    m_shaders.clear();
-    auto getType = [](u32 type) -> DXGI_FORMAT
-        {
-            if(type == 3)
-                return DXGI_FORMAT_R32G32B32_FLOAT;
-            if(type == 4)
-                return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            return DXGI_FORMAT_R32G32_FLOAT;
-        };
-    auto getInputElement = [getType](const char* name, 
-                              u32& offset, 
-                              u32 type) -> D3D12_INPUT_ELEMENT_DESC
-        {
-            u32 oldOffset = offset * sizeof(float);
-            offset += type;
-            return {
-                name,
-                0,
-                getType(type), 0, oldOffset,  
-                D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};    };
-    auto createShader = [this](TableEntry<DxBlob*>& entry)
-    {
-        if (entry.second != nullptr)
-            m_shaders.push_back(entry);
-    };
-    {
-        ShaderInfo info(createShader);
-        info.shaderName = L"forwardVS";
-        info.entryPoint = L"VertexMain";
-        info.path       = L"Shaders/forward_render.hlsl";
-        info.type       = ShaderType::VERTEX;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.shaderName = L"forwardPS";
-        info.entryPoint = L"PixelMain";
-        info.path       = L"Shaders/forward_render.hlsl";
-        info.type       = ShaderType::PIXEL;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.shaderName = L"debugBVH_VS";
-        info.entryPoint = L"VertexMain";
-        info.path       = L"Shaders/debug_BVHdraw.hlsl";
-        info.type       = ShaderType::VERTEX;
-    }
-    {
-        ShaderInfo info(createShader);
-        info.shaderName = L"debugBVH_PS";
-        info.entryPoint = L"PixelMain";
-        info.path       = L"Shaders/debug_BVHdraw.hlsl";
-        info.type       = ShaderType::PIXEL;
-    }
+    m_forwardPass = CreateRenderPass(forwardPassInit,
+                                     forwardPassExecute,
+                                     true);
+    m_forwardPass.init(globalContext);
 
-    {
-        RootParameters parameters = {
-            RootParameter::CreateDescriptor(0),
-            RootParameter::CreateConstants(1, 0, 10) };
-          /*RootParameter::CreateConstants(1, 1, 10) };*/
-
-        auto rootSignFlags = 
-            RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-            RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-
-        m_rootSignature.init(globalContext.device(), parameters, rootSignFlags);
-        u32 offset = 0;
-        D3D12_INPUT_ELEMENT_DESC inputElements[] ={
-            getInputElement("POSITION", offset, 3),
-            getInputElement("NORMAL", offset, 3),
-            getInputElement("TANGENT", offset, 4),
-            getInputElement("UV", offset, 2),
-        };
-        D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 4};
-
-        ShaderInputGroup sig;
-        sig.desc = inputLayout;
-        sig.vertexShader = getShader(*util::FindElement(m_shaders, L"forwardVS"));
-        sig.pixelShader = getShader(*util::FindElement(m_shaders, L"forwardPS"));
-        sig.rootSignature = &m_rootSignature;
-
-        RenderState renderState;
-        renderState.setShaderInputGroup(sig);
-        m_pso = PSO(renderState);
-    }
-    {
-        RootParameters parameters = { RootParameter::CreateConstants(1, 0, 10) };
-
-        auto rootSignFlags = 
-            RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-            RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
-        m_bvhDebugDrawRS.init(globalContext.device(), parameters, rootSignFlags);
-        u32 offset = 0;
-        D3D12_INPUT_ELEMENT_DESC inputElements[] ={
-            getInputElement("POSITION", offset, 3)
-        };
-        D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 1};
-
-        ShaderInputGroup sig;
-        sig.desc = inputLayout;
-        sig.vertexShader = getShader(*util::FindElement(m_shaders, L"debugBVH_VS"));
-        sig.pixelShader = getShader(*util::FindElement(m_shaders, L"debugBVH_PS"));
-        sig.rootSignature = &m_bvhDebugDrawRS;
-
-        RenderState renderState;
-        renderState.setShaderInputGroup(sig);
-        renderState.topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-        m_bvhDebugDrawPSO = PSO(renderState);
-    }
-
+    m_bvhDebugDrawPass = CreateRenderPass(debugDrawBVHPassInit,
+                                     debugDrawBVHPassExecute,
+                                     true);
+    m_bvhDebugDrawPass.init(globalContext);
 }
 
 bool BaseDemo::initialize()
 {
     LogScope("BaseDemo");
 
-    imgui::Init(getWindowHandle(), globalContext.device(), config::NumFrames);
+    imgui::Init(getWindowHandle(),
+                globalContext.device(), config::NumFrames);
 
     ShaderManager::InitializeCompiler();
-    compileShaders();
-    
+
     resetList(0);
+    createRenderPasses();
 
     // setup data 
-    ConstandBufferData data;
-    data.projection = m_camera.getProjectionMatrix();
-    data.view = m_camera.getViewMatrix();
-    m_constBuffer = ConstantBuffer(globalContext.device,
-                                   globalContext.cmdList, &data, 1);
-
-    LightSettings lightSettings;
-    lightSettings.cameraPosition = m_camera.getPos();
-    lightSettings.viewDirection = m_camera.getDir();
-    m_lightSettingsResource= ConstantBuffer(globalContext.device,
-                                   globalContext.cmdList, &lightSettings, 1);
+    GfxViewData data;
+    data.projectionMatrix = m_camera.getProjectionMatrix();
+    data.viewMatrix = m_camera.getViewMatrix();
+    createView(data);
 
     if(1)
         m_model.initGLTF(config::g_state.homeDir/"data/Sponza/glTF/Sponza.gltf",
@@ -285,20 +180,29 @@ bool BaseDemo::initialize()
         func diagonalF = [](const BVHNode& node) {
             return node.aabb.diagonal(); };
 
-        std::function<Vector3(const BVHNode&)> aabbF = [](const BVHNode& node){
+        std::function<Vector3(const BVHNode&)> aabbF =
+            [](const BVHNode& node)
+            {
             return node.aabb.aabbMin;};
-        m_bvhModel = BVHBuilder::generateDrawData(globalContext,
-                                                  m_bvhBuilder.getRootNode(),
-                                                  m_bvhBuilder.getNodeCount(),
-                                                  diagonalF, aabbF);
+        m_bvhModel = BVHBuilder::generateDrawData(
+                        globalContext,
+                        m_bvhBuilder.getRootNode(),
+                        m_bvhBuilder.getNodeCount(),
+                        diagonalF, aabbF);
     }
 
     if(m_model.isInitialized())
     {
         auto& geometry = m_model.m_geometry;
-        std::vector<tinybvh::bvhvec4> vertices(geometry.vertices.size());
+        std::vector<tinybvh::bvhvec4> vertices(
+            geometry.vertices.size());
         std::vector<u32> indices(geometry.indices.size());
-        locGenerateTinyBVHCompatibleGeometry(vertices, indices, geometry.vertices, geometry.indices, m_model.m_submeshes);
+        locGenerateTinyBVHCompatibleGeometry(
+                        vertices,
+                        indices,
+                        geometry.vertices,
+                        geometry.indices,
+                        m_model.m_submeshes);
 
         tinybvh::BVH bvh;
         Profiler::StartProfiling();
@@ -310,35 +214,33 @@ bool BaseDemo::initialize()
         Profiler::EndProfiling();
         util::printInfo("tiny bvh node number {}", bvh.NodeCount());
 
-        using func = std::function<Vector3(const tinybvh::BVH::BVHNode&)>;
-        auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) -> Vector3 
+        using func = std::function<Vector3(
+            const tinybvh::BVH::BVHNode&)>;
+        auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) 
             { return Vector3({vec.x, vec.y, vec.z}); };
 
         func diagonalF =
-            [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) {
-            return from_tinyV3_to_mathV3(node.aabbMax - node.aabbMin);};
+        [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) 
+            {
+        return from_tinyV3_to_mathV3(node.aabbMax - node.aabbMin);};
 
         func aabbF = 
-            [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node)  {
+        [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node)  
+        {
             return from_tinyV3_to_mathV3(node.aabbMin);};
 
         m_tinybvhModel = BVHBuilder::generateDrawData(globalContext,
                                                       bvh.bvhNode,
                                                       bvh.NodeCount(),
-                                                      diagonalF, aabbF);
+                                                  diagonalF, aabbF);
     }
 
-    m_camera.addChangeCallback([this](const Camera* camera)
+    m_camera.addChangeCallback([](const Camera* camera)
     {
-        ConstandBufferData data;
-        data.projection = camera->getProjectionMatrix();
-        data.view = camera->getViewMatrix();
-        this->m_constBuffer.update(&data);
-
-        LightSettings lightSettings;
-        lightSettings.cameraPosition = m_camera.getPos();
-        lightSettings.viewDirection = m_camera.getDir();
-        this->m_lightSettingsResource.update(&lightSettings);
+        GfxViewData data;
+        data.projectionMatrix = camera->getProjectionMatrix();
+        data.viewMatrix = camera->getViewMatrix();
+        updateView(data);
     });
 
     executeAll();
@@ -358,85 +260,22 @@ void BaseDemo::draw()
     u32 swapChainBufferIndex = m_swapChain.changeState(
                                 cmdList,
                                 ResourceState::RENDER_TARGET);
+    globalContext.currentRenderTarget = 
+        &m_swapChain.getRenderTarget(swapChainBufferIndex);
+    globalContext.currentDepthStencil = &m_depthStencil;
     // forward rendering 
-    {
-        const float clearColor[] = { .0f, 0.0f, .0f, 1.0f };
-        auto renderTarget = m_swapChain.getView(swapChainBufferIndex);
-
-        cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
-                                    true, &m_depthStencil.dsv.HandleCPU);
-        cmdList->ClearRenderTargetView(renderTarget.HandleCPU,
-                                       clearColor, 0, nullptr);
-        cmdList->ClearDepthStencilView(m_depthStencil.dsv.HandleCPU, 
-                           D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
-                           1.f, 0, 0, nullptr);
-
-        cmdList->SetDescriptorHeaps(1, 
-                DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
-        cmdList->SetGraphicsRootSignature(m_rootSignature);
-        cmdList->SetPipelineState(m_pso);
-
-        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        /*struct */
-        /*{*/
-        /*    int materialArrayIndex;*/
-        /*} passIndices;*/
-        u32 passIndices =
-            m_model.m_materialBuffer.getDescriptorHeapIndex();
-        cmdList->SetGraphicsRootConstantBufferView(
-            0,
-            m_constBuffer->GetGPUVirtualAddress());
-        cmdList->SetGraphicsRoot32BitConstant(1, passIndices, 0);
-
-        if(m_model.isInitialized())
-        {
-            auto vertexBuffer = GetVertexBufferView(m_model.m_mesh.m_vertexBuffer);
-            auto indexBuffer = GetIndexBufferView(m_model.m_mesh.m_indexBuffer);
-            cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-            cmdList->IASetIndexBuffer(&indexBuffer);
-
-            if(m_renderModel.getData())
-            for (auto& submesh : m_model.m_submeshes)
-            {
-                cmdList->SetGraphicsRoot32BitConstant(1, submesh.materialIndex, 0);
-                submesh.draw(cmdList);
-            }
-        }
-    }
+    ForwardPassData data;
+    data.drawModel = m_renderModel.getData();
+    m_forwardPass.execute(globalContext, m_model, &data);
+    
     // BVH debug draw
     if(m_drawBVHDebugView.getData() && m_tinybvhModel.isInitialized())
     {
-        cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
-        cmdList->SetPipelineState(m_bvhDebugDrawPSO);
-        cmdList->SetGraphicsRoot32BitConstant(
-            0, m_constBuffer.getDescriptorHeapIndex(), 0);
-        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-
-        auto mesh = m_bvhModel.m_mesh;
-        auto submesh = m_bvhModel.m_submeshes[0];
-        auto vertexBuffer = GetVertexBufferView(mesh.m_vertexBuffer);
-        auto indexBuffer = GetIndexBufferView(mesh.m_indexBuffer);
-        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-        cmdList->IASetIndexBuffer(&indexBuffer);
-        submesh.draw(cmdList);
+        m_bvhDebugDrawPass.execute(globalContext, m_bvhModel);
     }
     else if(m_tinybvhModel.isInitialized())
     {
-        cmdList->SetGraphicsRootSignature(m_bvhDebugDrawRS);
-        cmdList->SetPipelineState(m_bvhDebugDrawPSO);
-        cmdList->SetGraphicsRoot32BitConstant(0,
-                                              m_constBuffer.getDescriptorHeapIndex(),
-                                              0);
-        cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-
-        auto mesh = m_tinybvhModel.m_mesh;
-        auto submesh = m_tinybvhModel.m_submeshes[0];
-        auto vertexBuffer = GetVertexBufferView(mesh.m_vertexBuffer);
-        auto indexBuffer = GetIndexBufferView(mesh.m_indexBuffer);
-        cmdList->IASetVertexBuffers(0, 1, &vertexBuffer);
-        cmdList->IASetIndexBuffer(&indexBuffer);
-        submesh.draw(cmdList);
+        m_bvhDebugDrawPass.execute(globalContext, m_tinybvhModel);
     }
 
     imgui::StartFrame();
@@ -471,15 +310,13 @@ void BaseDemo::update()
     m_camera.update();
 
     if (m_inputManager->getKeyState(system::Key::C).isPressed())
-        compileShaders();
+        createRenderPasses();
 }
 void BaseDemo::destroy()
 {
     for (int i = 0; i < config::NumFrames; ++i)
         waitForFrame(i);
     m_model.reset();
-    m_buffer.reset();
-    m_constBuffer.reset();
 }
 
 LRESULT BaseDemo::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)

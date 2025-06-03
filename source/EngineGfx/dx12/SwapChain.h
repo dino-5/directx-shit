@@ -61,6 +61,7 @@ public:
     }
 
     DescriptorCPU getView(uint index) { return m_resources[index].rtv; }
+    Resource& getRenderTarget(u32 index) { return m_resources[index]; }
 
     u64 m_fence[engine::config::NumFrames] = {};
     SwapChainSettings m_currentSettings;

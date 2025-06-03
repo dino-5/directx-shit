@@ -82,6 +82,8 @@ void nextFrame(u32 nextFrameIndex);
 void waitForFrame(u32 index);
 void waitForFence(u32 index);
 void signal(u32 index);
+void createView(GfxViewData data);
+void updateView(GfxViewData data);
 
 inline void resetList(u32 index)
 {

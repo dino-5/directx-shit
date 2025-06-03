@@ -1,8 +1,20 @@
 #pragma once
 #include "EngineGfx/RenderPass.h"
 
-void forwardPassInit(GfxContext* context,
+void forwardPassInit(GfxContext& context,
                      RenderPass& pass);
-void forwardPassExecute(GfxContext* context,
-                        const Model& model,
-                        const RenderPass& pass);
+void forwardPassExecute(GfxContext& context,
+                        Model& model,
+                        RenderPass& pass,
+                        void* data);
+struct ForwardPassData
+{
+    bool drawModel;
+};
+
+void debugDrawBVHPassInit(GfxContext& context,
+                     RenderPass& pass);
+void debugDrawBVHPassExecute(GfxContext& context,
+                        Model& model,
+                        RenderPass& pass,
+                        void* data);
