@@ -33,7 +33,7 @@ using namespace engine;
 
 namespace engine::util
 {
-    inline std::wstring to_wstring(std::string str)
+    inline std::wstring to_wstring(std::string_view str)
     {
         std::wstring result;
         utf8::utf8to16(str.begin(), str.end(), std::back_inserter(result));

@@ -102,3 +102,22 @@ void updateView(GfxViewData data)
 {
     globalContext.view.buffer.update(&data);
 }
+
+void startFrame()
+{
+    auto cmdList = globalContext.currentCmdList;
+    cmdList->RSSetViewports(1, &globalContext.viewPort);
+    cmdList->RSSetScissorRects(1, &globalContext.scissorRect);
+
+    const float clearColor[] = { .0f, 0.0f, .0f, 1.0f };
+    auto renderTarget = globalContext.currentRenderTarget->rtv;
+    auto depthStencil = globalContext.currentDepthStencil->dsv;
+    cmdList->ClearRenderTargetView(renderTarget.HandleCPU,
+                                   clearColor, 0, nullptr);
+    cmdList->ClearDepthStencilView(depthStencil.HandleCPU, 
+                   D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+                   1.f, 0, 0, nullptr);
+
+    cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
+                                true, &depthStencil.HandleCPU);
+}

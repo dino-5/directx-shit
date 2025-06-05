@@ -137,13 +137,20 @@ void BaseDemo::createRenderPasses()
 {
     m_forwardPass = CreateRenderPass(forwardPassInit,
                                      forwardPassExecute,
-                                     true);
+                                     0);
     m_forwardPass.init(globalContext);
 
-    m_bvhDebugDrawPass = CreateRenderPass(debugDrawBVHPassInit,
-                                     debugDrawBVHPassExecute,
-                                     true);
+    m_bvhDebugDrawPass = CreateRenderPass(
+                                    debugDrawBVHPassInit,
+                                    debugDrawBVHPassExecute,
+                                    0);
     m_bvhDebugDrawPass.init(globalContext);
+
+    m_rtxComputePass = CreateRenderPass(
+                                    computeRTXPassInit,
+                                    computeRTXPassExecute,
+                                    1);
+    m_rtxComputePass.init(globalContext);
 }
 
 bool BaseDemo::initialize()
@@ -164,7 +171,7 @@ bool BaseDemo::initialize()
     data.viewMatrix = m_camera.getViewMatrix();
     createView(data);
 
-    if(1)
+    if(0)
         m_model.initGLTF(config::g_state.homeDir/"data/Sponza/glTF/Sponza.gltf",
                          globalContext);
     else if (0)
@@ -254,8 +261,9 @@ bool BaseDemo::initialize()
 void BaseDemo::draw()
 {
     Timer timer("draw");
-    startFrame();
+    resetList(globalContext.currentFrameIndex); 
     ID3D12GraphicsCommandList* cmdList = globalContext.currentCmdList;
+	cmdList->RSSetViewports(1, &globalContext.viewPort);
 
     u32 swapChainBufferIndex = m_swapChain.changeState(
                                 cmdList,
@@ -263,26 +271,30 @@ void BaseDemo::draw()
     globalContext.currentRenderTarget = 
         &m_swapChain.getRenderTarget(swapChainBufferIndex);
     globalContext.currentDepthStencil = &m_depthStencil;
+
+    startFrame();
+    
     // forward rendering 
     ForwardPassData data;
     data.drawModel = m_renderModel.getData();
-    m_forwardPass.execute(globalContext, m_model, &data);
+    m_forwardPass.execute(globalContext, &m_model, &data);
     
     // BVH debug draw
     if(m_drawBVHDebugView.getData() && m_tinybvhModel.isInitialized())
     {
-        m_bvhDebugDrawPass.execute(globalContext, m_bvhModel);
+        m_bvhDebugDrawPass.execute(globalContext, &m_bvhModel);
     }
     else if(m_tinybvhModel.isInitialized())
     {
-        m_bvhDebugDrawPass.execute(globalContext, m_tinybvhModel);
+        m_bvhDebugDrawPass.execute(globalContext, &m_tinybvhModel);
     }
+
+    m_rtxComputePass.execute(globalContext, nullptr);
 
     imgui::StartFrame();
     {
         imgui::Begin("Settings");
 
-        // light UI
         auto& uiElements = UI_ElementInterface::s_uiElements;
         for(UI_ElementInterface* uiElement: uiElements)
             uiElement->onUIAction();
@@ -321,5 +333,6 @@ void BaseDemo::destroy()
 
 LRESULT BaseDemo::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    return system::InputManager::GetInputManager().processInput(hwnd, msg, wParam, lParam);
+    return system::InputManager::GetInputManager().processInput(
+        hwnd, msg, wParam, lParam);
 }

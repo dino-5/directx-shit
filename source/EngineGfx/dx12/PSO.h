@@ -41,6 +41,7 @@ struct ShaderInfo
     std::wstring path{};
     std::wstring entryPoint{};
     ShaderType   type{};
+    D3D12_SHADER_BYTECODE createShader();
     ~ShaderInfo();
 };
 
@@ -59,6 +60,7 @@ struct ShaderInputGroup
     D3D12_INPUT_LAYOUT_DESC desc = { nullptr, 0 };
     D3D12_SHADER_BYTECODE vertexShader;
     D3D12_SHADER_BYTECODE pixelShader;
+    D3D12_SHADER_BYTECODE computeShader;
     RootSignature* rootSignature = nullptr;
 };
 
@@ -81,6 +83,7 @@ struct RenderState
 };
 
 D3D12_SHADER_BYTECODE GetShader(std::wstring name);
+
 class PSO
 {
 public:
@@ -92,6 +95,7 @@ public:
 
     // Warning: pointer can have dangling memory after adding new element
     PSO(const RenderState& state);
+    PSO(const ShaderInputGroup& sig);
 
     void reset() {
         if(m_pso)
@@ -100,34 +104,8 @@ public:
     }
 
 public:
-    ID3D12PipelineState* m_pso;
+    ID3D12PipelineState* m_pso = nullptr;
     D3D12_GRAPHICS_PIPELINE_STATE_DESC m_psoDesc{};
-
-    DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-    DXGI_FORMAT dsvBufferFormat  = DXGI_FORMAT_D24_UNORM_S8_UINT;
-};
-
-
-struct ComputeShaderInputGroup
-{
-    std::wstring computeShader;
-    RootSignature* rootSignature;
-
-    void setCS(std::wstring name) { computeShader= name;  }
-    void setRootSignature(RootSignature& r) { rootSignature = &r;  }
-};
-
-class ComputePSO
-{
-public:
-    ComputePSO() = default;
-    ComputePSO(ComputeShaderInputGroup shaderGroup);
-    operator ID3D12PipelineState* ()
-    {
-        return m_pso;
-    }
-private:
-    ID3D12PipelineState* m_pso=nullptr;
 };
 
 inline DXGI_FORMAT getType(u32 type)

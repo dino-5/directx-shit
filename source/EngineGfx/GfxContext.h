@@ -87,16 +87,10 @@ void updateView(GfxViewData data);
 
 inline void resetList(u32 index)
 {
-
     globalContext.currentCmdList = globalContext.cmdList.reset(index);
 }
 
-inline void startFrame()
-{
-    resetList(globalContext.currentFrameIndex); 
-    globalContext.currentCmdList->RSSetViewports(1, &globalContext.viewPort);
-    globalContext.currentCmdList->RSSetScissorRects(1, &globalContext.scissorRect);
-}
+void startFrame();
 
 inline void signal()
 {

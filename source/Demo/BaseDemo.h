@@ -131,6 +131,7 @@ private:
     Model m_tinybvhModel;
     RenderPass m_forwardPass;
     RenderPass m_bvhDebugDrawPass;
+    RenderPass m_rtxComputePass;
 
     UI_CheckBox<BaseDemo> m_renderModel;
     UI_CheckBox<BaseDemo> m_drawBVHDebugView;

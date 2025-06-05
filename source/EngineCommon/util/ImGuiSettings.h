@@ -72,9 +72,13 @@ struct UI_ElementGenericInterface : public UI_ElementInterface
     using uiActionCallback = std::function<void(Type&, Data)>;
 
     void onUIAction() override {}
-    UI_ElementGenericInterface(Type& aObj, Data aData, std::string_view aName) : UI_ElementInterface(), object(aObj), data(aData), name(aName) {}
+    UI_ElementGenericInterface(Type& aObj,
+                               Data aData,
+                               std::string_view aName) :
+        UI_ElementInterface(), object(aObj), data(aData), name(aName) {}
 
-    UI_ElementGenericInterface(UI_ElementGenericInterface&& other) : UI_ElementInterface(other), callback(other.callback), object(other.object)
+    UI_ElementGenericInterface(UI_ElementGenericInterface&& other) :
+        UI_ElementInterface(other), callback(other.callback), object(other.object)
     {
         other.object = nullptr;
     }
@@ -106,7 +110,8 @@ public:\
     using Super::getData;   \
 
 
-using Slider = std::function<bool(std::string_view name, float* ptr, float min, float max)>;
+using Slider = std::function<bool(std::string_view name,
+                                  float* ptr, float min, float max)>;
 using CheckBox = std::function<bool(std::string_view name, bool* ptr)>;
 
 template<typename T>

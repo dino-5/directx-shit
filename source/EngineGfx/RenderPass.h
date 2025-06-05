@@ -3,6 +3,7 @@
 #include "dx12/PSO.h"
 #include "dx12/RootSignature.h"
 #include <array>
+#include <string_view>
 
 using namespace engine::graphics;
 
@@ -28,7 +29,7 @@ struct Input
 };
 
 struct RenderPass;
-typedef void (*RenderPassDraw)(GfxContext&, Model&, RenderPass&,
+typedef void (*RenderPassDraw)(GfxContext&, Model*, RenderPass&,
                                void*);
 typedef void (*RenderPassInit)(GfxContext&, RenderPass&);
 
@@ -42,7 +43,7 @@ struct RenderPass
     RenderPassInit _init;
     bool enabled = true;
 
-    void execute(GfxContext& context, Model& model,
+    void execute(GfxContext& context, Model* model,
                  void* passData = nullptr)
     {
         if(enabled)
@@ -50,9 +51,14 @@ struct RenderPass
     }
     void init(GfxContext& context)
     {
-        if(enabled)
-            _init(context, *this);
+        _init(context, *this);
     }
+    void addShader(std::string_view name,
+                   std::string_view entryPoint,
+                   std::string_view path,
+                   ShaderType type,
+                   ShaderInputGroup* sig = nullptr);
+
 };
 
 inline RenderPass CreateRenderPass(RenderPassInit init,

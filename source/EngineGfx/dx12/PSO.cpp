@@ -14,6 +14,8 @@
 #include <codecvt>
 #undef memcpy
 
+DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+DXGI_FORMAT dsvBufferFormat  = DXGI_FORMAT_D24_UNORM_S8_UINT;
 namespace engine::graphics
 {
 
@@ -107,6 +109,17 @@ ShaderInfo::~ShaderInfo()
         shaderTable->push_back(obj);
 }
 
+D3D12_SHADER_BYTECODE ShaderInfo::createShader()
+{
+    auto obj = ShaderManager::CreateShader(*this);
+    if(shaderTable)
+    {
+        shaderTable->push_back(obj);
+        shaderTable = nullptr;
+    }
+    return getShader(obj.second);
+}
+
 namespace ShaderManager
 {
     DxCompiler* s_compiler = nullptr;
@@ -196,10 +209,10 @@ namespace ShaderManager
     }
 }
 
-ComputePSO::ComputePSO(ComputeShaderInputGroup shaderGroup)
+PSO::PSO(const ShaderInputGroup& shaderGroup)
 {
     D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
-    //desc.CS = GetShader(shaderGroup.computeShader);
+    desc.CS = shaderGroup.computeShader;
     desc.pRootSignature = *shaderGroup.rootSignature;
 
     ID3D12Device* device = Device::s_device->device;

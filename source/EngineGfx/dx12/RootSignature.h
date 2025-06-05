@@ -103,16 +103,12 @@ enum class RootSignatureFlags {
 
 class RootSignature {
 public:
-  RootSignature() = default;
+  RootSignature() =default;
   RootSignature(ID3D12Device *device);
   RootSignature(ID3D12Device *device,
                 RootParameters &arguments,
                 RootSignatureFlags flags =
                     RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-  inline void init(ID3D12Device *device,
-                   RootParameters &arguments,
-                   RootSignatureFlags flags =
-                       RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
   operator ID3D12RootSignature *() { return m_rootSignature; }
 
 public:

@@ -25,9 +25,6 @@ public:
     SwapChain(SwapChainSettings settings,
               Device& device,
               ComPtr<ID3D12CommandQueue> queue);
-    void init(SwapChainSettings settings,
-              Device& device,
-              ComPtr<ID3D12CommandQueue> queue);
     IDXGISwapChain* getSwapChain() { return m_swapChain; }
     void onResize(SwapChainSettings settings);
     void Present()

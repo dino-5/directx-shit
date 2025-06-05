@@ -5,19 +5,9 @@
 
 namespace engine::graphics
 {
-SwapChain::SwapChain(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue)
-{
-    init(settings, device, queue);
-}
-
-u32 SwapChain::changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
-{
-    u32 index = getCurrentIndex();
-    m_resources[index].transition(cmdList, state);
-    return index;
-}
-
-void SwapChain::init(SwapChainSettings settings, Device& device, ComPtr<ID3D12CommandQueue> queue)
+SwapChain::SwapChain(SwapChainSettings settings,
+                     Device& device,
+                     ComPtr<ID3D12CommandQueue> queue)
 {
     LogScope("SwapChain::Initialize");
     m_currentSettings = settings;
@@ -53,6 +43,13 @@ void SwapChain::init(SwapChainSettings settings, Device& device, ComPtr<ID3D12Co
         &m_swapChain));
 }
 
+u32 SwapChain::changeState(ID3D12GraphicsCommandList* cmdList, ResourceState state)
+{
+    u32 index = getCurrentIndex();
+    m_resources[index].transition(cmdList, state);
+    return index;
+}
+
 // call only when descriptor sets are already created
 void SwapChain::onResize(SwapChainSettings settings)
 {
@@ -70,7 +67,10 @@ void SwapChain::onResize(SwapChainSettings settings)
 
     for (UINT i = 0; i < engine::config::NumFrames; i++)
     {
-        ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(m_resources[i].getResourceAddress())));
+        ThrowIfFailed(m_swapChain->GetBuffer(i,
+                             IID_PPV_ARGS(m_resources[i].getResourceAddress())
+                                             )
+                      );
         m_resources[i].createViews(Device::s_device->device, 
             DescriptorProperties(DescriptorFlags::RenderTarget));
     }

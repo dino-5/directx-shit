@@ -41,8 +41,11 @@ namespace engine::graphics
         return val;
     }
 
-    RootParameter RootParameter::CreateDescriptor(uint shaderRegister, uint registerSpace,
-            RootParameterType type,    ShaderVisibility vis)
+    RootParameter RootParameter::CreateDescriptor(
+                        uint shaderRegister,
+                        uint registerSpace,
+                        RootParameterType type,
+                        ShaderVisibility vis)
     {
         RootParameter val;
         val.m_argument.ParameterType = CastType(type);
@@ -80,11 +83,6 @@ namespace engine::graphics
     }
 
     RootSignature::RootSignature(ID3D12Device* device, RootParameters& parameters, RootSignatureFlags flags)
-    {
-        init(device, parameters, flags);
-    }
-
-    void RootSignature::init(ID3D12Device* device, RootParameters& parameters, RootSignatureFlags flags)
     {
         auto sampler = GetSampler();
         auto rootArguments = GetParameters(parameters);
