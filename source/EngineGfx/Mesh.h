@@ -103,24 +103,18 @@ public:
         m_vertexByteStride = sizeof(VertexType);
         m_vertexBufferByteSize = m_vertexByteStride * vertexCount;
 
-        BufferDescription desc(
+        BufferDescription desc = getVertexBufferDescription(
                     vertexData,
-                    vertexCount,
-                    "VertexBuffer",
-                    ResourceState::VERTEX_CONSTANT_BUFFER,
-                    BufferType::VERTEX);
+                    vertexCount);
         m_vertexBuffer.init(context.device,
                             context.cmdList,
                             desc);
 
         if (indexData != nullptr)
         {
-            BufferDescription indexDesc(
+            BufferDescription indexDesc = getIndexBufferDescription(
                             indexData,
-                            indexCount,
-                            "IndexBuffer",
-                            ResourceState::INDEX_BUFFER,
-                            BufferType::INDEX);
+                            indexCount);
             m_indexBuffer.init(context.device,
                                context.cmdList,
                                indexDesc);

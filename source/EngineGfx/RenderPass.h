@@ -42,16 +42,18 @@ struct RenderPass
     RenderPassDraw _execute;
     RenderPassInit _init;
     bool enabled = true;
+    void* data;
 
     void execute(GfxContext& context, Model* model,
                  void* passData = nullptr)
     {
-        if(enabled)
+        if(enabled && _execute)
             _execute(context, model, *this, passData);
     }
     void init(GfxContext& context)
     {
-        _init(context, *this);
+        if(_init)
+            _init(context, *this);
     }
     void addShader(std::string_view name,
                    std::string_view entryPoint,

@@ -1,12 +1,52 @@
 #include "RenderPasses.h"
 #include "EngineGfx/Model.h"
 #include "EngineGfx/dx12/Buffers.h"
+#include <cstring>
 
 
 RootSignatureFlags getDefaultRSFlags()
 {
     return RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
         RootSignatureFlags::SBV_SRV_HEAP_DIRECT_INDEX;
+}
+
+struct PassResource
+{
+    u8 resourceCount;
+    u8 offset;
+};
+
+std::vector<PassResource> PassResourcesDesc(PassResourcesCount);
+
+void initRenderPassResources(GfxContext& context)
+{
+    PassResourcesDesc[RTXPass_ConstantBufferData] = {1, 0};
+    PassResourcesDesc[RTXPass_OutputTexture] = {config::NumFrames, 0};
+
+    u32 totalResourceCount = 0;
+    for(auto& resDesc : PassResourcesDesc)
+    {
+        resDesc.offset = totalResourceCount;
+        totalResourceCount += resDesc.resourceCount;
+    }
+
+    context.resources.resize(totalResourceCount);
+}
+
+Resource*& getResource(GfxContext& context, u8 index)
+{
+    PassResource desc = PassResourcesDesc[index];
+    u8 offset = 0;
+    if(desc.resourceCount > 1)
+        offset = globalContext.currentFrameIndex;
+
+    return context.resources[desc.offset + offset];
+}
+
+std::span<Resource*> getPassResources(GfxContext& context, u8 index)
+{
+    return {&context.resources[PassResourcesDesc[index].offset], 
+            PassResourcesDesc[index].resourceCount};
 }
 
 void forwardPassInit(GfxContext& context,
@@ -25,8 +65,8 @@ void forwardPassInit(GfxContext& context,
                     ShaderType::PIXEL, &sig);
 
     RootParameters parameters = {
-        RootParameter::CreateDescriptor(0),
-        RootParameter::CreateConstants(1, 0, 10) };
+        CreateDescriptor(0),
+        CreateConstants(1, 0, 10) };
 
     pass.rs = RootSignature(globalContext.device(), parameters,
                             getDefaultRSFlags());
@@ -74,9 +114,7 @@ void forwardPassExecute(GfxContext& context,
         context.view.buffer->GetGPUVirtualAddress());
     cmdList->SetGraphicsRoot32BitConstant(1, passIndices, 0);
 
-    ForwardPassData data = *(reinterpret_cast<ForwardPassData*>(
-        aData
-    ));
+    ForwardPassData data = *(ForwardPassData*)aData;
 
     if(model->isInitialized())
     {
@@ -111,9 +149,12 @@ void debugDrawBVHPassInit(GfxContext& context,
                    "Shaders/debug_BVHdraw.hlsl",
                     ShaderType::PIXEL, &sig);
     
-    RootParameters parameters = { RootParameter::CreateConstants(1, 0, 10) };
+    RootParameters parameters = {
+        CreateConstants(1, 0, 10)
+    };
 
-    pass.rs = RootSignature(globalContext.device(), parameters, getDefaultRSFlags());
+    pass.rs = RootSignature(globalContext.device(),
+                            parameters, getDefaultRSFlags());
     u32 offset = 0;
     D3D12_INPUT_ELEMENT_DESC inputElements[] ={
         getInputElement("POSITION", offset, 3)
@@ -167,11 +208,36 @@ void computeRTXPassInit(GfxContext& context,
                    "CSMain",
                    "Shaders/rtxCompute.hlsl",
                    ShaderType::COMPUTE, &sig);
+
+    RootParameters rsParams = {
+        CreateDescriptor(0, 0, RootParameterType::CBV),
+        CreateDescriptor(1, 0, RootParameterType::CBV),
+        CreateConstants(1, 2)
+    };
     
-    pass.rs = RootSignature(context.device());
+    pass.rs = RootSignature(context.device(), rsParams, getDefaultRSFlags());
     sig.rootSignature = &pass.rs;
     pass.pso = PSO(sig);
 
+    Resource*& constantBuffer = getResource(context, RTXPass_ConstantBufferData);
+    constantBuffer = new ConstantBuffer(globalContext.device,
+                                        globalContext.cmdList,
+                                        (RTXPassData*)0,
+                                        1);
+
+    std::span<Resource*> outputTexture =
+        getPassResources(context, RTXPass_OutputTexture);
+    for(auto& texture : outputTexture)
+    {
+        texture = new Texture(
+            {(int)context.viewPort.Width, (int)context.viewPort.Height, 4 },
+            context,
+            DescriptorFlags::ShaderResource | DescriptorFlags::UnorderedAccess,
+            ResourceState::UNORDERED_ACCESS
+        );
+
+    }
+    pass.data = new RTXPassData;
 }
 
 void computeRTXPassExecute(GfxContext& context,
@@ -179,5 +245,52 @@ void computeRTXPassExecute(GfxContext& context,
                         RenderPass& pass,
                         void* data)
 {
+    auto cmdList = context.currentCmdList;
 
+    auto renderTarget = context.currentRenderTarget->rtv;
+    auto depthStencil = context.currentDepthStencil->dsv;
+
+    Resource*& outputTexture = getResource(context, RTXPass_OutputTexture);
+    if(!outputTexture)
+        return;
+    struct
+    {
+        u32 outputTextureIndex;
+    } passResourcesIndices;
+    passResourcesIndices.outputTextureIndex = outputTexture->uav.getDescriptorIndex();
+
+    cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
+                                true, &depthStencil.HandleCPU);
+    cmdList->SetDescriptorHeaps(1, 
+            DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
+    cmdList->SetComputeRootSignature(pass.rs);
+    cmdList->SetPipelineState(pass.pso);
+
+    ConstantBuffer* constantBuffer = static_cast<ConstantBuffer*>(
+        globalContext.resources[RTXPass_ConstantBufferData]);
+    RTXPassData* rtxData = (RTXPassData*)pass.data;
+
+    if (data && memcmp(data, pass.data, sizeof(RTXPassData)))
+    {
+        memcpy(pass.data, data, sizeof(RTXPassData));
+        constantBuffer->update(rtxData);
+    }
+
+
+    cmdList->SetComputeRootConstantBufferView(0,
+              context.view.buffer->GetGPUVirtualAddress());
+    cmdList->SetComputeRootConstantBufferView(1,
+              (*constantBuffer)->GetGPUVirtualAddress());
+    cmdList->SetComputeRoot32BitConstants(2, 1,
+                                          &passResourcesIndices,
+                                          0);
+
+    cmdList->Dispatch(rtxData->imWidth / 8,
+                      rtxData->imHeight / 8, 1);
+
+    auto rt = context.currentRenderTarget;
+    rt->transition(cmdList, ResourceState::COPY_DEST);
+    outputTexture->transition(cmdList, ResourceState::COPY_SOURCE);
+    cmdList->CopyResource(*rt, *outputTexture);
+    rt->transition(cmdList, ResourceState::RENDER_TARGET);
 }

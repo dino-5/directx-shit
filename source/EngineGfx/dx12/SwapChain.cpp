@@ -69,7 +69,7 @@ void SwapChain::onResize(SwapChainSettings settings)
     {
         ThrowIfFailed(m_swapChain->GetBuffer(i,
                              IID_PPV_ARGS(m_resources[i].getResourceAddress())
-                                             )
+                         )
                       );
         m_resources[i].createViews(Device::s_device->device, 
             DescriptorProperties(DescriptorFlags::RenderTarget));

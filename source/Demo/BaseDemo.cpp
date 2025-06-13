@@ -65,9 +65,11 @@ BaseDemo::BaseDemo(
     std::string_view name) :
     WindowApp(width, height, name),
     m_renderModel(*this, true, "render model"),
-    m_drawBVHDebugView(*this, true, "draw BVH debug view")
+    m_drawBVHDebugView(*this, true, "draw BVH debug view"),
+    m_outputColor(*this, Vector3({1.f, 1.f, 0}), "color", 1.f)
 {
     initGfxContext(width, height);
+    initRenderPassResources(globalContext);
     m_swapChain = SwapChain(
         getCurrentWindowSettings(),
         globalContext.device,
@@ -289,7 +291,12 @@ void BaseDemo::draw()
         m_bvhDebugDrawPass.execute(globalContext, &m_tinybvhModel);
     }
 
-    m_rtxComputePass.execute(globalContext, nullptr);
+    RTXPassData rtxData;
+    rtxData.sphereCount = 0;
+    rtxData.imWidth = getWidth();
+    rtxData.imHeight = getHeight();
+    rtxData.color = m_outputColor.getData();
+    m_rtxComputePass.execute(globalContext, nullptr, &rtxData);
 
     imgui::StartFrame();
     {

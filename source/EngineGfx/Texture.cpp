@@ -7,35 +7,35 @@
 
 namespace engine::graphics
 {
-    void ImageData::init(system::Filepath path)
+void TextureDescription::init(system::Filepath path)
+{
+    setData((stbi_load(path.str().c_str(), &width, &height, &channels, 4)));
+    needToDestruct = true;
+}
+
+Texture::Texture(TextureDescription imData,
+                 const GfxContext& ctx,
+                 DescriptorFlags flags,
+                 ResourceState state)
+{
+    ResourceDescription desc;
+    desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.width = imData.width;
+    desc.height = imData.height;
+    desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.flags = ResourceFlags::NONE;
+    desc.createState = imData.data ? ResourceState::COPY_DEST : state;
+    desc.name = imData.name;
+
+    DescriptorProperties descriptorProps{
+        .descriptor = flags,
+        .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D
+    };
+
+    Resource::initResource(ctx.device, desc, descriptorProps);
+
+    if(imData.data)
     {
-        setData((stbi_load(path.str().c_str(), &width, &height, &channels, 4)));
-        needToDestruct = true;
-    }
-
-    Texture::Texture(ImageData imData, const GfxContext& ctx)
-    {
-        init(imData, ctx);
-    }
-
-    void Texture::init(ImageData imData, const GfxContext& ctx)
-    {
-        ResourceDescription desc;
-        desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        desc.width = imData.width;
-        desc.height = imData.height;
-        desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-        desc.flags = ResourceFlags::NONE;
-        desc.createState = ResourceState::COPY_DEST;
-        desc.name = imData.name;
-
-        DescriptorProperties descriptorProps{
-            .descriptor = DescriptorFlags::ShaderResource,
-            .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D
-        };
-
-        Resource::initResource(
-            ctx.device, desc, descriptorProps);
 
         const UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource(), 0, 1);
 
@@ -61,9 +61,12 @@ namespace engine::graphics
         UpdateSubresources(
             ctx.cmdList.list,
             resource(),
-        textureUploadHeap, 0, 0, 1, &textureData);
-        Resource::transition(ctx.cmdList.list,
-                             ResourceState::PIXEL_SHADER_RESOURCE);
+            textureUploadHeap, 0, 0, 1,
+            &textureData);
+
+        Resource::transition(ctx.cmdList.list, state);
     }
+
+}
 
 };

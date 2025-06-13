@@ -58,7 +58,58 @@ struct BufferDescription {
   BufferType type{};
 };
 
-class Buffer : public Resource {
+template<typename T>
+BufferDescription getIndexBufferDescription(T* data, u32 elementCount)
+{
+    return BufferDescription(
+                        data,
+                        elementCount,
+                        "IndexBuffer",
+                        ResourceState::INDEX_BUFFER,
+                        BufferType::INDEX);
+}
+
+template<typename T>
+BufferDescription getVertexBufferDescription(T* data, u32 elementCount)
+{
+    return BufferDescription(
+                    data,
+                    elementCount,
+                    "VertexBuffer",
+                    ResourceState::VERTEX_CONSTANT_BUFFER,
+                    BufferType::VERTEX);
+}
+
+template<typename T>
+BufferDescription getCustomBufferDescription(T* data, u32 elementCount)
+{
+    return BufferDescription(
+                    data,
+                    elementCount,
+                    "CustomBuffer",
+                    ResourceState::COMMON,
+                    BufferType::CUSTOM);
+}
+
+inline BufferDescription getConstantBufferDescription(u32 elementCount,
+                                               u32 elementSize)
+{
+    return BufferDescription(elementCount, elementSize,
+                                   "ConstantBuffer",
+                                   ResourceState::VERTEX_CONSTANT_BUFFER,
+                                   BufferType::CONSTANT);
+}
+
+inline BufferDescription getUploadBufferDescription(u32 bufferSize)
+{
+    return BufferDescription(
+                bufferSize,
+                "UploadBuffer",
+                ResourceState::COPY_SOURCE, BufferType::UPLOAD);
+}
+
+class Buffer : public Resource
+{
 public:
   Buffer() = default;
 
@@ -76,69 +127,6 @@ public:
          CommandList& cmdList,
          const BufferDescription &desc) {
     init(device, cmdList, desc);
-  }
-
-  static Buffer CreateIndexBuffer(Device& device,
-                                  CommandList& cmdList,
-                                  u32 *data,
-                                  u32 elementCount)
-  {
-    return CreateBuffer(device, cmdList,
-                BufferDescription(
-                        data,
-                        elementCount,
-                        "IndexBuffer",
-                        ResourceState::INDEX_BUFFER,
-                        BufferType::INDEX));
-  }
-
-  template <typename T>
-  static Buffer CreateVertexBuffer(Device& device,
-                                   CommandList& cmdList,
-                                   T *data,
-                                   u32 elementCount)
-  {
-    return CreateBuffer(device, cmdList,
-                BufferDescription(
-                    data,
-                    elementCount,
-                    "VertexBuffer",
-                    ResourceState::VERTEX_CONSTANT_BUFFER,
-                    BufferType::VERTEX));
-  }
-
-  template <typename T>
-  static Buffer CreateCustomBuffer(Device& device,
-                                   CommandList& cmdList,
-                                   T *data,
-                                   u32 elementCount)
-  {
-    return CreateBuffer(
-                device, cmdList,
-                BufferDescription(
-                    data,
-                    elementCount,
-                    "CustomBuffer",
-                    ResourceState::COMMON,
-                    BufferType::CUSTOM));
-  }
-
-  static Buffer CreateUploadBuffer(
-        Device& device, CommandList& cmdList,
-        u32 bufferSize)
-  {
-    return CreateBuffer(
-            device, cmdList,
-            BufferDescription(
-                bufferSize,
-                "UploadBuffer",
-                ResourceState::COPY_SOURCE, BufferType::UPLOAD));
-  }
-
-  static Buffer CreateBuffer(
-        Device& device, CommandList& cmdList,
-        const BufferDescription &bufferDesc) {
-    return Buffer(device, cmdList, bufferDesc);
   }
 
   void init(Device& device,
@@ -169,8 +157,8 @@ protected:
         return i;
       }
     }
-    s_uploadBuffers.push_back(CreateUploadBuffer(
-            device, cmdList, bufferSize));
+    s_uploadBuffers.push_back(Buffer(
+            device, cmdList, getUploadBufferDescription(bufferSize)));
     s_uploadBufferInfo.push_back({bufferSize, true});
     return (u32)s_uploadBuffers.size() - 1;
   }
@@ -192,11 +180,15 @@ class ConstantBuffer : public Buffer {
 public:
   template <typename T>
   ConstantBuffer(Device& device, CommandList& cmdList, T *data, u32 elementCount)
-      : Buffer(CreateConstantBuffer(device, cmdList, elementCount, sizeof(T))) {
+      : Buffer(
+        device, cmdList,
+        getConstantBufferDescription(elementCount, sizeof(T)))
+  {
     CD3DX12_RANGE readRange(0, 0);
     ThrowIfFailed(
         resource()->Map(0, &readRange, reinterpret_cast<void **>(&m_buffer)));
-    update(data);
+    if(data)
+        update(data);
   }
   ~ConstantBuffer() {
     CD3DX12_RANGE readRange(0, 0);
@@ -209,13 +201,6 @@ public:
   }
 
 private:
-  static Buffer CreateConstantBuffer(Device& device, CommandList& cmdList, u32 elementCount,
-                                     u32 elementSize) {
-    return CreateBuffer(
-        device, cmdList, BufferDescription(elementCount, elementSize, "ConstantBuffer",
-                                   ResourceState::VERTEX_CONSTANT_BUFFER,
-                                   BufferType::CONSTANT));
-  }
   char *m_buffer = nullptr;
 };
 

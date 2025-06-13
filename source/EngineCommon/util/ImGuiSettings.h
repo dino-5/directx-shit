@@ -85,6 +85,7 @@ struct UI_ElementGenericInterface : public UI_ElementInterface
 
     Data getData()const { return data; }
     void setCallback(uiActionCallback aCallback) { callback = aCallback; }
+    Data data;
 protected:
     void setFunction(Function f) { function = f; }
     Type& getObject() { return object; }
@@ -93,7 +94,6 @@ protected:
 
     Type& object;
     uiActionCallback callback;
-    Data data;
     Function function;
     std::string name;
 };
@@ -135,10 +135,11 @@ public:
     float range = 0;
 };
 
+using namespace engine::math;
 template<typename T, int D = 3>
-struct UI_Vector : public UI_ElementGenericInterface<T, Slider, engine::math::Vector<D>>
+struct UI_Vector : public UI_ElementGenericInterface<T, Slider, Vector<D>>
 {
-    using Super = UI_ElementGenericInterface<T, Slider, math::Vector<D>>;
+    using Super = UI_ElementGenericInterface<T, Slider, Vector<D>>;
     superFunctions()
     void onUIAction() override
     {
@@ -146,7 +147,7 @@ struct UI_Vector : public UI_ElementGenericInterface<T, Slider, engine::math::Ve
             callback(getObject(), getData());
     }
     
-    UI_Vector(T& obj, engine::math::Vector<D> aData, std::string_view aName, float aRange)	:
+    UI_Vector(T& obj, Vector<D> aData, std::string_view aName, float aRange):
         Super(obj, aData, aName), range(aRange)
     {
         if constexpr(D == 3)
@@ -156,6 +157,7 @@ struct UI_Vector : public UI_ElementGenericInterface<T, Slider, engine::math::Ve
     }
 
     float range = 0;
+    float* getDataPtr() { return Super::data.data(); }
 };
 
 template<typename T>

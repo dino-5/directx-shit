@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EngineCommon/include/defines.h"
-#include "EngineCommon/include/types.h"
+
 #include "EngineCommon/math/Matrix.h"
 #include "EngineCommon/System/config.h"
 #include "EngineGfx/dx12/Device.h"
@@ -63,6 +63,7 @@ struct GfxContext
     Resource* currentRenderTarget;
     Resource* currentDepthStencil;
     GfxView view;
+    std::vector<Resource*> resources;
 
     Fence fence;
     u32 fenceValues [config::NumFrames];

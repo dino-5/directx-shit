@@ -90,7 +90,9 @@ public:
     BaseDemo(u32 width, u32 height, std::string_view name);
     BaseDemo():
         m_renderModel(*this, true, "render model"),
-        m_drawBVHDebugView(*this, true, "draw BVH debug view"){}
+        m_drawBVHDebugView(*this, true, "draw BVH debug view"),
+        m_outputColor(*this, Vector3({1.f, 1.f, 0}), "color", 1.f)
+    {}
     bool initialize()override;
     void createRenderPasses();
     SHIT_ENGINE_SINGLETONE(BaseDemo);
@@ -133,6 +135,7 @@ private:
     RenderPass m_bvhDebugDrawPass;
     RenderPass m_rtxComputePass;
 
+    UI_Vector<BaseDemo> m_outputColor;
     UI_CheckBox<BaseDemo> m_renderModel;
     UI_CheckBox<BaseDemo> m_drawBVHDebugView;
 

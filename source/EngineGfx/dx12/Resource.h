@@ -45,8 +45,18 @@ struct DescriptorProperties
 {
     DescriptorFlags descriptor{0};
     D3D12_SRV_DIMENSION viewDimension{};
-    u32 bufferStride{};
-    u64 numElements{};
+    u32 bufferStride{0};
+    u64 numElements{0};
+    bool isRenderTarget() {
+        return u32(descriptor & DescriptorFlags::RenderTarget) > 0; } 
+    bool isDepthStencil (){
+        return u32(descriptor & DescriptorFlags::DepthStencil) > 0; }
+    bool isShaderResource() {
+        return u32(descriptor & DescriptorFlags::ShaderResource) > 0; }
+    bool isUnorderedAccess() {
+        return u32(descriptor & DescriptorFlags::UnorderedAccess) > 0; }
+    bool isConstantBuffer() {
+        return u32(descriptor & DescriptorFlags::ConstantBuffer) > 0; }
 };
 
 //DescriptorProperties descProps{
@@ -90,32 +100,19 @@ public:
                       DescriptorProperties descriptorDesc,
                       D3D12_CLEAR_VALUE* val=nullptr);
     void transition(ID3D12GraphicsCommandList* cmdList, ResourceState state);
+    void createViews(ID3D12Device* device, DescriptorProperties descriptors);
 
-    void reset()
-    {
-        m_resource.Reset();
-    }
-    
-    ~Resource()
-    {
-        reset();
-    }
+    void reset() { m_resource.Reset(); }
+    ~Resource() { reset(); }
 
-    operator ID3D12Resource* ()
-    {
-        return m_resource.Get();
-    }
-
-    ID3D12Resource* operator->()
-    {
-        return m_resource.Get();
-    }
-
+    operator ID3D12Resource* () { return resource(); }
+    ID3D12Resource* operator->() { return resource(); }
+    ID3D12Resource* operator()() { return resource(); }
     ID3D12Resource* resource() { return m_resource.Get(); }
     ID3D12Resource** getResourceAddress() { return m_resource.GetAddressOf(); }
-    D3D12_GPU_VIRTUAL_ADDRESS getGPUAdress() const { return m_resource->GetGPUVirtualAddress(); }
 
-    void createViews(ID3D12Device* device, DescriptorProperties descriptors);
+    D3D12_GPU_VIRTUAL_ADDRESS getGPUAdress() const {
+        return m_resource->GetGPUVirtualAddress(); }
     ResourceState getCurrentState() const { return m_currentState; }
 
     DescriptorCPU dsv;

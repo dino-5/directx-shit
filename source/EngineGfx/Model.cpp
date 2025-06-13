@@ -186,7 +186,11 @@ void Model::initGLTF(system::Filepath path, GfxContext& context)
         materialData.push_back({ colorTexture, normalTexture });
     }
 
-    BufferDescription desc(materialData.data(), (u32)materialData.size(), "model submesh data", ResourceState::PIXEL_SHADER_RESOURCE, BufferType::CUSTOM);
+    BufferDescription desc(materialData.data(),
+                           (u32)materialData.size(),
+                           "model submesh data",
+                           ResourceState::PIXEL_SHADER_RESOURCE,
+                           BufferType::CUSTOM);
 
     m_materialBuffer.init(context.device, context.cmdList, desc);
 
@@ -205,7 +209,8 @@ void Model::loadTextures()
             util::printError("no uri is provided for an image");
             return;
         }
-        m_textures.push_back(Texture(ImageData(m_directory/image.uri), *m_context));
+        m_textures.push_back(Texture(
+            TextureDescription(m_directory/image.uri), *m_context));
     }
 
 }
@@ -256,20 +261,29 @@ void Model::processMesh(uint index)
         if(tangentIndex != -1)
             tangent = getAccessor(tangentIndex ? tangentIndex : 0);
 
-        assert(checkAccessor(position, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3));
-        assert(checkAccessor(normal, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC3));
-        assert(checkAccessor(texture, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC2));
+        assert(checkAccessor(position,
+                             TINYGLTF_COMPONENT_TYPE_FLOAT,
+                             TINYGLTF_TYPE_VEC3));
+        assert(checkAccessor(normal,
+                             TINYGLTF_COMPONENT_TYPE_FLOAT,
+                             TINYGLTF_TYPE_VEC3));
+        assert(checkAccessor(texture,
+                             TINYGLTF_COMPONENT_TYPE_FLOAT,
+                             TINYGLTF_TYPE_VEC2));
         if(tangentIndex != -1)
-            assert(checkAccessor(tangent, TINYGLTF_COMPONENT_TYPE_FLOAT, TINYGLTF_TYPE_VEC4));
+            assert(checkAccessor(tangent,
+                                 TINYGLTF_COMPONENT_TYPE_FLOAT,
+                                 TINYGLTF_TYPE_VEC4));
 
-        assert(position.accessor.count == normal.accessor.count && normal.accessor.count == texture.accessor.count);
+        assert(position.accessor.count == normal.accessor.count 
+               && normal.accessor.count == texture.accessor.count);
         u32 count = (u32)position.accessor.count;
-        auto getSpan4 = [count](AccessorData& accessor) -> auto {
-            return std::span<math::Vector4>(reinterpret_cast<math::Vector4*>(accessor.getData()), count); };
-        auto getSpan3 = [count](AccessorData& accessor) -> auto {
-            return std::span<math::Vector3>(reinterpret_cast<math::Vector3*>(accessor.getData()), count); };
-        auto getSpan2 = [count](AccessorData& accessor) -> auto {
-            return std::span<math::Vector2>(reinterpret_cast<math::Vector2*>(accessor.getData()), count); };
+        auto getSpan4 = [count](AccessorData& accessor) {
+            return std::span<Vector4>((Vector4*)(accessor.getData()), count); };
+        auto getSpan3 = [count](AccessorData& accessor) {
+            return std::span<Vector3>((Vector3*)(accessor.getData()), count); };
+        auto getSpan2 = [count](AccessorData& accessor) {
+            return std::span<Vector2>((Vector2*)(accessor.getData()), count); };
 
         auto positionSpan = getSpan3(position);
         auto normalSpan = getSpan3(normal);
@@ -280,7 +294,10 @@ void Model::processMesh(uint index)
 
         for (u32 i = 0; i < count; i++)
         {
-            m_geometry.vertices.push_back({ positionSpan[i], normalSpan[i], tangentIndex != -1 ? tangentSpan[i] : math::Vector4(), textureSpan[i] });
+            m_geometry.vertices.push_back({ positionSpan[i],
+                normalSpan[i],
+                tangentIndex != -1 ? tangentSpan[i] : Vector4(),
+                textureSpan[i] });
         }
 
         auto indicesAccessor = getAccessor(primitive.indices);
@@ -298,7 +315,8 @@ void Model::processMesh(uint index)
         //u32 materialIndex = primitive.material != -1 ? primitive.material : 0;
         m_submeshes.push_back(m_geometry.getSubmesh(primitive.material));
     }
-    util::printInfo("{} index count {} vertex count", m_geometry.indices.size(), m_geometry.vertices.size());
+    util::printInfo("{} index count {} vertex count",
+                    m_geometry.indices.size(), m_geometry.vertices.size());
 }
 
 void Model::drawModel(ID3D12GraphicsCommandList* cmdList)
@@ -311,8 +329,13 @@ void Model::drawModel(ID3D12GraphicsCommandList* cmdList)
     for (auto& submesh : m_submeshes)
     {
         if(submesh.materialIndex!=-1)
-            cmdList->SetGraphicsRootDescriptorTable(1, m_textures[submesh.materialIndex].srv.HandleGPU);
-        cmdList->DrawIndexedInstanced(submesh.IndexCount, 1, submesh.StartIndexLocation, submesh.BaseVertexLocation, 0);
+            cmdList->SetGraphicsRootDescriptorTable(1,
+                            m_textures[submesh.materialIndex].srv.HandleGPU);
+        cmdList->DrawIndexedInstanced(submesh.IndexCount,
+                                      1,
+                                      submesh.StartIndexLocation,
+                                      submesh.BaseVertexLocation,
+                                      0);
     }
 }
 

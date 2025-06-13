@@ -57,37 +57,34 @@ enum class ShaderVisibility {
   PIXEL = D3D12_SHADER_VISIBILITY_PIXEL,
 };
 
-class RootParameter {
-public:
-  RootParameter() = default;
-  static RootParameter
-  CreateTable(uint numberOfDescriptorRanges, DescriptorRange &range,
-              ShaderVisibility vis = ShaderVisibility::PIXEL);
+struct RootParameter 
+{
+  operator D3D12_ROOT_PARAMETER() const { return argument; }
 
-  static RootParameter
-  CreateDescriptor(uint shaderRegister, uint registerSpace = 0,
-                   RootParameterType type = RootParameterType::CBV,
-                   ShaderVisibility vis = ShaderVisibility::ALL);
+  D3D12_ROOT_PARAMETER argument{};
+};
 
-  static RootParameter
-  CreateConstants(UINT num32BitValues, UINT shaderRegister,
-                  UINT registerSpace = 0,
-                  ShaderVisibility visibility = ShaderVisibility::ALL);
+RootParameter
+CreateTable(uint numberOfDescriptorRanges, DescriptorRange &range,
+          ShaderVisibility vis = ShaderVisibility::PIXEL);
 
-  operator D3D12_ROOT_PARAMETER() const { return m_argument; }
+RootParameter
+CreateDescriptor(uint shaderRegister, uint registerSpace = 0,
+               RootParameterType type = RootParameterType::CBV,
+               ShaderVisibility vis = ShaderVisibility::ALL);
 
-private:
-  static D3D12_ROOT_PARAMETER_TYPE CastType(RootParameterType type) {
+RootParameter
+CreateConstants(UINT num32BitValues, UINT shaderRegister,
+              UINT registerSpace = 0,
+              ShaderVisibility visibility = ShaderVisibility::ALL);
+
+inline D3D12_ROOT_PARAMETER_TYPE CastType(RootParameterType type) {
     return static_cast<D3D12_ROOT_PARAMETER_TYPE>(type);
   }
 
-  static D3D12_SHADER_VISIBILITY CastType(ShaderVisibility vis) {
+inline D3D12_SHADER_VISIBILITY CastType(ShaderVisibility vis) {
     return static_cast<D3D12_SHADER_VISIBILITY>(vis);
   }
-
-public:
-  D3D12_ROOT_PARAMETER m_argument{};
-};
 
 using RootParameters = std::vector<RootParameter>;
 std::vector<D3D12_ROOT_PARAMETER> GetParameters(RootParameters &vec);

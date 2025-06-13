@@ -17,14 +17,10 @@ using namespace engine;
 namespace engine::graphics 
 {
 class DescriptorHeap;
-struct ImageData
+struct TextureDescription
 {
-    int width;
-    int height;
-    int channels;
-    u8* data;
-    ImageData(const ImageData& imageData) = default;
-    ImageData(ImageData& imageData)
+    TextureDescription(const TextureDescription& imageData) = default;
+    TextureDescription(TextureDescription& imageData)
     {
         data = imageData.data;
         width = imageData.width;
@@ -34,19 +30,25 @@ struct ImageData
         imageData.data = nullptr;
         needToDestruct = imageData.needToDestruct;
     }
-    ~ImageData()
+    ~TextureDescription()
     {
         if (needToDestruct && data)
             delete[] data;
     }
-    template<typename T>
-    void setData(T* newData)
-    {
-        data = reinterpret_cast<u8*>(newData);
-    }
-    ImageData() = default;
-    ImageData(engine::system::Filepath path) { init(path); }
+    void setData(void* newData) { data = reinterpret_cast<u8*>(newData); }
+
+    TextureDescription() = default;
+    TextureDescription(system::Filepath path) { init(path); }
+    TextureDescription(int w, int h, int chn) :
+    width(w), height(h), channels(chn), data(nullptr)
+    {}
+
     void init(engine::system::Filepath path);
+
+    int width;
+    int height;
+    int channels;
+    u8* data;
     const char* name = nullptr;
     bool needToDestruct = false;
 };
@@ -56,8 +58,10 @@ class Texture : public Resource
 {
 public:
     Texture() = default;
-    Texture (ImageData imData, const GfxContext& ctx);
-    void init(ImageData imData, const GfxContext& ctx);
+    Texture (TextureDescription imData,
+             const GfxContext& ctx,
+             DescriptorFlags flags = DescriptorFlags::ShaderResource,
+             ResourceState state = ResourceState::PIXEL_SHADER_RESOURCE);
     u32 getDescriptorHeapIndex()
     {
         return srv.getDescriptorIndex();
