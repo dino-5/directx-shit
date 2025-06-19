@@ -5,6 +5,7 @@
 enum PassResources
 {
     RTXPass_ConstantBufferData,
+    RTXPass_SphereBuffer, // numFrames
     RTXPass_OutputTexture, // numFrames
     PassResourcesCount
 };
@@ -33,12 +34,22 @@ void debugDrawBVHPassExecute(GfxContext& context,
 
 void computeRTXPassInit(GfxContext& context,
                      RenderPass& pass);
+void computeRTXPassResize(GfxContext& context,
+                     RenderPass& pass);
 void computeRTXPassExecute(GfxContext& context,
                         Model* model,
                         RenderPass& pass,
                         void* data);
 
-struct RTXPassData
+struct Sphere
+{
+    Vector3 center;
+    float radius;
+    Vector4 color;
+};
+constexpr u32 MAX_NUMBER_OF_SPHERES = 100;
+
+struct RTXDescription
 {
     u32 sphereCount;
     u32 imWidth;
@@ -46,6 +57,13 @@ struct RTXPassData
     u32 dummy; // TODO :  why?? 
     Vector3 color;
 };
+
+struct RTXPassData
+{
+    RTXDescription description;
+    Sphere sphereArray[MAX_NUMBER_OF_SPHERES];
+};
+
 
 void copyResourcePassExecute(GfxContext& context,
                         Model* model,

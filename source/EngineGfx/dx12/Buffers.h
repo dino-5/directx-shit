@@ -28,26 +28,47 @@ enum class BufferType : u16 {
 
 struct BufferDescription {
   template <typename T>
-  BufferDescription(T *aData, u32 aElementCount,
+  BufferDescription(
+        T *aData,
+        u32 aElementCount,
+        std::string_view aName,
+        ResourceState aState = ResourceState::GENERIC_READ_STATE,
+        BufferType aType = BufferType::CUSTOM
+    )
+    : data((void *)aData),
+      elementCount(aElementCount),
+      elementSize(sizeof(T)),
+      name(aName),
+      state(aState),
+      type(aType) {}
+
+  BufferDescription(
+        u32 aSize,
+        std::string_view aName,
+        ResourceState aState =
+            ResourceState::GENERIC_READ_STATE,
+        BufferType aType = BufferType::CUSTOM
+    )
+      : data(nullptr),
+        elementCount(1),
+        elementSize(aSize),
+        name(aName),
+        state(aState),
+        type(aType) {}
+
+  BufferDescription(u32 aElementCount,
+                    u32 aElementSize,
                     std::string_view aName,
-                    ResourceState aState =
-                        ResourceState::GENERIC_READ_STATE,
-                    BufferType aType = BufferType::CUSTOM)
-      : data((void *)aData), elementCount(aElementCount),
-        elementSize(sizeof(T)), name(aName), state(aState), type(aType) {}
-
-  BufferDescription(u32 aSize, std::string_view aName,
-                    ResourceState aState =
-                        ResourceState::GENERIC_READ_STATE,
-                    BufferType aType = BufferType::CUSTOM)
-      : data(nullptr), elementCount(1), elementSize(aSize), name(aName),
-        state(aState), type(aType) {}
-
-  BufferDescription(u32 aElementCount, u32 aElementSize, std::string_view aName,
                     ResourceState aState = ResourceState::GENERIC_READ_STATE,
-                    BufferType aType = BufferType::CUSTOM)
-      : data(nullptr), elementCount(aElementCount), elementSize(aElementSize),
-        name(aName), state(aState), type(aType) {}
+                    BufferType aType = BufferType::CUSTOM
+    )
+      : data(nullptr),
+        elementCount(aElementCount),
+        elementSize(aElementSize),
+        name(aName),
+        state(aState),
+        type(aType) {}
+
   BufferDescription() = default;
 
   const void *data = nullptr;
@@ -91,13 +112,12 @@ BufferDescription getCustomBufferDescription(T* data, u32 elementCount)
                     BufferType::CUSTOM);
 }
 
-inline BufferDescription getConstantBufferDescription(u32 elementCount,
-                                               u32 elementSize)
+inline BufferDescription getConstantBufferDescription(u32 bufferSize)
 {
-    return BufferDescription(elementCount, elementSize,
-                                   "ConstantBuffer",
-                                   ResourceState::VERTEX_CONSTANT_BUFFER,
-                                   BufferType::CONSTANT);
+    return BufferDescription(bufferSize,
+                             "ConstantBuffer",
+                             ResourceState::VERTEX_CONSTANT_BUFFER,
+                             BufferType::CONSTANT);
 }
 
 inline BufferDescription getUploadBufferDescription(u32 bufferSize)
@@ -125,12 +145,15 @@ public:
 
   Buffer(Device& device,
          CommandList& cmdList,
-         const BufferDescription &desc) {
+         const BufferDescription &desc,
+         DescriptorFlags flags = DescriptorFlags::ShaderResource){
     init(device, cmdList, desc);
   }
 
   void init(Device& device,
-            CommandList& cmdList, const BufferDescription &desc);
+            CommandList& cmdList,
+            const BufferDescription &desc,
+            ResourceFlags flags = ResourceFlags::NONE);
 
   u32 getDescriptorHeapIndex() { return srv.getDescriptorIndex(); }
   u32 getBufferSize() const { return m_bufferSize; }
@@ -171,18 +194,20 @@ protected:
 
   static std::vector<Buffer> s_uploadBuffers;
   static std::vector<UploadBufferInfo> s_uploadBufferInfo;
+public:
   u32 m_elementSize;
   u32 m_bufferSize;
   BufferType m_type;
 };
 
-class ConstantBuffer : public Buffer {
+class ConstantBuffer : public Buffer 
+{
 public:
-  template <typename T>
-  ConstantBuffer(Device& device, CommandList& cmdList, T *data, u32 elementCount)
+  ConstantBuffer(Device& device, CommandList& cmdList, u32 bufferSize, 
+                 void* data = nullptr)
       : Buffer(
         device, cmdList,
-        getConstantBufferDescription(elementCount, sizeof(T)))
+        getConstantBufferDescription(bufferSize))
   {
     CD3DX12_RANGE readRange(0, 0);
     ThrowIfFailed(
@@ -196,15 +221,16 @@ public:
   }
   ConstantBuffer() = default;
 
-  template <typename T> void update(T *data, u32 elementNumber = 0) {
-    memcpy(&m_buffer[elementNumber * m_elementSize], data, sizeof(T));
+  void update(void *data) {
+    memcpy(m_buffer, data, getBufferSize());
   }
 
 private:
   char *m_buffer = nullptr;
 };
 
-struct BufferObject {
+struct BufferObject 
+{
   template <typename T>
   void create(Device& device,
               CommandList& cmdList,

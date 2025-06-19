@@ -44,13 +44,16 @@ enum class Format
 
 D3D12_RESOURCE_FLAGS CastType(ResourceFlags flag);
 
-inline void ThrowIfFailed(HRESULT hr, std::source_location location = std::source_location::current()) 
+inline void ThrowIfFailed(
+    HRESULT hr,
+    std::source_location location = std::source_location::current()) 
 {
     std::string wfn = __FILE__;
     if(FAILED(hr))
     {
         DebugBreak();
-        engine::util::printError("{} crashed ", engine::util::GetFormattedPath(location));
+        engine::util::printError("{} crashed ",
+                                 engine::util::GetFormattedPath(location));
         throw "we Crashed :}";
     }
 }

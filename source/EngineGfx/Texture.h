@@ -69,6 +69,8 @@ public:
 
 public:
     Resource textureUploadHeap;
+    uint width = 0;
+    uint height = 0;
 };
 
 };

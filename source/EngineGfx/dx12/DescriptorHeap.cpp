@@ -40,10 +40,10 @@ void DescriptorHeap::createCBV(ID3D12Device* device,
                                Resource& res,
                                D3D12_CONSTANT_BUFFER_VIEW_DESC& desc)
 {
-    res.srv.HandleCPU = getCPUHandle(currentDescriptorIndex); 
-    res.srv.HandleGPU = getGPUHandle(currentDescriptorIndex);
-    res.srv.HeapIndex = currentDescriptorIndex++;
-    device->CreateConstantBufferView(&desc, res.srv.HandleCPU);
+    res.cbv.HandleCPU = getCPUHandle(currentDescriptorIndex); 
+    res.cbv.HandleGPU = getGPUHandle(currentDescriptorIndex);
+    res.cbv.HeapIndex = currentDescriptorIndex++;
+    device->CreateConstantBufferView(&desc, res.cbv.HandleCPU);
 }
 
 void DescriptorHeap::createSRV(ID3D12Device* device,

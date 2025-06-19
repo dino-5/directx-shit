@@ -16,12 +16,14 @@ struct PassResource
     u8 offset;
 };
 
+
 std::vector<PassResource> PassResourcesDesc(PassResourcesCount);
 
 void initRenderPassResources(GfxContext& context)
 {
     PassResourcesDesc[RTXPass_ConstantBufferData] = {1, 0};
     PassResourcesDesc[RTXPass_OutputTexture] = {config::NumFrames, 0};
+    PassResourcesDesc[RTXPass_SphereBuffer] = {1, 0};
 
     u32 totalResourceCount = 0;
     for(auto& resDesc : PassResourcesDesc)
@@ -200,44 +202,73 @@ void debugDrawBVHPassExecute(GfxContext& context,
 }
 
 
-void computeRTXPassInit(GfxContext& context,
+struct BindlessRTXTable
+{
+    u32 outputTextureIndex;
+    u32 sphereArrayIndex;
+};
+
+void computeRTXPassResize(GfxContext& context,
                      RenderPass& pass)
 {
-    ShaderInputGroup sig;
-    pass.addShader("rtxCompute",
-                   "CSMain",
-                   "Shaders/rtxCompute.hlsl",
-                   ShaderType::COMPUTE, &sig);
-
-    RootParameters rsParams = {
-        CreateDescriptor(0, 0, RootParameterType::CBV),
-        CreateDescriptor(1, 0, RootParameterType::CBV),
-        CreateConstants(1, 2)
-    };
-    
-    pass.rs = RootSignature(context.device(), rsParams, getDefaultRSFlags());
-    sig.rootSignature = &pass.rs;
-    pass.pso = PSO(sig);
-
-    Resource*& constantBuffer = getResource(context, RTXPass_ConstantBufferData);
-    constantBuffer = new ConstantBuffer(globalContext.device,
-                                        globalContext.cmdList,
-                                        (RTXPassData*)0,
-                                        1);
-
-    std::span<Resource*> outputTexture =
-        getPassResources(context, RTXPass_OutputTexture);
+    std::span<Resource*> outputTexture = getPassResources(context,
+                                                          RTXPass_OutputTexture);
     for(auto& texture : outputTexture)
     {
+        if(texture)
+        {
+            Texture* tex = (Texture*)texture;
+            if(tex->width != context.viewPort.Width 
+                || tex->height != context.viewPort.Height)
+            {
+                delete tex;
+            }
+            else
+                continue;
+        }
+
         texture = new Texture(
             {(int)context.viewPort.Width, (int)context.viewPort.Height, 4 },
             context,
             DescriptorFlags::ShaderResource | DescriptorFlags::UnorderedAccess,
             ResourceState::UNORDERED_ACCESS
         );
-
     }
-    pass.data = new RTXPassData;
+}
+
+void computeRTXPassInit(GfxContext& context,
+                     RenderPass& pass)
+{
+    pass.addShader("rtxCompute",
+                   "CSMain",
+                   "Shaders/rtxCompute.hlsl",
+                   ShaderType::COMPUTE);
+
+    RootParameters rsParams = {
+        CreateDescriptor(0, 0, RootParameterType::CBV),
+        CreateDescriptor(1, 0, RootParameterType::CBV),
+        CreateConstants(sizeof(BindlessRTXTable) / sizeof(u32), 2)
+    };
+    
+    pass.rs = RootSignature(context.device(), rsParams, getDefaultRSFlags());
+    pass.compilePSO();
+
+    if(!pass.data)
+        pass.data = new RTXPassData;
+
+    Resource*& constantBuffer = getResource(context, RTXPass_ConstantBufferData);
+    constantBuffer = new ConstantBuffer(globalContext.device,
+                                        globalContext.cmdList,
+                                        sizeof(RTXDescription));
+
+    Resource*& sphereBuffer = getResource(context, RTXPass_SphereBuffer);
+    sphereBuffer = new ConstantBuffer(globalContext.device,
+                                     globalContext.cmdList,
+                                     sizeof(Sphere) * MAX_NUMBER_OF_SPHERES);
+
+    pass._resize = computeRTXPassResize;
+    computeRTXPassResize(context, pass);
+
 }
 
 void computeRTXPassExecute(GfxContext& context,
@@ -251,13 +282,19 @@ void computeRTXPassExecute(GfxContext& context,
     auto depthStencil = context.currentDepthStencil->dsv;
 
     Resource*& outputTexture = getResource(context, RTXPass_OutputTexture);
-    if(!outputTexture)
+
+    ConstantBuffer* descriptionCB = (ConstantBuffer*) getResource(context,
+                                                   RTXPass_ConstantBufferData);
+
+    ConstantBuffer* sphereArray = (ConstantBuffer*) getResource(context,
+                                                   RTXPass_SphereBuffer);
+
+    if(!outputTexture || !sphereArray)
         return;
-    struct
-    {
-        u32 outputTextureIndex;
-    } passResourcesIndices;
+
+    BindlessRTXTable passResourcesIndices;
     passResourcesIndices.outputTextureIndex = outputTexture->uav.getDescriptorIndex();
+    passResourcesIndices.sphereArrayIndex = sphereArray->cbv.getDescriptorIndex();
 
     cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
                                 true, &depthStencil.HandleCPU);
@@ -266,27 +303,39 @@ void computeRTXPassExecute(GfxContext& context,
     cmdList->SetComputeRootSignature(pass.rs);
     cmdList->SetPipelineState(pass.pso);
 
-    ConstantBuffer* constantBuffer = static_cast<ConstantBuffer*>(
-        globalContext.resources[RTXPass_ConstantBufferData]);
-    RTXPassData* rtxData = (RTXPassData*)pass.data;
+    RTXPassData* passData = (RTXPassData*)pass.data;
+    RTXPassData* newRtxData = (RTXPassData*)data;
 
-    if (data && memcmp(data, pass.data, sizeof(RTXPassData)))
+    if(!data)
+        return;
+
+    if (memcmp(&newRtxData->description, &passData->description,
+               sizeof(RTXDescription)))
     {
-        memcpy(pass.data, data, sizeof(RTXPassData));
-        constantBuffer->update(rtxData);
+        memcpy(pass.data, data, sizeof(RTXDescription));
+        descriptionCB->update(&passData->description);
     }
 
+    if (memcmp(&newRtxData->sphereArray, &passData->sphereArray,
+               sizeof(Sphere) * MAX_NUMBER_OF_SPHERES))
+    {
+        memcpy(&passData->sphereArray, &newRtxData->sphereArray,
+               sizeof(Sphere) * MAX_NUMBER_OF_SPHERES);
+        sphereArray->update(&passData->sphereArray);
+    }
+
+    u32 bindlessTableSize = sizeof(BindlessRTXTable) / sizeof(u32);
 
     cmdList->SetComputeRootConstantBufferView(0,
               context.view.buffer->GetGPUVirtualAddress());
     cmdList->SetComputeRootConstantBufferView(1,
-              (*constantBuffer)->GetGPUVirtualAddress());
-    cmdList->SetComputeRoot32BitConstants(2, 1,
+              (*descriptionCB)->GetGPUVirtualAddress());
+    cmdList->SetComputeRoot32BitConstants(2, bindlessTableSize,
                                           &passResourcesIndices,
                                           0);
 
-    cmdList->Dispatch(rtxData->imWidth / 8,
-                      rtxData->imHeight / 8, 1);
+    cmdList->Dispatch(passData->description.imWidth / 8,
+                      passData->description.imHeight / 8, 1);
 
     auto rt = context.currentRenderTarget;
     rt->transition(cmdList, ResourceState::COPY_DEST);

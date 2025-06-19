@@ -32,17 +32,22 @@ struct RenderPass;
 typedef void (*RenderPassDraw)(GfxContext&, Model*, RenderPass&,
                                void*);
 typedef void (*RenderPassInit)(GfxContext&, RenderPass&);
+typedef void (*RenderPassResize)(GfxContext&, RenderPass&);
 
 struct RenderPass
 {
     PSO pso;
     RootSignature rs;
     std::array<Input, (u32)InputType::Count> inputs;
-    Table<DxBlob*> shaders;
+    Table<DxBlob*> shadersBin;
+    ShaderInfo shadersDesc[3];
+
+    bool enabled = true;
+    void* data = nullptr;
+
     RenderPassDraw _execute;
     RenderPassInit _init;
-    bool enabled = true;
-    void* data;
+    RenderPassResize _resize;
 
     void execute(GfxContext& context, Model* model,
                  void* passData = nullptr)
@@ -55,22 +60,33 @@ struct RenderPass
         if(_init)
             _init(context, *this);
     }
+    void resize(GfxContext& context)
+    {
+        if(_resize)
+            _resize(context, *this);
+    }
+
     void addShader(std::string_view name,
                    std::string_view entryPoint,
                    std::string_view path,
                    ShaderType type,
                    ShaderInputGroup* sig = nullptr);
+    void compilePSO();
 
 };
 
 inline RenderPass CreateRenderPass(RenderPassInit init,
-                            RenderPassDraw exec,
-                            bool enable)
+                                   RenderPassResize resize,
+                                   RenderPassDraw exec,
+                                   bool enable,
+                                   GfxContext& context)
 {
     RenderPass pass;
     pass._init = init;
+    pass._resize = resize;
     pass._execute = exec;
     pass.enabled = enable;
+    pass.init(context);
     return pass;
 }
 

@@ -1,6 +1,7 @@
 #include <dxgiformat.h>
 #include <format>
 #include <functional>
+#include <iterator>
 #include <ostream>
 #include <string_view>
 #include "BaseDemo.h"
@@ -77,7 +78,6 @@ BaseDemo::BaseDemo(
     m_inputManager = &system::InputManager::GetInputManager();
 
     m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
-    onResize(width, height);
 }
 
 void BaseDemo::onResize(
@@ -127,6 +127,9 @@ void BaseDemo::onResize(
     m_camera.setProjectionProperties(perspectiveProps);
     m_camera.processUpdate();
 
+    for(auto& renderPass : m_renderPasses)
+        renderPass.resize(globalContext);
+
 }
 
 SwapChainSettings BaseDemo::getCurrentWindowSettings()
@@ -135,24 +138,28 @@ SwapChainSettings BaseDemo::getCurrentWindowSettings()
              getWindowHandle(), false, false};
 }
 
+struct RenderPassDesc
+{
+    RenderPassInit init;
+    RenderPassResize resize;
+    RenderPassDraw execute;
+    bool enabled;
+};
+
 void BaseDemo::createRenderPasses()
 {
-    m_forwardPass = CreateRenderPass(forwardPassInit,
-                                     forwardPassExecute,
-                                     0);
-    m_forwardPass.init(globalContext);
-
-    m_bvhDebugDrawPass = CreateRenderPass(
-                                    debugDrawBVHPassInit,
-                                    debugDrawBVHPassExecute,
-                                    0);
-    m_bvhDebugDrawPass.init(globalContext);
-
-    m_rtxComputePass = CreateRenderPass(
-                                    computeRTXPassInit,
-                                    computeRTXPassExecute,
-                                    1);
-    m_rtxComputePass.init(globalContext);
+    RenderPassDesc renderPassDesc[RenderPassCount] = {
+        {forwardPassInit, 0, forwardPassExecute,  0} ,
+        {debugDrawBVHPassInit, 0, debugDrawBVHPassExecute, 0} ,
+        {computeRTXPassInit, computeRTXPassResize, computeRTXPassExecute, 1}
+    };
+    
+    for(int i = 0; i < RenderPassCount; ++i)
+        m_renderPasses[i] = CreateRenderPass(renderPassDesc[i].init,
+                                             renderPassDesc[i].resize,
+                                             renderPassDesc[i].execute,
+                                             renderPassDesc[i].enabled,
+                                             globalContext);
 }
 
 bool BaseDemo::initialize()
@@ -166,6 +173,7 @@ bool BaseDemo::initialize()
 
     resetList(0);
     createRenderPasses();
+    onResize(getWidth(), getHeight());
 
     // setup data 
     GfxViewData data;
@@ -279,24 +287,32 @@ void BaseDemo::draw()
     // forward rendering 
     ForwardPassData data;
     data.drawModel = m_renderModel.getData();
-    m_forwardPass.execute(globalContext, &m_model, &data);
+    m_renderPasses[ForwardPass].execute(globalContext, &m_model, &data);
     
     // BVH debug draw
     if(m_drawBVHDebugView.getData() && m_tinybvhModel.isInitialized())
     {
-        m_bvhDebugDrawPass.execute(globalContext, &m_bvhModel);
+        m_renderPasses[BVHDebugPass].execute(globalContext, &m_bvhModel);
     }
     else if(m_tinybvhModel.isInitialized())
     {
-        m_bvhDebugDrawPass.execute(globalContext, &m_tinybvhModel);
+        m_renderPasses[BVHDebugPass].execute(globalContext, &m_tinybvhModel);
     }
 
-    RTXPassData rtxData;
-    rtxData.sphereCount = 0;
-    rtxData.imWidth = getWidth();
-    rtxData.imHeight = getHeight();
-    rtxData.color = m_outputColor.getData();
-    m_rtxComputePass.execute(globalContext, nullptr, &rtxData);
+    RTXDescription rtxDesc;
+    rtxDesc.sphereCount = 1;
+    rtxDesc.imWidth = getWidth();
+    rtxDesc.imHeight = getHeight();
+    rtxDesc.color = m_outputColor.getData();
+
+    m_rtxData.description = rtxDesc;
+    m_rtxData.sphereArray[0] = {
+        {0.f, 0.f, 0.f},
+        0.3f,
+        {1.f, 1.f, 1.f, 1.f}
+    };
+
+    m_renderPasses[RTXComputePass].execute(globalContext, nullptr, &m_rtxData);
 
     imgui::StartFrame();
     {
@@ -329,7 +345,10 @@ void BaseDemo::update()
     m_camera.update();
 
     if (m_inputManager->getKeyState(system::Key::C).isPressed())
-        createRenderPasses();
+    {
+        for(auto& pass : m_renderPasses)
+            pass.compilePSO();
+    }
 }
 void BaseDemo::destroy()
 {

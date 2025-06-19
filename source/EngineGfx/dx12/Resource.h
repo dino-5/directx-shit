@@ -118,6 +118,7 @@ public:
     DescriptorCPU dsv;
     DescriptorCPU rtv;
     DescriptorGPU srv;
+    DescriptorGPU cbv;
     DescriptorGPU uav;
 
 private:

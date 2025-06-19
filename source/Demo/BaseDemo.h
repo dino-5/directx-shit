@@ -12,6 +12,7 @@
 #include "EngineGfx/BVH_Builder.h"
 #include "EngineGfx/GfxContext.h"
 #include "EngineGfx/RenderPass.h"
+#include "RenderPasses.h"
 
 #include "third_party/magic_enum/include/magic_enum.hpp"
 
@@ -131,9 +132,17 @@ private:
     Model m_model;
     Model m_bvhModel;
     Model m_tinybvhModel;
-    RenderPass m_forwardPass;
-    RenderPass m_bvhDebugDrawPass;
-    RenderPass m_rtxComputePass;
+
+    enum {
+        ForwardPass,
+        BVHDebugPass,
+        RTXComputePass,
+        RenderPassCount
+    };
+
+    RenderPass m_renderPasses[RenderPassCount];
+
+    RTXPassData m_rtxData;
 
     UI_Vector<BaseDemo> m_outputColor;
     UI_CheckBox<BaseDemo> m_renderModel;

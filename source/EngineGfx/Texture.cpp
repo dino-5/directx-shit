@@ -17,11 +17,12 @@ Texture::Texture(TextureDescription imData,
                  const GfxContext& ctx,
                  DescriptorFlags flags,
                  ResourceState state)
+: width(imData.width), height(imData.height)
 {
     ResourceDescription desc;
     desc.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    desc.width = imData.width;
-    desc.height = imData.height;
+    desc.width = width;
+    desc.height = height;
     desc.dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     desc.flags = ResourceFlags::NONE;
     desc.createState = imData.data ? ResourceState::COPY_DEST : state;

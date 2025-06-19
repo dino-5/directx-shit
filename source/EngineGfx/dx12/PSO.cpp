@@ -104,6 +104,9 @@ std::wstring GetShaderTypeString(ShaderType type)
 
 ShaderInfo::~ShaderInfo()
 {
+    if(shaderName.empty())
+        return;
+
     auto obj = ShaderManager::CreateShader(*this);
     if(shaderTable)
         shaderTable->push_back(obj);
@@ -157,6 +160,7 @@ namespace ShaderManager
             info.shaderName.c_str(),
             L"-E", info.entryPoint.c_str(),
             L"-T", type.c_str(),
+            L"-Qembed_debug",
             DXC_ARG_DEBUG
         };
         IDxcResult* result;

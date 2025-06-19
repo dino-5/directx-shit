@@ -1,4 +1,6 @@
 #include "Buffers.h"
+#include "Resource.h"
+#include "dx12_includes.hpp"
 #include "third_party/magic_enum/include/magic_enum.hpp"
 using namespace magic_enum::bitwise_operators;
 
@@ -30,30 +32,33 @@ inline void Buffer::copyDataToGPU(
 
 void Buffer::init(
     Device& device, CommandList& cmdList,
-    const BufferDescription& bufferDesc)
+    const BufferDescription& bufferDesc,
+    ResourceFlags flags)
 {
     m_type = bufferDesc.type;
-    m_elementSize = (u32)(bufferDesc.type & BufferType::CONSTANT) != 0 
-        ? util::CalcConstantBufferByteSize(bufferDesc.elementSize) 
-        : bufferDesc.elementSize;
+    m_elementSize = bufferDesc.elementSize;
+
     m_bufferSize = bufferDesc.elementCount * m_elementSize;
+    m_bufferSize = (u32)(m_type & BufferType::CONSTANT)  
+                ? util::CalcConstantBufferByteSize(m_bufferSize) 
+                : m_bufferSize;
+
     ResourceDescription desc{
-            .format = DXGI_FORMAT_UNKNOWN,
-            .width = m_bufferSize,
-            .height = 1,
-            .depthOrArraySize = 1,
-            .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-            .flags = ResourceFlags::NONE,
-            .createState = bufferDesc.state,
-            .heapType = bufferDesc.type != BufferType::UPLOAD 
-        && bufferDesc.type != BufferType::CONSTANT 
-        ? D3D12_HEAP_TYPE_DEFAULT : D3D12_HEAP_TYPE_UPLOAD,
-            .name = bufferDesc.name.data()
+        .format = DXGI_FORMAT_UNKNOWN,
+        .width = m_bufferSize,
+        .height = 1,
+        .depthOrArraySize = 1,
+        .dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .flags = flags,
+        .createState = bufferDesc.state,
+        .heapType = bufferDesc.type != BufferType::UPLOAD 
+                    && bufferDesc.type != BufferType::CONSTANT 
+                    ? D3D12_HEAP_TYPE_DEFAULT : D3D12_HEAP_TYPE_UPLOAD,
+        .name = bufferDesc.name.data()
     };
 
     DescriptorProperties descriptorProps;
-    if(bufferDesc.type == BufferType::CONSTANT 
-        || bufferDesc.type == BufferType::CUSTOM)
+    if((u32)(bufferDesc.type & (BufferType::CONSTANT | BufferType::CUSTOM)))
     {
         descriptorProps = {
             .descriptor = bufferDesc.type == BufferType::CUSTOM 
@@ -62,6 +67,9 @@ void Buffer::init(
             .bufferStride = m_elementSize,
             .numElements = bufferDesc.elementCount
         };
+
+        if((u32)(flags & ResourceFlags::UNOURDERED))
+            descriptorProps.descriptor |= DescriptorFlags::UnorderedAccess;
     }
     Resource::initResource(device, desc, descriptorProps);
 

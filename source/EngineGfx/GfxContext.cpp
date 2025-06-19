@@ -29,7 +29,7 @@ void initGfxContext(u32 width, u32 height)
     
     DescriptorHeapManager::CreateDSVHeap(20);
     DescriptorHeapManager::CreateRTVHeap(100);
-    DescriptorHeapManager::CreateSRVHeap(200);
+    DescriptorHeapManager::CreateSRVHeap(400);
 
     setWindowSize(width, height);
 
@@ -95,7 +95,8 @@ void createView(GfxViewData data)
 {
     globalContext.view.data = data;
     globalContext.view.buffer = ConstantBuffer(globalContext.device,
-                                   globalContext.cmdList, &data, 1);
+                                   globalContext.cmdList, 
+                                   sizeof(GfxViewData), &data);
 }
 
 void updateView(GfxViewData data)
