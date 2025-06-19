@@ -344,7 +344,7 @@ void BaseDemo::update()
 
     m_camera.update();
 
-    if (m_inputManager->getKeyState(system::Key::C).isPressed())
+    //if (m_inputManager->getKeyState(system::Key::C).isPressed())
     {
         for(auto& pass : m_renderPasses)
             pass.compilePSO();

@@ -5,41 +5,33 @@
 void RenderPass::addShader(std::string_view name,
                std::string_view entryPoint,
                std::string_view path,
-               ShaderType type,
-               ShaderInputGroup* sig)
+               ShaderType type)
 {
-    ShaderInfo info(&shadersBin);
+    ShaderInfo info;
     info.shaderName = util::to_wstring(name);
     info.entryPoint = util::to_wstring(entryPoint);
     info.path       = util::to_wstring(path);
     info.type       = type;
-    shadersDesc[(u32)type] = info;
-
-    if(!sig)
-        return;
-
-    if(type == ShaderType::PIXEL)
-        sig->pixelShader = info.createShader();
-    else if(type == ShaderType::VERTEX)
-        sig->vertexShader = info.createShader();
-    else 
-        sig->computeShader = info.createShader();
+    shaders[(u32)type] = info;
 }
 
 void RenderPass::compilePSO()
 {
-    ShaderInputGroup sig;
-    if (!shadersDesc[0].shaderName.empty())
+    if(!shaders[0].isChanged() && !shaders[1].isChanged() && !shaders[2].isChanged())
+        return;
+
+    renderState.sig.rootSignature = &rs;
+    if (!shaders[0].shaderName.empty())
     {
-        sig.vertexShader = shadersDesc[0].createShader();
-        sig.pixelShader = shadersDesc[1].createShader();
+        renderState.sig.vs = shaders[0].createShader();
+        renderState.sig.ps = shaders[1].createShader();
+        pso = PSO(renderState);
     }
     else
     {
-        sig.computeShader = shadersDesc[2].createShader();
+        renderState.sig.cs = shaders[2].createShader();
+        pso = PSO(renderState.sig);
     }
    
-    sig.rootSignature = &rs;
-    pso = PSO(sig);
 
 }

@@ -4,17 +4,22 @@
 #include "third_party/fmt/include/fmt/printf.h"
 #include "third_party/fmt/include/fmt/core.h"
 
+#include <filesystem>
 #include <fstream>
 
-inline bool checkFileExists(const fs::path& path)
+bool isFileExists(std::string_view file)
 {
-	if (!fs::exists(path))
+	if (!fs::exists(file))
 	{
-		std::string error = engine::util::to_string(path.native());
-		engine::util::printError("{} is not exist", error);
+		engine::util::printError("{} is not exist", file);
 		return false;
 	}
 	return true;
+}
+
+void copyFile(std::string_view src, std::string_view dst)
+{
+    fs::copy_file(src, dst, fs::copy_options::overwrite_existing);
 }
 
 namespace engine::system
@@ -37,7 +42,7 @@ void Filepath::init(fs::path path)
 
 std::string Filepath::readFile()
 {
-	if(checkFileExists(m_path))
+	if(isFileExists(m_path))
 	{
         std::ifstream file(m_path);
         std::ostringstream s_str;
@@ -46,5 +51,5 @@ std::string Filepath::readFile()
 	}
 	return "";
 }
-
 };
+

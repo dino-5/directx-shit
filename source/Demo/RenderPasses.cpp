@@ -59,12 +59,12 @@ void forwardPassInit(GfxContext& context,
     pass.addShader("forwardVS",
                    "VertexMain",
                    "Shaders/forward_render.hlsl",
-                    ShaderType::VERTEX, &sig);
+                    ShaderType::VERTEX);
 
     pass.addShader("forwardPS",
                    "PixelMain",
                    "Shaders/forward_render.hlsl",
-                    ShaderType::PIXEL, &sig);
+                    ShaderType::PIXEL);
 
     RootParameters parameters = {
         CreateDescriptor(0),
@@ -73,20 +73,17 @@ void forwardPassInit(GfxContext& context,
     pass.rs = RootSignature(globalContext.device(), parameters,
                             getDefaultRSFlags());
     u32 offset = 0;
-    D3D12_INPUT_ELEMENT_DESC inputElements[] ={
+    std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements = {
         getInputElement("POSITION", offset, 3),
         getInputElement("NORMAL", offset, 3),
         getInputElement("TANGENT", offset, 4),
         getInputElement("UV", offset, 2),
     };
-    D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 4};
 
-    sig.desc = inputLayout;
-    sig.rootSignature = &pass.rs;
+    sig.desc = inputElements;
+    pass.renderState.sig = sig;
 
-    RenderState renderState;
-    renderState.setShaderInputGroup(sig);
-    pass.pso = PSO(renderState);
+    pass.compilePSO();
 }
 
 void forwardPassExecute(GfxContext& context,
@@ -144,12 +141,12 @@ void debugDrawBVHPassInit(GfxContext& context,
     pass.addShader("debugBVH_VS",
                    "VertexMain",
                    "Shaders/debug_BVHdraw.hlsl",
-                   ShaderType::VERTEX, &sig);
+                   ShaderType::VERTEX);
 
     pass.addShader("debugBVH_PS",
                    "PixelMain",
                    "Shaders/debug_BVHdraw.hlsl",
-                    ShaderType::PIXEL, &sig);
+                    ShaderType::PIXEL);
     
     RootParameters parameters = {
         CreateConstants(1, 0, 10)
@@ -158,18 +155,14 @@ void debugDrawBVHPassInit(GfxContext& context,
     pass.rs = RootSignature(globalContext.device(),
                             parameters, getDefaultRSFlags());
     u32 offset = 0;
-    D3D12_INPUT_ELEMENT_DESC inputElements[] ={
+    std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements ={
         getInputElement("POSITION", offset, 3)
     };
-    D3D12_INPUT_LAYOUT_DESC inputLayout {inputElements, 1};
 
-    sig.desc = inputLayout;
-    sig.rootSignature = &pass.rs;
+    sig.desc = inputElements;
+    pass.renderState.sig = sig;
 
-    RenderState renderState;
-    renderState.setShaderInputGroup(sig);
-    renderState.topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-    pass.pso = PSO(renderState);
+    pass.compilePSO();
 }
 
 void debugDrawBVHPassExecute(GfxContext& context,
@@ -265,9 +258,6 @@ void computeRTXPassInit(GfxContext& context,
     sphereBuffer = new ConstantBuffer(globalContext.device,
                                      globalContext.cmdList,
                                      sizeof(Sphere) * MAX_NUMBER_OF_SPHERES);
-
-    pass._resize = computeRTXPassResize;
-    computeRTXPassResize(context, pass);
 
 }
 

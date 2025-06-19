@@ -21,22 +21,25 @@ namespace engine::graphics
 
 D3D12_SHADER_BYTECODE getShader(DxBlob* blob)
 {
-    D3D12_SHADER_BYTECODE ret
-    {
+    if(!blob)
+        return {nullptr, 0};
+    return {
         reinterpret_cast<BYTE*>(blob->GetBufferPointer()),
         blob->GetBufferSize()
     };
-    return ret;
 }
 
 PSO::PSO(const RenderState& state)
 {
     ID3D12Device* device = Device::s_device->device;
+    D3D12_INPUT_LAYOUT_DESC layout;
+    layout.pInputElementDescs = state.sig.desc.data();
+    layout.NumElements = state.sig.desc.size();
     
-    m_psoDesc.InputLayout = state.shader.desc;
-    m_psoDesc.pRootSignature = *state.shader.rootSignature;
-    m_psoDesc.VS = state.shader.vertexShader;
-    m_psoDesc.PS = state.shader.pixelShader;
+    m_psoDesc.InputLayout = layout;
+    m_psoDesc.pRootSignature = *state.sig.rootSignature;
+    m_psoDesc.VS = state.sig.vs;
+    m_psoDesc.PS = state.sig.ps;
     m_psoDesc.RasterizerState = +state.rast;
     m_psoDesc.BlendState = state.blend;
     m_psoDesc.DepthStencilState = +state.ds;
@@ -61,27 +64,6 @@ PSO::PSO(const RenderState& state)
         &m_psoDesc, IID_PPV_ARGS(&m_pso)));
 }
 
-void RenderState::setBlendState(BlendState blendState)
-{
-    blend = blendState;
-}
-
-void RenderState::setDepthStencilState(DepthStencilState d)
-{
-    ds = d;
-}
-
-void RenderState::setRasterizerState(RasterizerState r)
-{
-    rast = r;
-}
-
-void RenderState::setShaderInputGroup(ShaderInputGroup& s)
-{
-    shader = s;
-}
-
-
 PSO RenderState::compile(std::wstring name)
 {
     return PSO(*this);
@@ -102,25 +84,17 @@ std::wstring GetShaderTypeString(ShaderType type)
     }
 }
 
-ShaderInfo::~ShaderInfo()
-{
-    if(shaderName.empty())
-        return;
-
-    auto obj = ShaderManager::CreateShader(*this);
-    if(shaderTable)
-        shaderTable->push_back(obj);
-}
-
 D3D12_SHADER_BYTECODE ShaderInfo::createShader()
 {
+    if(shaderName.empty())
+        return D3D12_SHADER_BYTECODE{};
+
     auto obj = ShaderManager::CreateShader(*this);
-    if(shaderTable)
+    if(obj)
     {
-        shaderTable->push_back(obj);
-        shaderTable = nullptr;
+        bin = obj;
     }
-    return getShader(obj.second);
+    return getShader(bin);
 }
 
 namespace ShaderManager
@@ -138,10 +112,17 @@ namespace ShaderManager
     }
 
 
-    TableEntry< DxBlob*> CreateShader(const ShaderInfo& info)
+    DxBlob* CreateShader(const ShaderInfo& info)
     {
         IDxcBlobEncoding* sourceBlob;
-        s_utils->LoadFile(info.path.c_str(), nullptr, &sourceBlob);
+        s_utils->LoadFile(info.getTempPath().c_str(), nullptr, &sourceBlob);
+
+        if (!sourceBlob)
+        {
+            engine::util::printError("Failed to load shader file: {}",
+                util::to_string(info.path));
+            return nullptr;
+        }
 
         DxcBuffer sourceBuffer;
         sourceBuffer.Ptr = sourceBlob->GetBufferPointer();
@@ -153,8 +134,10 @@ namespace ShaderManager
         
         auto path = config::g_state.shaderDir / L"pdb" /
                     system::Filepath(info.path).filename();
+
         system::Filepath pdbPath(std::filesystem::absolute(path.getPath()));
         std::wstring pdbPathWstr = pdbPath.wstr() + info.entryPoint + L".pdb";
+
         std::vector<const wchar_t*> args= 
         {
             info.shaderName.c_str(),
@@ -190,12 +173,15 @@ namespace ShaderManager
                 engine::util::printError("{}",std::string(str));
                 delete[] str;
             }
-            return { L"", nullptr };
+            return nullptr;
         }
         else
         {
             DxBlob* blob;
             result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&blob), nullptr);
+
+            engine::util::printInfo("shader {} succesfully compiled", 
+                                    util::to_string(info.path));
 
             std::vector<std::byte> pdbData;
             DxBlob* pdbBlob;
@@ -207,7 +193,7 @@ namespace ShaderManager
             std::ofstream file(pdbPathWstr.data(), std::ios::binary | std::ios::trunc);
             file.write(reinterpret_cast<const char*>(pdbData.data()), pdbData.size());
             file.close();
-            return { info.shaderName, blob};
+            return blob;
         }
 
     }
@@ -216,7 +202,7 @@ namespace ShaderManager
 PSO::PSO(const ShaderInputGroup& shaderGroup)
 {
     D3D12_COMPUTE_PIPELINE_STATE_DESC desc{};
-    desc.CS = shaderGroup.computeShader;
+    desc.CS = shaderGroup.cs;
     desc.pRootSignature = *shaderGroup.rootSignature;
 
     ID3D12Device* device = Device::s_device->device;

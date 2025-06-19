@@ -3,13 +3,16 @@
 
 #include <d3d12.h>
 #include <dxgiformat.h>
+#include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <functional>
 #include <unordered_map>
 #include "PipelineStates.h"
 #include "RootSignature.h"
 #include "EngineCommon/util/Util.h"
+#include "EngineCommon/System/Filesystem.h"
 
 struct IDxcCompiler3;
 using DxCompiler = IDxcCompiler3;
@@ -32,17 +35,46 @@ enum class ShaderType
 };
 std::wstring GetShaderTypeString(ShaderType type);
 
-
 struct ShaderInfo
 {
-    ShaderInfo(Table<DxBlob*>* aShaderTable=nullptr) : shaderTable(aShaderTable) {}
-    Table<DxBlob*>* shaderTable;
+    DxBlob* bin = nullptr;
     std::wstring shaderName{};
     std::wstring path{};
     std::wstring entryPoint{};
     ShaderType   type{};
     D3D12_SHADER_BYTECODE createShader();
-    ~ShaderInfo();
+    bool isChanged()
+    {
+        if(shaderName.empty())
+            return false;
+
+        if(!bin)
+            return true;
+        
+        std::string orPath = util::to_string(path);
+        std::string tempPath = util::to_string(getTempPath());
+        if(!fs::exists(tempPath))
+        {
+            copyFile(orPath, tempPath);
+            return true;
+        }
+
+        error_code code;
+        auto original = GetLastEditTime(orPath, code);
+        auto temp = GetLastEditTime(tempPath, code);
+        if(!code && original > temp)
+        {
+            copyFile(orPath, tempPath);
+            return true;
+        }
+
+        return false;
+    }
+
+    std::wstring getTempPath() const
+    {
+        return path + L"t";
+    }
 };
 
 namespace ShaderManager
@@ -51,17 +83,17 @@ namespace ShaderManager
     extern DxUtils* s_utils;
     extern DxIncludeHandler* s_includer;
     void InitializeCompiler();
-    TableEntry< DxBlob*> CreateShader(const ShaderInfo& info);
+    DxBlob* CreateShader(const ShaderInfo& info);
     void Clear();
 };
 
 struct ShaderInputGroup
 {
-    D3D12_INPUT_LAYOUT_DESC desc = { nullptr, 0 };
-    D3D12_SHADER_BYTECODE vertexShader;
-    D3D12_SHADER_BYTECODE pixelShader;
-    D3D12_SHADER_BYTECODE computeShader;
+    D3D12_SHADER_BYTECODE vs;
+    D3D12_SHADER_BYTECODE ps;
+    D3D12_SHADER_BYTECODE cs;
     RootSignature* rootSignature = nullptr;
+    std::vector<D3D12_INPUT_ELEMENT_DESC> desc;
 };
 
 class PSO;
@@ -69,15 +101,11 @@ struct RenderState
 {
     RenderState()=default;
     PSO compile(std::wstring name);
-    void setBlendState       (BlendState blend=BlendState());
-    void setDepthStencilState(DepthStencilState ds =DepthStencilState());
-    void setRasterizerState  (RasterizerState raster = RasterizerState());
-    void setShaderInputGroup (ShaderInputGroup&);
 
     BlendState        blend;
     DepthStencilState ds;
     RasterizerState   rast;
-    ShaderInputGroup  shader;
+    ShaderInputGroup  sig;
     D3D12_PRIMITIVE_TOPOLOGY_TYPE topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     std::vector<DXGI_FORMAT> renderTargets = {};
 };

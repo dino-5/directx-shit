@@ -40,7 +40,8 @@ struct RenderPass
     RootSignature rs;
     std::array<Input, (u32)InputType::Count> inputs;
     Table<DxBlob*> shadersBin;
-    ShaderInfo shadersDesc[3];
+    ShaderInfo shaders[3];
+    RenderState renderState;
 
     bool enabled = true;
     void* data = nullptr;
@@ -69,8 +70,7 @@ struct RenderPass
     void addShader(std::string_view name,
                    std::string_view entryPoint,
                    std::string_view path,
-                   ShaderType type,
-                   ShaderInputGroup* sig = nullptr);
+                   ShaderType type);
     void compilePSO();
 
 };
