@@ -1,45 +1,5 @@
 #include "Shaders/Ray.hlsl"
-
-uint Hash(uint x)
-{
-    x ^= x >> 17;
-    x *= 0xed5ad4bbU;
-    x ^= x >> 11;
-    x *= 0xac4c1b51U;
-    x ^= x >> 15;
-    x *= 0x31848babU;
-    x ^= x >> 14;
-    return x;
-}
-
-float Random1(inout uint x)
-{
-    float result =  (float)(Hash(x)) / 4294967296.0; // normalize to [0,1)
-    x = Hash(x);
-    return result;
-}
-
-float2 Random2(inout uint x)
-{
-    float2 result;
-    result.x = Random1(x);
-    x = Hash(x);
-    result.y = Random1(x);
-    x = Hash(x);
-    return result;
-}
-
-float3 Random3(inout uint x)
-{
-    float3 result;
-    result.x = Random1(x);
-    x = Hash(x);
-    result.y = Random1(x);
-    x = Hash(x);
-    result.z = Random1(x);
-    x = Hash(x);
-    return result;
-}
+#include "Shaders/RandomUtilities.hlsl"
 
 struct ViewSettings
 {
@@ -72,7 +32,8 @@ struct Camera
                       float3 cameraU,
                       float fov,
                       uint2 id,
-                      uint samples)
+                      uint samples,
+                      uint depth)
     {
         pos = cameraPos;
 
@@ -81,6 +42,7 @@ struct Camera
         U = cameraU;
 
         sampleCount = samples;
+        maxDepth = depth;
 
         uint seed = id.x + id.y * (uint)width;
         hash = Hash(seed);
@@ -120,24 +82,40 @@ struct Camera
         return r;
     }
 
-    float4 render(SphereArray array, float2 interval, uint sphereCount)
+    float4 pixelColor(SphereArray array, Ray r)
     {
-
-        Ray r = getRay();
         float blue = 0.5 * (r.dir.y + 1);
         float4 colorBlue = calculateSky(blue);
-        float4 color = float4(0,0,0,0);
+        float k = 1;
+
         HitRecord hit;
+        for(int i = 0; i < maxDepth; i++)
+        {
+            if(array.hit(r, interv, hit, sphCount))
+            {
+                float3 dir = RandomOnHemisphere(hit.n, hash);
+                r = createRay(hit.p, dir);
+                k *= 0.5;
+            }
+            else
+                break;
+        }
+
+        return k*colorBlue;
+    }
+
+    float4 render(SphereArray array, float2 interval, uint sphereCount)
+    {
+        Ray r = getRay();
+        float4 color = float4(0,0,0,0);
+
+        interv = interval;
+        sphCount = sphereCount;
 
         float scale = 1 / float(sampleCount);
         for(int i = 0; i < sampleCount; i++)
         {
-            if(array.hit(getRay(i), interval, hit, sphereCount))
-            {
-                color += float4(hit.n, 1.f);
-            }
-            else
-                color += colorBlue;
+            color += pixelColor(array, getRay(i));
         }
 
         return color / sampleCount;
@@ -153,6 +131,10 @@ struct Camera
     float dy;
     float hash;
     uint sampleCount;
+    uint maxDepth;
+
+    uint sphCount;
+    float2 interv;
 
 };
 
@@ -195,10 +177,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.cameraUpDir,
                         g_view.fov,
                         id.xy,
-                        100);
+                        100,
+                        10);
 
     tex[id.xy] = camera.render(sphereArray.array,
-                               float2(0, 100000),
+                               float2(0.001, 100000),
                                g_rtxData.sphereCount); 
 }
 

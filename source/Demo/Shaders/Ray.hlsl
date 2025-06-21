@@ -11,6 +11,14 @@ struct Ray
     }
 };
 
+Ray createRay(float3 p, float3 d)
+{
+    Ray r;
+    r.pos = p;
+    r.dir = d;
+    return r;
+}
+
 struct HitRecord 
 {
     float3 p;
