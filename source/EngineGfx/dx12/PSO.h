@@ -37,6 +37,7 @@ std::wstring GetShaderTypeString(ShaderType type);
 
 struct ShaderInfo
 {
+    // TODO : Add dependencies on the include files
     DxBlob* bin = nullptr;
     std::wstring shaderName{};
     std::wstring path{};
@@ -48,9 +49,6 @@ struct ShaderInfo
         if(shaderName.empty())
             return false;
 
-        if(!bin)
-            return true;
-        
         std::string orPath = util::to_string(path);
         std::string tempPath = util::to_string(getTempPath());
         if(!fs::exists(tempPath))
@@ -62,7 +60,7 @@ struct ShaderInfo
         error_code code;
         auto original = GetLastEditTime(orPath, code);
         auto temp = GetLastEditTime(tempPath, code);
-        if(!code && original > temp)
+        if((!code && original > temp) || !bin)
         {
             copyFile(orPath, tempPath);
             return true;

@@ -263,11 +263,11 @@ bool BaseDemo::initialize()
         data.projectionMatrix = camera->getProjectionMatrix();
         data.viewMatrix = camera->getViewMatrix();
 
-		data.cameraPos = camera->getPos();
-		data.cameraViewDir = camera->getViewDir();
-		data.cameraRightDir = camera->getRightDir();
-		data.cameraUpDir = camera->getUpDir();
-		data.fov = 90.f;
+        data.cameraPos = camera->getPos();
+        data.cameraViewDir = camera->getViewDir();
+        data.cameraRightDir = camera->getRightDir();
+        data.cameraUpDir = camera->getUpDir();
+        data.fov = 90.f;
         updateView(data);
     });
 
@@ -284,7 +284,7 @@ void BaseDemo::draw()
     Timer timer("draw");
     resetList(globalContext.currentFrameIndex); 
     ID3D12GraphicsCommandList* cmdList = globalContext.currentCmdList;
-	cmdList->RSSetViewports(1, &globalContext.viewPort);
+    cmdList->RSSetViewports(1, &globalContext.viewPort);
 
     u32 swapChainBufferIndex = m_swapChain.changeState(
                                 cmdList,
@@ -319,7 +319,7 @@ void BaseDemo::draw()
     m_rtxData.description = rtxDesc;
     m_rtxData.sphereArray[0] = {
         {0.f, 0.f, 0.f},
-        0.3f,
+        10.f,
         {1.f, 1.f, 1.f, 1.f}
     };
 

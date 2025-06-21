@@ -15,6 +15,36 @@ struct ViewSettings
     float fov;
 };
 
+struct Camera
+{
+
+    void createCamera(float width,
+                      float height,
+                      float3 cameraPos,
+                      float3 cameraV,
+                      float3 cameraR,
+                      float3 cameraU,
+                      float fov,
+                      uint2 id)
+    {
+
+        float aspectRatio = width / height;
+        float3 viewPlaneC = cameraPos + cameraV;
+        float cosHalfFov = cos(fov/2);
+        float sx = cosHalfFov * aspectRatio;
+        float sy = cosHalfFov;
+
+        float3 lb = viewPlaneC - sx * cameraR+ sy * cameraU; // left bottom
+
+        float dx =  2 * sx / width;
+        float dy = 2 * sy / height;
+        pixel = lb + dx * id.x * cameraR - dy * id.y * cameraU;
+    }
+
+    float3 pixel;
+
+};
+
 struct RTXData
 {
     uint sphereCount;
@@ -41,23 +71,19 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     if(id.x >= g_rtxData.imWidth || id.y >= g_rtxData.imHeight)
         return;
 
-    float aspectRatio = float(g_rtxData.imWidth) / float(g_rtxData.imHeight);
-    float3 viewPlaneCenter = g_view.cameraPos + g_view.cameraViewDir;
-    float cosHalfFov = cos(g_view.fov/2);
-    float sx = cosHalfFov * aspectRatio;
-    float sy = cosHalfFov;
-
-    float3 lb = viewPlaneCenter - sx * g_view.cameraRightDir + 
-        sy * g_view.cameraUpDir; // left bottom
-
-    float dx =  2 * sx / float(g_rtxData.imWidth);
-    float dy = 2 * sy / float(g_rtxData.imHeight);
-    float3 currentPixel = lb + dx * id.x * g_view.cameraRightDir -
-        dy * id.y * g_view.cameraUpDir;
+    Camera camera;
+    camera.createCamera(g_rtxData.imWidth,
+                        g_rtxData.imHeight,
+                        g_view.cameraPos,
+                        g_view.cameraViewDir,
+                        g_view.cameraRightDir,
+                        g_view.cameraUpDir,
+                        g_view.fov,
+                        id.xy);
 
     Ray ray;
     ray.pos = g_view.cameraPos;
-    ray.dir = normalize(currentPixel - g_view.cameraPos);
+    ray.dir = normalize(camera.pixel - g_view.cameraPos);
 
     RWTexture2D<float4> tex = RDH(bindless.outputTextureIndex);
     ConstantBuffer<CB_Sphere> sphereArray = RDH(bindless.sphereBufferIndex);
@@ -66,8 +92,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     for(int i = 0; i < g_rtxData.sphereCount; ++i)
     {
-        if(hit_sphere(sphereArray.spheres[i], ray))
-            color = RED;
+        Sphere sph = sphereArray.array.spheres[i];
+        HitRecord hit;
+        bool result = hit_sphere(sph, ray, 0, 1000, hit);
+        if(result)
+        {
+            color = float4(hit.n, 1.f);
+        }
 
     }
 
