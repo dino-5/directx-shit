@@ -47,12 +47,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float sx = cosHalfFov * aspectRatio;
     float sy = cosHalfFov;
 
-    float3 lb = viewPlaneCenter - sx * g_view.cameraRightDir - 
+    float3 lb = viewPlaneCenter - sx * g_view.cameraRightDir + 
         sy * g_view.cameraUpDir; // left bottom
 
     float dx =  2 * sx / float(g_rtxData.imWidth);
     float dy = 2 * sy / float(g_rtxData.imHeight);
-    float3 currentPixel = lb + dx * id.x * g_view.cameraRightDir +
+    float3 currentPixel = lb + dx * id.x * g_view.cameraRightDir -
         dy * id.y * g_view.cameraUpDir;
 
     Ray ray;
