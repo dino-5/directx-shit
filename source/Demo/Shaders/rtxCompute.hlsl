@@ -89,18 +89,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     ConstantBuffer<CB_Sphere> sphereArray = RDH(bindless.sphereBufferIndex);
     
     float4 color = float4(g_rtxData.color, 1.f);
-
-    for(int i = 0; i < g_rtxData.sphereCount; ++i)
-    {
-        Sphere sph = sphereArray.array.spheres[i];
-        HitRecord hit;
-        bool result = hit_sphere(sph, ray, 0, 1000, hit);
-        if(result)
-        {
-            color = float4(hit.n, 1.f);
-        }
-
-    }
+    HitRecord hit;
+    if(sphereArray.array.hit(ray, float2(0, 100000), hit, g_rtxData.sphereCount))
+        color = float4(hit.n, 1.f);
 
     tex[id.xy] = color; 
 }

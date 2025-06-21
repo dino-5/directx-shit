@@ -53,7 +53,6 @@ void locGenerateTinyBVHCompatibleGeometry(
     }
 }
 
-
 Light::Light(
     math::Vector3 vec)
     : m_position(vec)
@@ -311,15 +310,21 @@ void BaseDemo::draw()
     }
 
     RTXDescription rtxDesc;
-    rtxDesc.sphereCount = 1;
+    rtxDesc.sphereCount = 2;
     rtxDesc.imWidth = getWidth();
     rtxDesc.imHeight = getHeight();
     rtxDesc.color = m_outputColor.getData();
 
     m_rtxData.description = rtxDesc;
     m_rtxData.sphereArray[0] = {
-        {0.f, 0.f, 0.f},
+        {0.f, 0.f, -1.f},
         10.f,
+        {1.f, 1.f, 1.f, 1.f}
+    };
+
+    m_rtxData.sphereArray[1] = {
+        {0.f, -1010.f, -1.f},
+        1000.f,
         {1.f, 1.f, 1.f, 1.f}
     };
 
