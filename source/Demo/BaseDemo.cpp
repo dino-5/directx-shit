@@ -179,6 +179,11 @@ bool BaseDemo::initialize()
     GfxViewData data;
     data.projectionMatrix = m_camera.getProjectionMatrix();
     data.viewMatrix = m_camera.getViewMatrix();
+    data.cameraPos = m_camera.getPos();
+    data.cameraViewDir = m_camera.getViewDir();
+    data.cameraRightDir = m_camera.getRightDir();
+    data.cameraUpDir = m_camera.getUpDir();
+    data.fov = 90.f;
     createView(data);
 
     if(0)
@@ -257,6 +262,12 @@ bool BaseDemo::initialize()
         GfxViewData data;
         data.projectionMatrix = camera->getProjectionMatrix();
         data.viewMatrix = camera->getViewMatrix();
+
+		data.cameraPos = camera->getPos();
+		data.cameraViewDir = camera->getViewDir();
+		data.cameraRightDir = camera->getRightDir();
+		data.cameraUpDir = camera->getUpDir();
+		data.fov = 90.f;
         updateView(data);
     });
 

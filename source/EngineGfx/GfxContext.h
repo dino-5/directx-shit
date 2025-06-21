@@ -27,6 +27,15 @@ struct GfxViewData
 {
     Matrix4 viewMatrix;
     Matrix4 projectionMatrix;
+    Vector3 cameraPos;
+    float pad0;
+    Vector3 cameraViewDir;
+    float pad1;
+    Vector3 cameraRightDir;
+    float pad2;
+    Vector3 cameraUpDir;
+    float pad3;
+    float fov;
 };
 
 struct GfxView

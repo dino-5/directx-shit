@@ -25,13 +25,18 @@ class Camera
 public:
     using CallbackSign = std::function<void(const Camera* camera)>;
     Camera();
-    void initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props);
+    void initialize(math::Vector3 pos,
+                    math::Vector3 viewDirection, math::ProjectionProps props);
     void initialize(math::Vector3 pos, math::Vector3 viewDirection);
 
     math::Matrix4 getViewMatrix() const { return m_viewMatrix; }
     math::Matrix4 getProjectionMatrix() const { return m_projectionMatrix; }
-    math::Vector3 getPos() const { return m_position; }
-    math::Vector3 getDir() const { return m_viewDir; }
+    math::Vector3 getPos() const { return pos; }
+
+    math::Vector3 getViewDir() const { return viewDir; }
+    math::Vector3 getRightDir() const { return rightDir; }
+    math::Vector3 getUpDir() const { return upDir; }
+
     void setPosition(math::Vector3 pos);
     void setDirection(math::Vector3 dir);
 
@@ -54,10 +59,10 @@ public:
 private:
     static constexpr float defaultCameraMovementSpeed = 10.f;
     static constexpr float defaultCameraRotationSpeed = 1.f;
-    math::Vector3 m_position;
-    math::Vector3 m_viewDir {0.f, 0.f, 1.f};
-    math::Vector3 m_rightDir{1.f, 0.f, 0.f};
-    math::Vector3 m_upDir   {0.f, 1.f, 0.f};
+    math::Vector3 pos;
+    math::Vector3 viewDir {0.f, 0.f, 1.f};
+    math::Vector3 rightDir{1.f, 0.f, 0.f};
+    math::Vector3 upDir   {0.f, 1.f, 0.f};
 
     math::Matrix4 m_viewMatrix;
     math::Matrix4 m_rotationMatrix;

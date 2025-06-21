@@ -169,11 +169,18 @@ Matrix4 RotateY(float degrees);
 Matrix4 RotateZ(float degrees);
 Matrix4 Translate(Vector3 vec);
 
-Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection, Vector3 upDirection, Vector3 rightDirection);
+Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection,
+                                 Vector3 upDirection,
+                                 Vector3 rightDirection);
 
 // projection matrices
-Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ);
-Matrix4 OrhographicProjection(float l, float r, float b, float t, float n, float f);
+Matrix4 PerspectiveProjection(float fov/*in degrees*/,
+                              float aspectRatio,
+                              float nearZ, float farZ);
+
+Matrix4 OrhographicProjection(float l, float r,
+                              float b, float t,
+                              float n, float f);
 
 enum class ProjectionType : u8
 {

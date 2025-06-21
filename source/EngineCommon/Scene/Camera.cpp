@@ -9,8 +9,12 @@ using namespace engine;
 using namespace engine::math;
 
 Camera::Camera() 
-    : m_cameraMovementSpeedButton(*this, defaultCameraMovementSpeed, "CameraMovementSpeed", 100),
-      m_cameraRotationSpeedButton(*this, defaultCameraRotationSpeed, "CameraRotationSpeed", 5)
+    : m_cameraMovementSpeedButton(*this,
+                                  defaultCameraMovementSpeed,
+                                  "CameraMovementSpeed", 100),
+      m_cameraRotationSpeedButton(*this,
+                                  defaultCameraRotationSpeed,
+                                  "CameraRotationSpeed", 5)
 {
     m_cameraMovementSpeedButton.setCallback([](Camera& camera, float speed)
     {
@@ -22,39 +26,41 @@ Camera::Camera()
     });
 }
 
-void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection, math::ProjectionProps props)
+void Camera::initialize(math::Vector3 aPos, 
+                        math::Vector3 viewDirection, 
+                        math::ProjectionProps props)
 {
 	setDirection(viewDirection);
-    m_position = pos;
+    pos = aPos;
     updateViewMatrix();
     updateProjectionMatrix(props);
 }
 
-void Camera::initialize(math::Vector3 pos, math::Vector3 viewDirection)
+void Camera::initialize(math::Vector3 aPos, math::Vector3 viewDirection)
 {
 	setDirection(viewDirection);
-    m_position = pos;
+    pos = aPos;
     updateViewMatrix();
 }
 
-void Camera::setPosition(math::Vector3 pos)
+void Camera::setPosition(math::Vector3 aPos)
 {
-    m_position = pos;
+    pos = aPos;
 }
 
 void Camera::setDirection(math::Vector3 dir)
 {
-    m_viewDir = dir.normalize();
+    viewDir = dir.normalize();
 	math::Vector3 y{0.f, 1.f, 0.f};
-	m_rightDir = math::CrossProduct(y, m_viewDir);
-	m_upDir = math::CrossProduct(m_viewDir, m_rightDir);
+	rightDir = math::CrossProduct(y, viewDir).normalize();
+	upDir = math::CrossProduct(viewDir, rightDir).normalize();
 }
 
 
 void Camera::updateViewMatrix()
 {
-    m_rotationMatrix = math::CreateViewRotationMatrix(m_viewDir, m_upDir, m_rightDir);
-    m_viewMatrix = math::Translate(-m_position) * m_rotationMatrix;
+    m_rotationMatrix = math::CreateViewRotationMatrix(viewDir, upDir, rightDir);
+    m_viewMatrix = math::Translate(-pos) * m_rotationMatrix;
 }
 
 void Camera::updateProjectionMatrix(math::ProjectionProps props)
@@ -127,17 +133,17 @@ void Camera::processUpdate()
 
 void Camera::reset()
 {
-    m_position = {0.f, 0.f, 0.f};
-    m_viewDir  = {0.f, 0.f, 1.f};
-    m_rightDir = {1.f, 0.f, 0.f};
-    m_upDir    = {0.f, 1.f, 0.f};
+    pos = {0.f, 0.f, 0.f};
+    viewDir  = {0.f, 0.f, 1.f};
+    rightDir = {1.f, 0.f, 0.f};
+    upDir    = {0.f, 1.f, 0.f};
     m_needUpdate = true;
 }
 
 void Camera::translate(MovementDirection direction, float velocity)
 {
-    auto offset = (&m_viewDir)[(u8)direction] * velocity;
-    m_position = m_position + offset;
+    auto offset = (&viewDir)[(u8)direction] * velocity;
+    pos = pos + offset;
     m_needUpdate = true;
 }
 
@@ -147,17 +153,17 @@ void Camera::translate(MovementDirection direction, float velocity)
 */
 void Camera::rotate(float vertical, float horizontal)
 {
-    math::Quartenion rotationY(m_upDir, horizontal);
-    math::Quartenion rotationX(m_rightDir, vertical);
+    math::Quartenion rotationY(upDir, horizontal);
+    math::Quartenion rotationX(rightDir, vertical);
     auto rotationMatrixX = math::Matrix4(rotationX);
     auto rotationMatrixY = math::Matrix4(rotationY);
     auto rotationMatrixXY = rotationMatrixX * rotationMatrixY;
 
-    m_viewDir = (rotationMatrixXY * Vector4(m_viewDir, { 1.f }));
-    m_viewDir.normalizeSelf();
-    m_rightDir = (rotationMatrixY * Vector4(m_rightDir, { 1.f }));
-    m_rightDir.normalizeSelf();
-    m_upDir = (rotationMatrixX * math::Vector4(m_upDir, { 1.f }));
-    m_upDir.normalizeSelf();
+    viewDir = (rotationMatrixXY * Vector4(viewDir, { 1.f }));
+    viewDir.normalizeSelf();
+    rightDir = (rotationMatrixY * Vector4(rightDir, { 1.f }));
+    rightDir.normalizeSelf();
+    upDir = (rotationMatrixX * math::Vector4(upDir, { 1.f }));
+    upDir.normalizeSelf();
     m_needUpdate = true;
 }

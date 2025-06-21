@@ -7,7 +7,10 @@ namespace engine::math
         And M is matrix, a is vector. Also as we see in PerspectiveProjection we need to do transpose for matrix because it's
         row-major
     */
-    Matrix4 PerspectiveProjection(float fov/*in degrees*/, float aspectRatio, float nearZ, float farZ)
+    Matrix4 PerspectiveProjection(float fov/*in degrees*/,
+                                  float aspectRatio,
+                                  float nearZ,
+                                  float farZ)
     {
         //positive z direction is assumed
         float f = ToRadians(fov / 2.f);
@@ -25,7 +28,9 @@ namespace engine::math
         return matrix;
     }
 
-    Matrix4 OrhographicProjection(float l, float r, float b, float t, float n, float f)
+    Matrix4 OrhographicProjection(float l, float r,
+                                  float b, float t,
+                                  float n, float f)
     {
         Matrix4 matrix;
         matrix[0][0] =  2 / (r - l);
@@ -90,7 +95,9 @@ namespace engine::math
          return result;
      }
 
-    Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection, Vector3 upDirection, Vector3 rightDirection)
+    Matrix4 CreateViewRotationMatrix(const Vector3& viewDirection,
+                                     Vector3 upDirection,
+                                     Vector3 rightDirection)
     {
         Matrix4 res;
         res[0] = rightDirection;
