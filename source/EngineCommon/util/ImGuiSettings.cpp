@@ -48,6 +48,17 @@ namespace engine::util
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
         }
 
+        void PushID(int n)
+        {
+            ImGui::PushID(n);
+        }
+
+        void PopID()
+        {
+            ImGui::PopID();
+        }
+
+
         void Begin(std::string_view name)
         {
             ImGui::Begin(name.data());
@@ -63,9 +74,19 @@ namespace engine::util
             return ImGui::SliderFloat2(name.data(), ptr, min, max);
         }
 
+        void Text(std::string_view name)
+        {
+            ImGui::Text(name.data());
+        }
+
         bool SliderFloat3(std::string_view name, float* ptr, float min, float max)
         {
             return ImGui::SliderFloat3(name.data(), ptr, min, max);
+        }
+
+        bool Combo(std::string_view name, int* ptr, const char* const names[], int count)
+        {
+            return ImGui::Combo(name.data(), ptr, names, count);
         }
 
         bool checkBox(std::string_view name, bool* value)

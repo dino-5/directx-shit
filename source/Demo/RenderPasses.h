@@ -1,5 +1,6 @@
 #pragma once
 #include "EngineGfx/RenderPass.h"
+#include "EngineCommon/Scene/Material.h"
 #include <span>
 
 enum PassResources
@@ -45,7 +46,9 @@ struct Sphere
 {
     Vector3 center;
     float radius;
-    Vector4 color;
+    Material mat;
+    Vector3 pad;
+
 };
 constexpr u32 MAX_NUMBER_OF_SPHERES = 100;
 

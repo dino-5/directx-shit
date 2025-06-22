@@ -1,5 +1,4 @@
 #include "Shaders/Ray.hlsl"
-#include "Shaders/RandomUtilities.hlsl"
 
 struct ViewSettings
 {
@@ -86,6 +85,7 @@ struct Camera
     {
         float blue = 0.5 * (r.dir.y + 1);
         float4 colorBlue = calculateSky(blue);
+        float4 color = float4(1,1,1,1);
         float k = 1;
 
         HitRecord hit;
@@ -93,15 +93,20 @@ struct Camera
         {
             if(array.hit(r, interv, hit, sphCount))
             {
-                float3 dir = RandomOnHemisphere(hit.n, hash);
-                r = createRay(hit.p, dir);
-                k *= 0.5;
+                Ray scattered;
+                float4 attenuation;
+                if(scatter_Lambert(r, hit, attenuation, scattered, hash))
+                {
+                    k *= 0.4;
+                    r = scattered;
+                    color *= attenuation;
+                }
             }
             else
                 break;
         }
 
-        return k*colorBlue;
+        return color * colorBlue;
     }
 
     float4 render(SphereArray array, float2 interval, uint sphereCount)
@@ -178,10 +183,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.fov,
                         id.xy,
                         100,
-                        10);
+                        50);
 
-    tex[id.xy] = camera.render(sphereArray.array,
+    float4 color = camera.render(sphereArray.array,
                                float2(0.001, 100000),
                                g_rtxData.sphereCount); 
+    //color.xyz = pow(color.xyz, 1/2.2);
+    tex[id.xy] = color;
 }
 

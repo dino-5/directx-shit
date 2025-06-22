@@ -270,6 +270,32 @@ bool BaseDemo::initialize()
         updateView(data);
     });
 
+    RTXDescription rtxDesc;
+    rtxDesc.sphereCount = sphereCount;
+    rtxDesc.imWidth = getWidth();
+    rtxDesc.imHeight = getHeight();
+    rtxDesc.color = m_outputColor.getData();
+
+    m_rtxData.description = rtxDesc;
+    m_rtxData.sphereArray[0] = {
+        {0.f, 0.f, -1.f},
+        10.f,
+        {{1.f, 0.f, 1.f, 1.f}, Lambertian}
+    };
+
+    m_rtxData.sphereArray[1] = {
+        {0.f, -1010.f, -1.f},
+        1000.f,
+        {{1.f, 1.f, 0.f, 1.f}, Lambertian}
+    };
+
+    for(int i = 0; i < sphereCount; i++)
+    {
+        m_sphereUI[i].init(*this, m_rtxData.sphereArray[i], 
+                           std::format("Sphere {}", i));
+        m_sphereUI[i].index = i;
+    }
+
     executeAll();
 
     signal(0);
@@ -309,24 +335,6 @@ void BaseDemo::draw()
         m_renderPasses[BVHDebugPass].execute(globalContext, &m_tinybvhModel);
     }
 
-    RTXDescription rtxDesc;
-    rtxDesc.sphereCount = 2;
-    rtxDesc.imWidth = getWidth();
-    rtxDesc.imHeight = getHeight();
-    rtxDesc.color = m_outputColor.getData();
-
-    m_rtxData.description = rtxDesc;
-    m_rtxData.sphereArray[0] = {
-        {0.f, 0.f, -1.f},
-        10.f,
-        {1.f, 1.f, 1.f, 1.f}
-    };
-
-    m_rtxData.sphereArray[1] = {
-        {0.f, -1010.f, -1.f},
-        1000.f,
-        {1.f, 1.f, 1.f, 1.f}
-    };
 
     m_renderPasses[RTXComputePass].execute(globalContext, nullptr, &m_rtxData);
 
@@ -360,11 +368,19 @@ void BaseDemo::update()
 
     m_camera.update();
 
-    //if (m_inputManager->getKeyState(system::Key::C).isPressed())
-    {
-        for(auto& pass : m_renderPasses)
-            pass.compilePSO();
-    }
+    RTXDescription rtxDesc;
+    rtxDesc.sphereCount = 2;
+    rtxDesc.imWidth = getWidth();
+    rtxDesc.imHeight = getHeight();
+    rtxDesc.color = m_outputColor.getData();
+
+    for(u32 i = 0; i < sphereCount; ++i)
+        m_rtxData.sphereArray[i] = m_sphereUI[i].getData();
+
+    m_rtxData.description = rtxDesc;
+
+    for(auto& pass : m_renderPasses)
+        pass.compilePSO();
 }
 void BaseDemo::destroy()
 {

@@ -5,6 +5,7 @@
 #include "EngineCommon/System/Window.h"
 #include "EngineCommon/System/InputManager.h"
 #include "EngineCommon/Scene/Camera.h"
+#include "EngineCommon/util/ImGuiSettings.h"
 
 #include "EngineGfx/dx12/PSO.h"
 #include "EngineGfx/dx12/Buffers.h"
@@ -22,11 +23,17 @@ using namespace engine;
 struct IDxcBlob;
 using DxBlob = IDxcBlob;
 
+using namespace engine::graphics;
+using namespace engine::math;
+using namespace engine::util;
+using namespace engine::system;
+
 // ?
 struct DemoSettings
 {
     graphics::SwapChainSettings m_settings; 
 };
+
 
 enum class LightFlags
 {
@@ -57,10 +64,6 @@ struct Light
     LightFlags       m_flags;
 };
 
-using namespace engine::graphics;
-using namespace engine::math;
-using namespace engine::util;
-using namespace engine::system;
 
 struct ObjectData
 {
@@ -83,6 +86,54 @@ struct ConstandBufferData
 {
     Matrix4 view;
     Matrix4 projection;
+};
+
+using SphereUI = std::function<bool(std::string_view name, Sphere* sphere, int i)>;
+using uiSphereActionCallback = std::function<void(BaseDemo&, Sphere, int)>;
+
+inline bool locSphereUI(std::string_view str, Sphere* sphere, int index)
+{
+    imgui::PushID(index);
+    imgui::Text(str);
+    bool res = false;
+    res |= imgui::SliderFloat3("Pos", sphere->center.data(), -100, 100);
+    res |= imgui::SliderFloat3("Color", sphere->mat.color.data(), 0, 1);
+    res |= imgui::SliderFloat("Radius", &sphere->radius, 1,100);
+
+    int material = (int)sphere->mat.type;
+    if (imgui::Combo("Material Type", &material, MaterialTypeNames, MaterialCount)) 
+    {
+            sphere->mat.type = (MaterialType)material;
+    }
+    imgui::PopID();
+    return res;
+}
+
+struct UI_Sphere : public UI_ElementGenericInterface<BaseDemo, 
+                            SphereUI, Sphere, uiSphereActionCallback>
+{
+    using Super = UI_ElementGenericInterface<BaseDemo, SphereUI, Sphere,
+                                            uiSphereActionCallback>;
+    superFunctions()
+    void onUIAction() override
+    {
+        if (!Super::object)
+            return;
+        if (function(getStringView(), getDataPtr(), index) && call)
+            call(getObject(), getData(), index);
+    }
+    UI_Sphere()
+    {
+        setFunction(locSphereUI);
+    }
+    
+    UI_Sphere(BaseDemo& obj, Sphere aData, std::string_view aName):
+        Super(obj, aData, aName)
+    {
+        setFunction(locSphereUI);
+    }
+
+    int index = 0;
 };
 
 class BaseDemo : public WindowApp
@@ -141,6 +192,9 @@ private:
     };
 
     RenderPass m_renderPasses[RenderPassCount];
+    constexpr static uint sphereCount = 2;
+
+    UI_Sphere m_sphereUI[sphereCount];
 
     RTXPassData m_rtxData;
 

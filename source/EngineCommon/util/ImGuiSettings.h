@@ -24,6 +24,11 @@ namespace imgui
     bool ColorEdit3(std::string_view label, float* col);
     bool Button(std::string_view label);
     bool checkBox(std::string_view name, bool* value);
+    void Text(std::string_view name);
+    bool Combo(std::string_view name, int* ptr, const char* const names[], int count);
+
+    void PushID(int n);
+    void PopID();
 
     struct FrameContext
     {
@@ -66,34 +71,45 @@ private:
     i32 arrayIndex = -1;
 };
 
-template<typename Type, typename Function, typename Data>
+template<typename Type, typename Data>
+using uiActionCallback = std::function<void(Type&, Data)>;
+
+template<typename Type, typename Function, typename Data, typename callback = uiActionCallback<Type, Data>>
 struct UI_ElementGenericInterface : public UI_ElementInterface
 {
-    using uiActionCallback = std::function<void(Type&, Data)>;
 
     void onUIAction() override {}
+    UI_ElementGenericInterface() {}
     UI_ElementGenericInterface(Type& aObj,
                                Data aData,
                                std::string_view aName) :
-        UI_ElementInterface(), object(aObj), data(aData), name(aName) {}
+        UI_ElementInterface(), object(&aObj), data(aData), name(aName) {}
+
+    void init(Type& aObj, Data aData, std::string_view aName)
+    {
+        object = &aObj;
+        data = aData;
+        name = aName;
+    }
 
     UI_ElementGenericInterface(UI_ElementGenericInterface&& other) :
-        UI_ElementInterface(other), callback(other.callback), object(other.object)
+        UI_ElementInterface(other), call(other.call), object(other.object)
     {
         other.object = nullptr;
     }
 
     Data getData()const { return data; }
-    void setCallback(uiActionCallback aCallback) { callback = aCallback; }
+    void setCallback(callback aCallback) { call = aCallback; }
     Data data;
+
 protected:
     void setFunction(Function f) { function = f; }
-    Type& getObject() { return object; }
+    Type& getObject() { return *object; }
     Data* getDataPtr(){ return &data; }
     std::string_view getStringView() { return name; }
 
-    Type& object;
-    uiActionCallback callback;
+    Type* object = nullptr;
+    callback call;
     Function function;
     std::string name;
 };
@@ -105,7 +121,7 @@ protected:\
     using Super::setFunction; \
     using Super::function; \
     using Super::getStringView; \
-    using Super::callback; \
+    using Super::call; \
 public:\
     using Super::getData;   \
 
@@ -113,6 +129,7 @@ public:\
 using Slider = std::function<bool(std::string_view name,
                                   float* ptr, float min, float max)>;
 using CheckBox = std::function<bool(std::string_view name, bool* ptr)>;
+using Button = std::function<bool(std::string_view name)>;
 
 template<typename T>
 struct UI_Float : public UI_ElementGenericInterface<T, Slider, float>
@@ -121,8 +138,8 @@ struct UI_Float : public UI_ElementGenericInterface<T, Slider, float>
     superFunctions()
     void onUIAction() override
     {
-        if (function(getStringView(), getDataPtr(), -range, range) && callback)
-            callback(getObject(), getData());
+        if (function(getStringView(), getDataPtr(), -range, range) && call)
+            call(getObject(), getData());
     }
     
     UI_Float(T& aObject, float aData, std::string_view aName, float aRange)	:
@@ -143,8 +160,8 @@ struct UI_Vector : public UI_ElementGenericInterface<T, Slider, Vector<D>>
     superFunctions()
     void onUIAction() override
     {
-        if (function(getStringView(), getDataPtr(), -range, range) && callback)
-            callback(getObject(), getData());
+        if (function(getStringView(), getDataPtr(), -range, range) && call)
+            call(getObject(), getData());
     }
     
     UI_Vector(T& obj, Vector<D> aData, std::string_view aName, float aRange):
@@ -167,13 +184,33 @@ struct UI_CheckBox : public UI_ElementGenericInterface<T, CheckBox, bool>
     superFunctions()
     void onUIAction() override
     {
-        if (function(getStringView(), getDataPtr()) && callback)
-            callback(getObject(), getData());
+        if (function(getStringView(), getDataPtr()) && call)
+            call(getObject(), getData());
     }
 
     UI_CheckBox(T& obj, bool aValue, std::string_view aName) : Super(obj, aValue, aName)
     {
         setFunction(imgui::checkBox);
+    }
+
+};
+
+template<typename T>
+struct UI_Button : public UI_ElementGenericInterface<T, Button, int>
+{
+    using Super = UI_ElementGenericInterface<T, CheckBox, int>;
+    superFunctions()
+    void onUIAction() override
+    {
+        if(!Super::object)
+            return;
+        if (function(getStringView()) && call)
+            call(getObject());
+    }
+
+    UI_Button(T& obj, std::string_view aName) : Super(obj, 0, aName)
+    {
+        setFunction(imgui::Button);
     }
 
 };

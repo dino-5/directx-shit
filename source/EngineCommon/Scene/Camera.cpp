@@ -20,6 +20,7 @@ Camera::Camera()
     {
         camera.setCameraMovementSpeed(speed);
     });
+
     m_cameraRotationSpeedButton.setCallback([](Camera& camera, float speed)
     {
         camera.setCameraRotationSpeed(speed);

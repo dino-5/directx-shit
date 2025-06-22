@@ -21,9 +21,9 @@ float2 Random2(inout uint x)
 {
     float2 result;
     result.x = Random1(x);
-    x = Hash(x);
+    x += Hash(x);
     result.y = Random1(x);
-    x = Hash(x);
+    x += Hash(x);
     return result;
 }
 
@@ -31,11 +31,11 @@ float3 Random3(inout uint x)
 {
     float3 result;
     result.x = Random1(x);
-    x = Hash(x);
+    x++;// = Hash(x);
     result.y = Random1(x);
-    x = Hash(x);
+    x++;// = Hash(x);
     result.z = Random1(x);
-    x = Hash(x);
+    x++;// = Hash(x);
     return result;
 }
 
