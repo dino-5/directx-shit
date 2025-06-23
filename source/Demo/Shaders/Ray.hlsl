@@ -24,6 +24,16 @@ struct Material
 {
     float4 color;
     uint materialType;
+
+    bool isLambertian()
+    {
+        return materialType == 0;
+    }
+
+    bool isMetal()
+    {
+        return materialType == 1;
+    }
 };
 
 struct HitRecord 
@@ -66,6 +76,7 @@ bool hit_sphere(Sphere sphere, Ray ray,
 
     d = sqrt(d);
     float t = b - d;
+    record.m = sphere.mat;
     if(t <= tmin || t >= tmax)
     {
         t = b + d;
@@ -75,7 +86,6 @@ bool hit_sphere(Sphere sphere, Ray ray,
 
     record.p = ray.at(t);
     record.t = t;
-    record.m = sphere.mat;
     float3 n = (record.p - sphere.center) / sphere.radius;
     record.setNormal(ray, n);
 
@@ -90,7 +100,7 @@ bool scatter_Lambert(Ray r,
 {
     attenuation = hit.m.color;
 
-    scattered.dir = hit.n + Random3Unit(hash); // could be zero vector
+    scattered.dir = normalize(hit.n + Random3Unit(hash)); // could be zero vector
     scattered.pos = hit.p;
     
     return true;
@@ -104,7 +114,7 @@ bool scatter_Metalic(Ray r,
 {
     attenuation = hit.m.color;
 
-    scattered.dir = r.dir - 2 * dot(hit.n, r.dir) * hit.n;
+    scattered.dir = normalize(reflect(r.dir, hit.n));
     scattered.pos = hit.p;
     
     return true;
@@ -132,8 +142,18 @@ bool scatter(Ray r,
              out Ray scattered,
              inout uint hash)
 {
+    attenuation = hit.m.color;
+    scattered.pos = hit.p;
+    if(hit.m.isLambertian())
+    {
+        scattered.dir = hit.n + Random3Unit(hash); // could be zero vector
+    }
+    else
+    {
+        scattered.dir = reflect(r.dir, hit.n);//r.dir - 2 * dot(hit.n, r.dir) * hit.n;
+    }
 
-    return scatter_Lambert(r, hit, attenuation, scattered, hash);
+    return true;
 }
 
 #define MAX_NUMBER_OF_SPHERES 100
@@ -158,7 +178,6 @@ struct SphereArray
                 hitAny = true;
                 record = tempRec;
                 closestHit = tempRec.t;
-
             }
         }
 

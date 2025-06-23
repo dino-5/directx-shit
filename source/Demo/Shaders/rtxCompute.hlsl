@@ -17,7 +17,8 @@ struct ViewSettings
 
 float4 calculateSky(float blue)
 {
-    return float4((1 - blue) * float3(1,1,1) + blue * float3(0.5, 0.7, 1), 1.f); 
+    return float4((1 - blue) * float2(1,1) + blue * float2(0.5, 0.7), 
+                  1.f, 1.f); 
 }
 
 struct Camera
@@ -83,10 +84,8 @@ struct Camera
 
     float4 pixelColor(SphereArray array, Ray r)
     {
-        float blue = 0.5 * (r.dir.y + 1);
-        float4 colorBlue = calculateSky(blue);
         float4 color = float4(1,1,1,1);
-        float k = 1;
+        float blue = 0.5 * (r.dir.y + 1);
 
         HitRecord hit;
         for(int i = 0; i < maxDepth; i++)
@@ -95,18 +94,22 @@ struct Camera
             {
                 Ray scattered;
                 float4 attenuation;
-                if(scatter_Lambert(r, hit, attenuation, scattered, hash))
+                if(scatter(r, hit, attenuation, scattered, hash))
                 {
-                    k *= 0.4;
                     r = scattered;
                     color *= attenuation;
                 }
             }
-            else
+            else 
+            {
+                r.dir = normalize(r.dir);
+                float blue = 0.5 * (r.dir.y + 1);
+                color *= calculateSky(blue);
                 break;
+            }
         }
 
-        return color * colorBlue;
+        return color;
     }
 
     float4 render(SphereArray array, float2 interval, uint sphereCount)
