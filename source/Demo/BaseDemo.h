@@ -99,6 +99,8 @@ inline bool locSphereUI(std::string_view str, Sphere* sphere, int index)
     res |= imgui::SliderFloat3("Pos", sphere->center.data(), -100, 100);
     res |= imgui::SliderFloat3("Color", sphere->mat.color.data(), 0, 1);
     res |= imgui::SliderFloat("Radius", &sphere->radius, 1,100);
+    if(sphere->mat.type == Metal)
+        res |= imgui::SliderFloat("Fuzy", &sphere->mat.metalFuzy, 0,1);
 
     int material = (int)sphere->mat.type;
     if (imgui::Combo("Material Type", &material, MaterialTypeNames, MaterialCount)) 

@@ -47,7 +47,7 @@ struct Sphere
     Vector3 center;
     float radius;
     Material mat;
-    Vector3 pad;
+    Vector2 pad;
 
 };
 constexpr u32 MAX_NUMBER_OF_SPHERES = 100;
