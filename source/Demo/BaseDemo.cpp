@@ -280,12 +280,18 @@ bool BaseDemo::initialize()
     m_rtxData.sphereArray[0] = {
         {0.f, 0.f, -1.f},
         10.f,
+        {{1.f, 1.f, 1.f, 1.f}, Metal}
+    };
+
+    m_rtxData.sphereArray[2] = {
+        {20.f, 0.f, -1.f},
+        10.f,
         {{1.f, 0.f, 1.f, 1.f}, Lambertian}
     };
 
     m_rtxData.sphereArray[1] = {
-        {0.f, -1010.f, -1.f},
-        1000.f,
+        {0.f, -10010.5f, -1.f},
+        10000.f,
         {{1.f, 1.f, 0.f, 1.f}, Lambertian}
     };
 
@@ -369,7 +375,7 @@ void BaseDemo::update()
     m_camera.update();
 
     RTXDescription rtxDesc;
-    rtxDesc.sphereCount = 2;
+    rtxDesc.sphereCount = sphereCount;
     rtxDesc.imWidth = getWidth();
     rtxDesc.imHeight = getHeight();
     rtxDesc.color = m_outputColor.getData();

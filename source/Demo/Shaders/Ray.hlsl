@@ -92,7 +92,7 @@ bool hit_sphere(Sphere sphere, Ray ray,
     return true;
 }
 
-bool scatter_Lambert(Ray r, 
+bool scatter_Lambertian(Ray r, 
                      HitRecord hit,
                      out float4 attenuation,
                      out Ray scattered,
