@@ -24,6 +24,7 @@ struct Material
 {
     float4 color;
     float fuzz;
+    float refractionAngle;
     uint materialType;
 
     bool isLambertian()
@@ -35,6 +36,11 @@ struct Material
     {
         return materialType == 1;
     }
+
+    bool isDielectric()
+    {
+        return materialType == 2;
+    }
 };
 
 struct HitRecord 
@@ -44,6 +50,7 @@ struct HitRecord
     float t;
     Material m;
     bool frontFace;
+    bool hit;
 
     void setNormal(Ray r, float3 normal)
     {
@@ -52,6 +59,16 @@ struct HitRecord
     }
 };
 
+HitRecord getHit()
+{
+    HitRecord rec;
+    rec.hit = false;
+    rec.n = float3(0,0,0);
+    rec.p = float3(0,0,0);
+    rec.t = 0;
+    return rec;
+}
+
 
 struct Sphere
 {
@@ -59,6 +76,106 @@ struct Sphere
     float radius;
     Material mat;
     float2 pad;
+};
+
+#define MAX_NUMBER_OF_SPHERES 100
+struct SphereArray
+{
+    Sphere spheres[MAX_NUMBER_OF_SPHERES];
+
+};
+
+HitRecord hit_sphere(Sphere sphere, Ray ray,
+                float tmin, float tmax)
+{
+    HitRecord hit = getHit();
+    // a is always zero
+    ray.dir = normalize(ray.dir);
+    float3 co = sphere.center - ray.pos;
+    float b = dot(ray.dir, co);
+
+    float c = dot(co, co) - sphere.radius * sphere.radius;
+
+    float d = b * b - c ;
+    if (d < 0)
+        return hit;
+
+    d = sqrt(d);
+    float t = b - d;
+    if(t < tmin || t > tmax)
+    {
+        t = b + d;
+        if(t < tmin || t > tmax)
+            return hit;
+    }
+
+    hit.p = ray.at(t);
+    hit.t = t;
+    float3 n = (hit.p - sphere.center) / sphere.radius;
+    hit.setNormal(ray, normalize(n));
+    hit.m = sphere.mat;
+    hit.hit = true;
+
+    return hit;
+}
+
+HitRecord hitArray(SphereArray array, 
+              Ray ray, 
+              float2 interval, 
+              uint count)
+{
+    HitRecord record = getHit(); 
+    bool hitAny = false;
+    float closestHit = interval.y;
+
+    for(uint i = 0; i < count; i++)
+    {
+        HitRecord tempRec = hit_sphere(array.spheres[i],
+                              ray,
+                              interval.x, closestHit);
+        if(tempRec.hit) // we shrink interval to the closestHit every time
+        {
+            record = tempRec;
+            record.hit = true;
+            closestHit = tempRec.t;
+        }
+    }
+
+    return record;
+}
+
+// NOTE : for some reason direct call to scatter_lambert is not the same as
+// call through this function
+bool scatter(Ray r, 
+             HitRecord hit,
+             inout float4 attenuation,
+             inout Ray scattered,
+             inout uint hash)
+{
+    attenuation = hit.m.color;
+    scattered.pos = hit.p;
+    bool fl = hit.m.isLambertian();
+    bool result = true;
+
+    if(fl)
+    {
+        scattered.dir = hit.n + RandomOnHemisphere(hit.n, hash); // could be zero vector
+    }
+    else
+    {
+        scattered.dir = reflect(r.dir, hit.n);
+        scattered.dir +=  hit.m.fuzz * RandomOnHemisphere(hit.n, hash);
+        result = dot(scattered.dir, hit.n) > 0;
+    }
+    scattered.dir = normalize(scattered.dir);
+
+    return result;
+}
+
+
+struct CB_Sphere
+{
+    SphereArray array;
 };
 
 

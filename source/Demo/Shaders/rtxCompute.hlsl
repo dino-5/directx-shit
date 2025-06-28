@@ -1,106 +1,5 @@
 #include "Shaders/Ray.hlsl"
 
-#define MAX_NUMBER_OF_SPHERES 100
-struct SphereArray
-{
-    Sphere spheres[MAX_NUMBER_OF_SPHERES];
-
-};
-
-bool hit_sphere(Sphere sphere, Ray ray,
-                float tmin, float tmax,
-                out HitRecord record)
-{
-    // a is always zero
-    ray.dir = normalize(ray.dir);
-    float3 co = sphere.center - ray.pos;
-    float b = dot(ray.dir, co);
-
-    float c = dot(co, co) - sphere.radius * sphere.radius;
-
-    float d = b * b - c ;
-    if (d < 0)
-        return false;
-
-    d = sqrt(d);
-    float t = b - d;
-    if(t < tmin || t > tmax)
-    {
-        t = b + d;
-        if(t < tmin || t > tmax)
-            return false;
-    }
-
-    record.p = ray.at(t);
-    record.t = t;
-    float3 n = (record.p - sphere.center) / sphere.radius;
-    record.setNormal(ray, normalize(n));
-    record.m = sphere.mat;
-
-    return true;
-}
-
-// NOTE : for some reason direct call to scatter_lambert is not the same as
-// call through this function
-bool scatter(Ray r, 
-             HitRecord hit,
-             out float4 attenuation,
-             out Ray scattered,
-             inout uint hash)
-{
-
-    attenuation = hit.m.color;
-    scattered.pos = hit.p;
-    bool fl = hit.m.isLambertian();
-    bool result = true;
-
-    if(fl)
-    {
-        scattered.dir = hit.n + Random3Unit(hash); // could be zero vector
-    }
-    else
-    {
-        scattered.dir = reflect(r.dir, hit.n);
-        //scattered.dir +=  0.01 * Random3Unit(hash);
-        result = dot(scattered.dir, hit.n) > 0;
-    }
-    scattered.dir = normalize(scattered.dir);
-
-    return result;
-}
-
-
-bool hitArray(SphereArray array, 
-              Ray ray, 
-              float2 interval, 
-              out HitRecord record, 
-              uint count)
-{
-    bool hitAny = false;
-    float closestHit = interval.y;
-
-    for(uint i = 0; i < count; i++)
-    {
-        HitRecord tempRec;
-        bool res = hit_sphere(array.spheres[i],
-                              ray,
-                              interval.x, closestHit,
-                              tempRec);
-        if(res) // we shrink interval to the closestHit every time
-        {
-            hitAny = true;
-            record = tempRec;
-            closestHit = tempRec.t;
-        }
-    }
-
-    return hitAny;
-}
-
-struct CB_Sphere
-{
-    SphereArray array;
-};
 
 struct ViewSettings
 {
@@ -188,35 +87,54 @@ struct Camera
     {
         float4 color = float4(1,1,1,1);
 
-        HitRecord hit;
+        HitRecord hitRec;
         for(int i = 0; i < maxDepth; i++)
         {
-            if(hitArray(array, r, interv, hit, sphCount))
+            hitRec = hitArray(array, r, interv, sphCount);
+            if(hitRec.hit)
             {
                 Ray scattered;
                 float4 attenuation;
-                if(scatter(r, hit, attenuation, scattered, hash))
+
+                attenuation = hitRec.m.color;
+
+                scattered.pos = hitRec.p;
+                bool result = true;
+
+                if(hitRec.m.isLambertian())
+                {
+                    scattered.dir = hitRec.n + RandomOnHemisphere(hitRec.n, hash); // could be zero vector
+                }
+                else
+                {
+                    scattered.dir = reflect(r.dir, hitRec.n);
+                    scattered.dir +=  hitRec.m.fuzz * RandomOnHemisphere(hitRec.n, hash);
+                    result = dot(scattered.dir, hitRec.n) > 0;
+                }
+
+                scattered.dir = normalize(scattered.dir);
+
+                if(result)
                 {
                     r = scattered;
                     color *= attenuation;
                 }
                 else
                 {
-                    color = float4(1,0,0,0);
-                    //color.xyz = scattered.dir;
+                    color = float4(0,0,0,0);
                     break;
 
                 }
             }
             else 
             {
+
+                r.dir = normalize(r.dir);
+                float blue = 0.5 * (r.dir.y + 1);
+                color *= calculateSky(blue);
                 break;
             }
         }
-
-        r.dir = normalize(r.dir);
-        float blue = 0.5 * (r.dir.y + 1);
-        color *= calculateSky(blue);
 
         return color;
     }
@@ -246,7 +164,7 @@ struct Camera
     float3 pos;
     float dx;
     float dy;
-    float hash;
+    uint hash;
     uint sampleCount;
     uint maxDepth;
 
