@@ -22,6 +22,7 @@ float4 calculateSky(float blue)
                   1.f, 1.f); 
 }
 
+
 struct Camera
 {
 
@@ -96,20 +97,32 @@ struct Camera
                 Ray scattered;
                 float4 attenuation;
 
-                attenuation = hitRec.m.color;
-
                 scattered.pos = hitRec.p;
                 bool result = true;
 
                 if(hitRec.m.isLambertian())
                 {
+                    attenuation = hitRec.m.color;
                     scattered.dir = hitRec.n + RandomOnHemisphere(hitRec.n, hash); // could be zero vector
                 }
-                else
+                else if (hitRec.m.isMetal())
                 {
+                    attenuation = hitRec.m.color;
                     scattered.dir = reflect(r.dir, hitRec.n);
                     scattered.dir +=  hitRec.m.fuzz * RandomOnHemisphere(hitRec.n, hash);
                     result = dot(scattered.dir, hitRec.n) > 0;
+                }
+                else if(hitRec.m.isDielectric())
+                {
+                    attenuation = float4(1,1,1,1);
+                    float rIndex = hitRec.m.refractionIndex;
+                    float ri = hitRec.frontFace ? 1 / rIndex : rIndex;
+                    scattered.dir = refractRay(r.dir, hitRec.n, ri);
+                }
+                else
+                {
+                    color = float4(0,0,0,0);
+                    break;
                 }
 
                 scattered.dir = normalize(scattered.dir);
@@ -131,7 +144,7 @@ struct Camera
 
                 r.dir = normalize(r.dir);
                 float blue = 0.5 * (r.dir.y + 1);
-                color *= calculateSky(blue);
+                color = calculateSky(blue);
                 break;
             }
         }
@@ -212,8 +225,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.cameraUpDir,
                         g_view.fov,
                         id.xy,
-                        100,
-                        2);
+                        500,
+                        5);
 
     float4 color = camera.render(sphereArray.array,
                                float2(0.001, 100000),

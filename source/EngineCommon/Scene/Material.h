@@ -15,7 +15,7 @@ struct Material
 {
     engine::math::Vector4 color;
     float metalFuzy; // metal
-    float refractionAngle; // dielectric
+    float refractionIndex; // dielectric
     MaterialType type;
 };
 

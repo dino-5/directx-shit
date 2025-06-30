@@ -280,20 +280,21 @@ bool BaseDemo::initialize()
     m_rtxData.sphereArray[0] = {
         {0.f, 0.f, -1.f},
         10.f,
-        {{1.f, 1.f, 1.f, 1.f}, .1f, Metal}
-    };
-
-    m_rtxData.sphereArray[2] = {
-        {20.f, 0.f, -1.f},
-        10.f,
-        {{1.f, 0.f, 1.f, 1.f}, .0f, Lambertian}
+        {{1.f, 1.f, 1.f, 1.f}, .1f, 0.0f, Metal}
     };
 
     m_rtxData.sphereArray[1] = {
         {0.f, -10010.5f, -1.f},
         10000.f,
-        {{1.f, 1.f, 0.f, 1.f}, .0f, Lambertian}
+        {{1.f, 1.f, 0.f, 1.f}, .0f, 0.0f, Lambertian}
     };
+
+    m_rtxData.sphereArray[2] = {
+        {20.f, 0.f, -1.f},
+        10.f,
+        {{1.f, 0.f, 1.f, 1.f}, .0f, 0.5f, Dielectric}
+    };
+
 
     for(int i = 0; i < sphereCount; i++)
     {

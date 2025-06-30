@@ -24,7 +24,7 @@ struct Material
 {
     float4 color;
     float fuzz;
-    float refractionAngle;
+    float refractionIndex;
     uint materialType;
 
     bool isLambertian()
@@ -75,7 +75,7 @@ struct Sphere
     float3 center;
     float radius;
     Material mat;
-    float2 pad;
+    float pad;
 };
 
 #define MAX_NUMBER_OF_SPHERES 100
@@ -117,6 +117,20 @@ HitRecord hit_sphere(Sphere sphere, Ray ray,
     hit.hit = true;
 
     return hit;
+}
+
+float3 refractRay(float3 r, float3 n, float etai_over_etai) // refract is HLSL function :)
+{
+    float cos_theta = min(dot(-r, n), 1);
+    float sin_theta = sqrt( 1 - cos_theta*cos_theta);
+
+    if(sin_theta * etai_over_etai > 1)
+        return reflect(r, n);
+
+    float3 r_out_perp = etai_over_etai * (r + cos_theta * n);
+    float len = length(r_out_perp);
+    float3 r_out_parallel = -sqrt(abs(1 - len*len)) * n;
+    return r_out_perp + r_out_parallel;
 }
 
 HitRecord hitArray(SphereArray array, 
