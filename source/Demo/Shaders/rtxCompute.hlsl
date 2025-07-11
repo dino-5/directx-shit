@@ -1,5 +1,11 @@
 #include "Shaders/Ray.hlsl"
 
+#define PI 3.1415
+
+float degrees_to_radians(float degrees)
+{
+    return degrees / 180 * PI;
+}
 
 struct ViewSettings
 {
@@ -35,8 +41,12 @@ struct Camera
                       float fov,
                       uint2 id,
                       uint samples,
-                      uint depth)
+                      uint depth,
+                      float defAngle,
+                      float focusD)
     {
+        defocusAngle = defAngle;
+        focusDist = focusD;
         pos = cameraPos;
 
         V = cameraV;
@@ -50,7 +60,7 @@ struct Camera
         hash = Hash(seed);
 
         float aspectRatio = width / height;
-        float3 viewPlaneC = pos + cameraV;
+        viewPlaneC = pos + cameraV * focusDist;
         float cosHalfFov = cos(fov/2);
         float sx = cosHalfFov * aspectRatio;
         float sy = cosHalfFov;
@@ -61,12 +71,17 @@ struct Camera
         dy = 2 * sy / height;
 
         pixel = lb + dx * id.x * cameraR - dy * id.y * cameraU;
+
+        float defocus_radius = focusDist * tan(degrees_to_radians(defocusAngle / 2));
+        defocus_disk_u = U * defocus_radius;
+        defocus_disk_r = R * defocus_radius;
     }
 
     Ray getRay()
     {
         Ray r;
-        r.pos = pos;
+        float3 rayOrigin = (defocusAngle <= 0) ? pos : defocus_disk_sample();
+        r.pos = rayOrigin;
         r.dir = normalize(pixel - pos);
         return r;
     }
@@ -74,7 +89,8 @@ struct Camera
     Ray getRay(uint i)
     {
         Ray r;
-        r.pos = pos;
+        float3 rayOrigin = (defocusAngle <= 0) ? pos : defocus_disk_sample();
+        r.pos = rayOrigin;
 
         float randomX = dx * (Random1(hash) - 0.5f); 
         float randomY = dy * (Random1(hash) - 0.5f); 
@@ -121,7 +137,6 @@ struct Camera
                 }
                 else
                 {
-                    color = float4(0,0,0,0);
                     break;
                 }
 
@@ -144,12 +159,18 @@ struct Camera
 
                 r.dir = normalize(r.dir);
                 float blue = 0.5 * (r.dir.y + 1);
-                color = calculateSky(blue);
+                color *= calculateSky(blue);
                 break;
             }
         }
 
         return color;
+    }
+
+    float3 defocus_disk_sample() {
+        // Returns a random point in the camera defocus disk.
+        float3 p = random_in_unit_disk(hash);
+        return pos + (p.x * defocus_disk_u) + (p.y * defocus_disk_r);
     }
 
     float4 render(SphereArray array, float2 interval, uint sphereCount)
@@ -173,6 +194,8 @@ struct Camera
     float3 R;
     float3 U;
 
+    float3 viewPlaneC;
+
     float3 pixel;
     float3 pos;
     float dx;
@@ -183,6 +206,11 @@ struct Camera
 
     uint sphCount;
     float2 interv;
+
+    float defocusAngle;
+    float focusDist;
+    float3   defocus_disk_u;       // Defocus disk horizontal radius
+    float3   defocus_disk_r;       // Defocus disk vertical radius
 
 };
 
@@ -225,13 +253,15 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.cameraUpDir,
                         g_view.fov,
                         id.xy,
-                        500,
-                        5);
+                        50,
+                        6,
+                        0.6,
+                        1);
 
     float4 color = camera.render(sphereArray.array,
                                float2(0.001, 100000),
                                g_rtxData.sphereCount); 
-    //color.xyz = pow(color.xyz, 1/2.2);
+    color.xyz = pow(color.xyz, 1/2.2);
     tex[id.xy] = color;
 }
 

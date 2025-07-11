@@ -57,8 +57,8 @@ public:
     void setCameraRotationSpeed(float speed) { m_cameraRotationSpeed = speed; }
 
 private:
-    static constexpr float defaultCameraMovementSpeed = 0.2f;
-    static constexpr float defaultCameraRotationSpeed = .5f;
+    static constexpr float defaultCameraMovementSpeed = 0.02f;
+    static constexpr float defaultCameraRotationSpeed = .05f;
     math::Vector3 pos;
     math::Vector3 viewDir {0.f, 0.f, 1.f};
     math::Vector3 rightDir{1.f, 0.f, 0.f};

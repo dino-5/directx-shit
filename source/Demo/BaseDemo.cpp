@@ -11,6 +11,24 @@
 #include "EngineCommon/util/Timer.h"
 #include "EngineGfx/tiny_bvh.h"
 #include "RenderPasses.h"
+#include <random>
+
+
+inline float random_float() {
+    static std::uniform_real_distribution<float> distribution(0.0, 1.0);
+    static std::mt19937 generator;
+    return distribution(generator);
+}
+
+inline float random_float(float min, float max) {
+    // Returns a random real in [min,max).
+    return min + (max-min)*random_float();
+}
+
+Vector3 randomColor(float min = 0.f, float max = 1.f)
+{
+    return Vector3 { random_float(), random_float(),random_float() };
+}
 
 using namespace std;
 using namespace util;
@@ -270,33 +288,64 @@ bool BaseDemo::initialize()
         updateView(data);
     });
 
+    Material ground_material = MakeLamberian(Vector3{0.5, 0.5, 0.5});
+    int i = 0;
+    m_rtxData.sphereArray[i++] = {
+        {.0f, -1000.f, .0f}, 1000, ground_material
+    };
+
+    if(1)
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
+            float choose_mat = random_float();
+            Vector3 center = Vector3{a + 0.9f*random_float(),
+                0.2,
+                b + 0.9f*random_float()};
+
+            if ((center - Vector3{4, 0.2f, 0}).length() > 0.9) {
+                Material sphere_material;
+
+                if (choose_mat < 0.8) {
+                    // diffuse
+                    auto albedo = randomColor() * randomColor();
+                    sphere_material = MakeLamberian(albedo);
+
+                    m_rtxData.sphereArray[i++] = { center, 0.2f, sphere_material };
+                } else if (choose_mat < 0.95) {
+                    // metal
+                    auto albedo = randomColor(0.5, 1);
+                    auto fuzz = random_float(0, 0.5);
+                    sphere_material = MakeMetal(albedo, fuzz);
+                    m_rtxData.sphereArray[i++] = { center, 0.2f, sphere_material };
+                } else {
+                    // glass
+                    sphere_material = MakeDielectric(1.5);
+                    m_rtxData.sphereArray[i] = { center, 0.2f, sphere_material };
+                }
+            }
+        }
+    }
+
+    Material mat1 = MakeDielectric(1.5);
+    m_rtxData.sphereArray[i++] = { Vector3{0, 1, 0}, 1.0f, mat1 };
+
+    Material mat2 = MakeLamberian(Vector3{0.4f, 0.2f, 0.1f});
+    m_rtxData.sphereArray[i++] = { Vector3{-4.f, 1.f, 0.f}, 1.0f, mat2 };
+
+    Material mat3 = MakeMetal(Vector3{0.7f, 0.6f, 0.5f}, 0);
+    m_rtxData.sphereArray[i++] = { Vector3{4.f, 1.f, 0.f}, 1.0f, mat3 };
+
+    m_currentSphereCount = i;
+
     RTXDescription rtxDesc;
-    rtxDesc.sphereCount = sphereCount;
+    rtxDesc.sphereCount = m_currentSphereCount;
     rtxDesc.imWidth = getWidth();
     rtxDesc.imHeight = getHeight();
     rtxDesc.color = m_outputColor.getData();
 
     m_rtxData.description = rtxDesc;
-    m_rtxData.sphereArray[0] = {
-        {0.f, 0.f, -1.f},
-        10.f,
-        {{1.f, 1.f, 1.f, 1.f}, .1f, 0.0f, Metal}
-    };
 
-    m_rtxData.sphereArray[1] = {
-        {0.f, -10010.5f, -1.f},
-        10000.f,
-        {{1.f, 1.f, 0.f, 1.f}, .0f, 0.0f, Lambertian}
-    };
-
-    m_rtxData.sphereArray[2] = {
-        {20.f, 0.f, -1.f},
-        10.f,
-        {{1.f, 0.f, 1.f, 1.f}, .0f, 0.5f, Dielectric}
-    };
-
-
-    for(int i = 0; i < sphereCount; i++)
+    for(int i = 0; i < m_currentSphereCount; i++)
     {
         m_sphereUI[i].init(*this, m_rtxData.sphereArray[i], 
                            std::format("Sphere {}", i));
@@ -376,12 +425,12 @@ void BaseDemo::update()
     m_camera.update();
 
     RTXDescription rtxDesc;
-    rtxDesc.sphereCount = sphereCount;
+    rtxDesc.sphereCount = m_currentSphereCount;
     rtxDesc.imWidth = getWidth();
     rtxDesc.imHeight = getHeight();
     rtxDesc.color = m_outputColor.getData();
 
-    for(u32 i = 0; i < sphereCount; ++i)
+    for(u32 i = 0; i < m_currentSphereCount; ++i)
         m_rtxData.sphereArray[i] = m_sphereUI[i].getData();
 
     m_rtxData.description = rtxDesc;

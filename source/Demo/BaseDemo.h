@@ -197,7 +197,8 @@ private:
     };
 
     RenderPass m_renderPasses[RenderPassCount];
-    constexpr static uint sphereCount = 3;
+    constexpr static uint sphereCount = 500;
+    u32 m_currentSphereCount = 0;
 
     UI_Sphere m_sphereUI[sphereCount];
 

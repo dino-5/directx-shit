@@ -50,7 +50,7 @@ struct Sphere
     float pad;
 
 };
-constexpr u32 MAX_NUMBER_OF_SPHERES = 100;
+constexpr u32 MAX_NUMBER_OF_SPHERES = 500;
 
 struct RTXDescription
 {
