@@ -25,6 +25,7 @@ public:
     std::wstring wstr() { return m_path.c_str(); }
     std::wstring wfilename() { return m_path.filename(); }
     std::string filename() { return util::to_string(m_path.filename()); }
+
     Filepath parent() const { return Filepath(m_path.parent_path()) ; }
     Filepath operator/(const std::string& name)
     {
@@ -53,7 +54,7 @@ enum DirectoryPath
 };
 };
 
-using Filetime =std::filesystem::file_time_type; 
+using Filetime = std::filesystem::file_time_type; 
 using error_code = std::error_code;
 inline Filetime GetLastEditTime(system::Filepath path, error_code& code)
 {

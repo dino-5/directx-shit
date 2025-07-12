@@ -2,13 +2,6 @@
 
 #include <windows.h>
 #include <wrl.h>
-#include <dxgi1_4.h>
-#include <d3d12.h>
-#include <D3Dcompiler.h>
-#include <DirectXMath.h>
-#include <DirectXPackedVector.h>
-#include <DirectXColors.h>
-#include <DirectXCollision.h>
 #include <string>
 #include <memory>
 #include <algorithm>
@@ -24,11 +17,10 @@
 #include <minwinbase.h>
 #include <format>
 #include "EngineGfx/dx12/d3dx12.h"
-#include "MathHelper.h"
 #include "EngineCommon/include/types.h"
 #include "third_party/utfcpp/utf8.h"
 
-
+namespace engine{};
 using namespace engine;
 
 namespace engine::util
@@ -53,33 +45,14 @@ namespace engine::util
         return to_string(wstr);
     }
 
-    inline std::string GetFormattedPath(const std::source_location& location, const std::string_view& name = "")
+    inline std::string GetFormattedPath(const std::source_location& location,
+                                        const std::string_view& name = "")
     {
         if(name.length() == 0)
             return std::format("{}::{}", location.function_name(), location.line());
-        return std::format("{}::{}::{}", location.function_name(), location.line(), name);
-    }
-
-    inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
-    {
-        if (obj)
-        {
-            obj->SetPrivateData(WKPDID_D3DDebugObjectName, lstrlenA(name), name);
-        }
-    }
-    inline void d3dSetDebugName(ID3D12Device* obj, const char* name)
-    {
-        if (obj)
-        {
-            obj->SetPrivateData(WKPDID_D3DDebugObjectName, lstrlenA(name), name);
-        }
-    }
-    inline void d3dSetDebugName(ID3D12DeviceChild* obj, const char* name)
-    {
-        if (obj)
-        {
-            obj->SetPrivateData(WKPDID_D3DDebugObjectName, lstrlenA(name), name);
-        }
+        return std::format("{}::{}::{}", 
+                           location.function_name(), 
+                           location.line(), name);
     }
 
     inline std::wstring AnsiToWString(const std::string& str)

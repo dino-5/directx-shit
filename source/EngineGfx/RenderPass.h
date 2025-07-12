@@ -75,6 +75,15 @@ struct RenderPass
 
 };
 
+struct RenderPassDesc
+{
+    RenderPassInit init;
+    RenderPassResize resize;
+    RenderPassDraw execute;
+    bool enabled;
+};
+
+
 inline RenderPass CreateRenderPass(RenderPassInit init,
                                    RenderPassResize resize,
                                    RenderPassDraw exec,
@@ -88,5 +97,12 @@ inline RenderPass CreateRenderPass(RenderPassInit init,
     pass.enabled = enable;
     pass.init(context);
     return pass;
+}
+
+inline RenderPass CreateRenderPass(RenderPassDesc desc,
+                                   GfxContext& context)
+{
+    return CreateRenderPass(desc.init, desc.resize, desc.execute, desc.enabled,
+                            context);
 }
 

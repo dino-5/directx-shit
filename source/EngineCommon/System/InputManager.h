@@ -63,7 +63,9 @@ namespace engine::system
             Released,
             Off
         };
-        bool isPressed() const { return m_state == JustPressed || m_state == AlreadyPressed; }
+        bool isPressed() const { 
+            return m_state == JustPressed || m_state == AlreadyPressed; 
+        }
         bool isUp() const { return m_state == Released || m_state == Off;}
         State getState() const { return m_state; }
         void setPressed()

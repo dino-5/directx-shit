@@ -3,9 +3,7 @@
 #include "EngineCommon/util/Timer.h"
 #include "EngineCommon/System/InputManager.h"
 
-using namespace DirectX;
 using namespace engine;
-
 using namespace engine::math;
 
 Camera::Camera() 

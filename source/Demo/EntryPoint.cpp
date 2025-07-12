@@ -14,10 +14,12 @@ int main()
 
     // global variable initialization
     {
+        CommandLine& cmdLine = CommandLine::GetCommandLine();
+
         g_state.demoDir   = fs::current_path();
         g_state.homeDir   = g_state.demoDir.parent().parent();
         g_state.shaderDir = g_state.demoDir / "Shaders";
-        g_state.profilingEnabled = CommandLine::GetCommandLine().getValue(CommandLineOption::ENABLE_PROFILER);
+        g_state.profilingEnabled = cmdLine.getValue(CommandLineOption::ENABLE_PROFILER);
         util::g_loggerState.setErrorsEnabled(true);
         util::g_loggerState.setInfoEnabled(true);
     }

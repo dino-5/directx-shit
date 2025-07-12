@@ -10,6 +10,7 @@
 #include "EngineCommon/util/ImGuiSettings.h"
 #include "EngineCommon/util/Timer.h"
 #include "EngineGfx/tiny_bvh.h"
+#include "EngineGfx/dx12/GfxHelper.h"
 #include "RenderPasses.h"
 #include <random>
 
@@ -30,6 +31,17 @@ Vector3 randomColor(float min = 0.f, float max = 1.f)
     return Vector3 { random_float(), random_float(),random_float() };
 }
 
+void locCreateViewData(GfxViewData& data, const Camera& camera)
+{
+    data.projectionMatrix = camera.getProjectionMatrix();
+    data.viewMatrix = camera.getViewMatrix();
+    data.cameraPos = camera.getPos();
+    data.cameraViewDir = camera.getViewDir();
+    data.cameraRightDir = camera.getRightDir();
+    data.cameraUpDir = camera.getUpDir();
+    data.fov = 90.f;
+}
+
 using namespace std;
 using namespace util;
 using namespace DirectX;
@@ -42,7 +54,7 @@ void locGenerateTinyBVHCompatibleGeometry(
     const std::vector<Submesh>& submeshes)
 {
     u32 currentIndex = 0;
-    auto convertV3_to_V4 = [](const math::Vector3& vec) -> tinybvh::bvhvec4
+    auto convertV3_to_V4 = [](const math::Vector3& vec) 
     {
         tinybvh::bvhvec4 result;
         result.x = vec[0];
@@ -63,9 +75,12 @@ void locGenerateTinyBVHCompatibleGeometry(
             for(u32 i = start; i < end; i+=3)
             {
                 auto ind = &indices[i];
-                outIndices[currentIndex++] = ind[0] + submesh.BaseVertexLocation;
-                outIndices[currentIndex++] = ind[1] + submesh.BaseVertexLocation;
-                outIndices[currentIndex++] = ind[2] + submesh.BaseVertexLocation;
+                outIndices[currentIndex++] =
+                        ind[0] + submesh.BaseVertexLocation;
+                outIndices[currentIndex++] =
+                        ind[1] + submesh.BaseVertexLocation;
+                outIndices[currentIndex++] =
+                        ind[2] + submesh.BaseVertexLocation;
             }
         }
     }
@@ -95,6 +110,16 @@ BaseDemo::BaseDemo(
     m_inputManager = &system::InputManager::GetInputManager();
 
     m_camera.initialize({ 0, 100, 0 }, { 0.f, 0.f, 1.f });
+
+    math::ProjectionProps perspectiveProps;
+    perspectiveProps.perspective.fov = 90;
+    perspectiveProps.perspective.aspectRatio = m_swapChain.getAspectRatio();
+    perspectiveProps.perspective.nearZ = 0.1f;
+    perspectiveProps.perspective.farZ = 10000.f;
+    perspectiveProps.type = math::ProjectionType::Perspective;
+
+    m_camera.setProjectionProperties(perspectiveProps);
+    m_camera.processUpdate();
 }
 
 void BaseDemo::onResize(
@@ -114,35 +139,14 @@ void BaseDemo::onResize(
             .descriptor = DescriptorFlags::DepthStencil,
             .viewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
         };
-        ResourceDescription desc{
-                .format = DXGI_FORMAT_D24_UNORM_S8_UINT,
-                .width= width,
-                .height = height,
-                .depthOrArraySize = 1,
-                .dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-                .flags = ResourceFlags::DEPTH_STENCIL,
-                .createState = ResourceState::DEPTH_WRITE ,
-                .heapType = D3D12_HEAP_TYPE_DEFAULT,
-                .name = "depthStencil"
-        };
         D3D12_CLEAR_VALUE val;
         val.DepthStencil = { 1.0f, 0 };
         val.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
         m_depthStencil.initResource(
             globalContext.device,
-            desc, viewProps, &val);
+            getDepthStencilDesc(width, height),
+            viewProps, &val);
     }
-
-    math::ProjectionProps perspectiveProps;
-    perspectiveProps.perspective.fov = 90;
-    perspectiveProps.perspective.aspectRatio = 
-        m_swapChain.getAspectRatio();
-    perspectiveProps.perspective.nearZ = 0.1f;
-    perspectiveProps.perspective.farZ = 10000.f;
-    perspectiveProps.type = math::ProjectionType::Perspective;
-
-    m_camera.setProjectionProperties(perspectiveProps);
-    m_camera.processUpdate();
 
     for(auto& renderPass : m_renderPasses)
         renderPass.resize(globalContext);
@@ -155,13 +159,6 @@ SwapChainSettings BaseDemo::getCurrentWindowSettings()
              getWindowHandle(), false, false};
 }
 
-struct RenderPassDesc
-{
-    RenderPassInit init;
-    RenderPassResize resize;
-    RenderPassDraw execute;
-    bool enabled;
-};
 
 void BaseDemo::createRenderPasses()
 {
@@ -172,11 +169,7 @@ void BaseDemo::createRenderPasses()
     };
     
     for(int i = 0; i < RenderPassCount; ++i)
-        m_renderPasses[i] = CreateRenderPass(renderPassDesc[i].init,
-                                             renderPassDesc[i].resize,
-                                             renderPassDesc[i].execute,
-                                             renderPassDesc[i].enabled,
-                                             globalContext);
+        m_renderPasses[i] = CreateRenderPass(renderPassDesc[i], globalContext);
 }
 
 bool BaseDemo::initialize()
@@ -194,13 +187,7 @@ bool BaseDemo::initialize()
 
     // setup data 
     GfxViewData data;
-    data.projectionMatrix = m_camera.getProjectionMatrix();
-    data.viewMatrix = m_camera.getViewMatrix();
-    data.cameraPos = m_camera.getPos();
-    data.cameraViewDir = m_camera.getViewDir();
-    data.cameraRightDir = m_camera.getRightDir();
-    data.cameraUpDir = m_camera.getUpDir();
-    data.fov = 90.f;
+    locCreateViewData(data, m_camera);
     createView(data);
 
     if(0)
@@ -216,13 +203,9 @@ bool BaseDemo::initialize()
         Profiler::EndProfiling();
 
         using func = std::function<Vector3(const BVHNode&)>;
-        func diagonalF = [](const BVHNode& node) {
-            return node.aabb.diagonal(); };
+        func diagonalF = [](const BVHNode& node) { return node.aabb.diagonal(); };
+        func aabbF = [](const BVHNode& node) { return node.aabb.aabbMin;};
 
-        std::function<Vector3(const BVHNode&)> aabbF =
-            [](const BVHNode& node)
-            {
-            return node.aabb.aabbMin;};
         m_bvhModel = BVHBuilder::generateDrawData(
                         globalContext,
                         m_bvhBuilder.getRootNode(),
@@ -253,20 +236,17 @@ bool BaseDemo::initialize()
         Profiler::EndProfiling();
         util::printInfo("tiny bvh node number {}", bvh.NodeCount());
 
-        using func = std::function<Vector3(
-            const tinybvh::BVH::BVHNode&)>;
+        using func = std::function<Vector3( const tinybvh::BVH::BVHNode&)>;
         auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) 
             { return Vector3({vec.x, vec.y, vec.z}); };
 
         func diagonalF =
         [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node) 
-            {
-        return from_tinyV3_to_mathV3(node.aabbMax - node.aabbMin);};
+            { return from_tinyV3_to_mathV3(node.aabbMax - node.aabbMin);};
 
         func aabbF = 
         [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node)  
-        {
-            return from_tinyV3_to_mathV3(node.aabbMin);};
+        { return from_tinyV3_to_mathV3(node.aabbMin);};
 
         m_tinybvhModel = BVHBuilder::generateDrawData(globalContext,
                                                       bvh.bvhNode,
@@ -277,14 +257,8 @@ bool BaseDemo::initialize()
     m_camera.addChangeCallback([](const Camera* camera)
     {
         GfxViewData data;
-        data.projectionMatrix = camera->getProjectionMatrix();
-        data.viewMatrix = camera->getViewMatrix();
+        locCreateViewData(data, *camera);
 
-        data.cameraPos = camera->getPos();
-        data.cameraViewDir = camera->getViewDir();
-        data.cameraRightDir = camera->getRightDir();
-        data.cameraUpDir = camera->getUpDir();
-        data.fov = 90.f;
         updateView(data);
     });
 
@@ -294,37 +268,37 @@ bool BaseDemo::initialize()
         {.0f, -1000.f, .0f}, 1000, ground_material
     };
 
-    if(1)
-    for (int a = -11; a < 11; a++) {
-        for (int b = -11; b < 11; b++) {
-            float choose_mat = random_float();
-            Vector3 center = Vector3{a + 0.9f*random_float(),
-                0.2,
-                b + 0.9f*random_float()};
+    if(0)
+        for (int a = -11; a < 11; a++) {
+            for (int b = -11; b < 11; b++) {
+                float choose_mat = random_float();
+                Vector3 center = Vector3{a + 0.9f*random_float(),
+                    0.2,
+                    b + 0.9f*random_float()};
 
-            if ((center - Vector3{4, 0.2f, 0}).length() > 0.9) {
-                Material sphere_material;
+                if ((center - Vector3{4, 0.2f, 0}).length() > 0.9) {
+                    Material sphere_material;
 
-                if (choose_mat < 0.8) {
-                    // diffuse
-                    auto albedo = randomColor() * randomColor();
-                    sphere_material = MakeLamberian(albedo);
+                    if (choose_mat < 0.8) {
+                        // diffuse
+                        auto albedo = randomColor() * randomColor();
+                        sphere_material = MakeLamberian(albedo);
 
-                    m_rtxData.sphereArray[i++] = { center, 0.2f, sphere_material };
-                } else if (choose_mat < 0.95) {
-                    // metal
-                    auto albedo = randomColor(0.5, 1);
-                    auto fuzz = random_float(0, 0.5);
-                    sphere_material = MakeMetal(albedo, fuzz);
-                    m_rtxData.sphereArray[i++] = { center, 0.2f, sphere_material };
-                } else {
-                    // glass
-                    sphere_material = MakeDielectric(1.5);
-                    m_rtxData.sphereArray[i] = { center, 0.2f, sphere_material };
+                        m_rtxData.sphereArray[i++] = { center, 0.2f, sphere_material };
+                    } else if (choose_mat < 0.95) {
+                        // metal
+                        auto albedo = randomColor(0.5, 1);
+                        auto fuzz = random_float(0, 0.5);
+                        sphere_material = MakeMetal(albedo, fuzz);
+                        m_rtxData.sphereArray[i++] = { center, 0.2f, sphere_material };
+                    } else {
+                        // glass
+                        sphere_material = MakeDielectric(1.5);
+                        m_rtxData.sphereArray[i] = { center, 0.2f, sphere_material };
+                    }
                 }
             }
         }
-    }
 
     Material mat1 = MakeDielectric(1.5);
     m_rtxData.sphereArray[i++] = { Vector3{0, 1, 0}, 1.0f, mat1 };

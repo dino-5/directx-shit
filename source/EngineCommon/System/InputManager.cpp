@@ -5,7 +5,10 @@
 #include "third_party/imgui/backends/imgui_impl_dx12.h"
 #include <windowsx.h>
 
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd,
+                                                             UINT msg,
+                                                             WPARAM wParam,
+                                                             LPARAM lParam);
 
 namespace engine::system
 {
@@ -28,7 +31,10 @@ namespace engine::system
         m_pressed[index].release();
     }
 
-    LRESULT InputManager::processInput(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+    LRESULT InputManager::processInput(HWND hwnd, 
+                                       UINT msg, 
+                                       WPARAM wParam,
+                                       LPARAM lParam)
     {
         if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
             return 0;

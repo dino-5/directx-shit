@@ -14,8 +14,6 @@
 #include <windef.h>
 #include <dwmapi.h>
 
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
 LRESULT CALLBACK
 MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -29,7 +27,7 @@ LRESULT WindowApp::msgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-WNDCLASSEXA Window::CreateWindowClass(const std::string_view name)
+WNDCLASSEXA CreateWindowClass(const std::string_view name)
 {
     HINSTANCE inst = GetModuleHandle(nullptr);
     WNDCLASSEXA wcex;
@@ -135,7 +133,9 @@ void WindowApp::run()
             draw();
 
             double fps = timer.getFps();
-            std::string title = util::to_string(std::format(L"DX12 Demo fps: {}/{}", round(fps), timer.getElapsedTime()));
+            std::string title = std::format("DX12 Demo fps: {}/{}", 
+                                            round(fps),
+                                            timer.getElapsedTime());
             if(!SetWindowTextA(getWindowHandle(), title.c_str()))
                 util::printError("can't change title name");
         }
