@@ -268,9 +268,10 @@ bool BaseDemo::initialize()
         {.0f, -1000.f, .0f}, 1000, ground_material
     };
 
-    if(0)
-        for (int a = -11; a < 11; a++) {
-            for (int b = -11; b < 11; b++) {
+    int number = 9;
+    if(1)
+        for (int a = -number; a < number; a++) {
+            for (int b = -number; b < number; b++) {
                 float choose_mat = random_float();
                 Vector3 center = Vector3{a + 0.9f*random_float(),
                     0.2,

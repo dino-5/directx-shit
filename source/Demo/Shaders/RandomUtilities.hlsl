@@ -51,14 +51,12 @@ float3 Random3Unit(inout uint x)
     return normalize((Random3(x) - 0.5) * 2);
 }
 
-float3 random_in_unit_disk(inout uint x ) 
+float2 random_in_unit_disk(inout uint x ) 
 {
-    while(true){
-        float3 p = float3(Random1Range(x, -1, 1), Random1Range(x, -1, 1), 0);
-        float len = length(p);
-        if (len*len < 1)
-            return p;
-    }
+    float eps = 0.00000001;
+    float2 p = float2(Random1Range(x, -1, 1) + eps, Random1Range(x, -1, 1) + eps);
+    float len = 1 / length(p);
+    return p * len;
 }
 
 float3 RandomOnHemisphere(float3 normal, inout uint x)

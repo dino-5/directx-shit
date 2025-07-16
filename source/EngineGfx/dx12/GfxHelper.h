@@ -4,7 +4,7 @@
 
 using namespace engine::graphics;
 
-ResourceDescription getDepthStencilDesc(u32 width, u32 height)
+inline ResourceDescription getDepthStencilDesc(u32 width, u32 height)
 {
     return{
             .format = DXGI_FORMAT_D24_UNORM_S8_UINT,

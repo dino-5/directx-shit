@@ -42,10 +42,10 @@ struct Camera
                       uint2 id,
                       uint samples,
                       uint depth,
-                      float defAngle,
+                      float lensR,
                       float focusD)
     {
-        defocusAngle = defAngle;
+        lensAngle = lensR;
         focusDist = focusD;
         pos = cameraPos;
 
@@ -62,8 +62,8 @@ struct Camera
         float aspectRatio = width / height;
         viewPlaneC = pos + cameraV * focusDist;
         float cosHalfFov = cos(fov/2);
-        float sx = cosHalfFov * aspectRatio;
-        float sy = cosHalfFov;
+        float sy = cosHalfFov * focusDist;
+        float sx = sy * aspectRatio; 
 
         float3 lb = viewPlaneC - sx * cameraR + sy * cameraU; // left bottom
 
@@ -72,15 +72,16 @@ struct Camera
 
         pixel = lb + dx * id.x * cameraR - dy * id.y * cameraU;
 
-        float defocus_radius = focusDist * tan(degrees_to_radians(defocusAngle / 2));
-        defocus_disk_u = U * defocus_radius;
-        defocus_disk_r = R * defocus_radius;
+        float defocusRadius = focusDist * tan(degrees_to_radians(lensAngle / 2));
+        defocus_disk_u = U * defocusRadius;
+        defocus_disk_r = R * defocusRadius;
+
     }
 
     Ray getRay()
     {
         Ray r;
-        float3 rayOrigin = (defocusAngle <= 0) ? pos : defocus_disk_sample();
+        float3 rayOrigin = pos;
         r.pos = rayOrigin;
         r.dir = normalize(pixel - pos);
         return r;
@@ -89,13 +90,13 @@ struct Camera
     Ray getRay(uint i)
     {
         Ray r;
-        float3 rayOrigin = (defocusAngle <= 0) ? pos : defocus_disk_sample();
-        r.pos = rayOrigin;
+
+        r.pos = defocus_disk_sample();
 
         float randomX = dx * (Random1(hash) - 0.5f); 
         float randomY = dy * (Random1(hash) - 0.5f); 
 
-        r.dir = normalize(pixel + R * randomX + U * randomY - pos);
+        r.dir = normalize(pixel + R * randomX + U * randomY - r.pos);
 
         return r;
     }
@@ -169,8 +170,8 @@ struct Camera
 
     float3 defocus_disk_sample() {
         // Returns a random point in the camera defocus disk.
-        float3 p = random_in_unit_disk(hash);
-        return pos + (p.x * defocus_disk_u) + (p.y * defocus_disk_r);
+        float2 p = random_in_unit_disk(hash);
+        return pos + (p.x * defocus_disk_r) + (p.y * defocus_disk_u);
     }
 
     float4 render(SphereArray array, float2 interval, uint sphereCount)
@@ -207,7 +208,7 @@ struct Camera
     uint sphCount;
     float2 interv;
 
-    float defocusAngle;
+    float lensAngle;
     float focusDist;
     float3   defocus_disk_u;       // Defocus disk horizontal radius
     float3   defocus_disk_r;       // Defocus disk vertical radius
@@ -254,9 +255,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.fov,
                         id.xy,
                         50,
-                        6,
+                        4,
                         0.6,
-                        1);
+                        10);
 
     float4 color = camera.render(sphereArray.array,
                                float2(0.001, 100000),
