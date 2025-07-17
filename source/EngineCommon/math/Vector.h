@@ -101,6 +101,15 @@ public:
             m_data[i++] = el;
     }
 
+    template<typename... Args>
+    Vector( Args... args)
+    {
+        static_assert(sizeof...(Args) == N);
+        int i = 0;
+        for (auto el : std::initializer_list<T>{ args... })
+            m_data[i++] = el;
+    }
+
     Vector& operator=(const Vector& v1)
     {
         for (int i = 0; i < N; i++)
