@@ -263,7 +263,7 @@ bool BaseDemo::initialize()
     });
 
     int i = 0;
-    Material ground_material = MakeLamberian(Vector3{0.5, 0.5, 0.5});
+    Material ground_material = MakeLamberian(Vector3{0.5f, 0.5f, 0.5f});
     m_rtxData.sphereArray[i++] = {
         {.0f, -1000.f, .0f}, 1000, ground_material
     };
@@ -278,10 +278,10 @@ bool BaseDemo::initialize()
             float choose_mat = random_float();
             Vector3 center = Vector3(
                         a + 0.9f*random_float(),
-                        0.2,
+                        0.2f,
                         b + 0.9f*random_float());
 
-            if ((center - Vector3(4, 0.2f, 0)).length() > 0.9) 
+            if ((center - Vector3(4.f, 0.2f, 0.f)).length() > 0.9) 
             {
                 Material sphere_material;
 
@@ -308,7 +308,7 @@ bool BaseDemo::initialize()
     }
 
     Material mat1 = MakeDielectric(1.5);
-    m_rtxData.sphereArray[i++] = { Vector3(0, 1, 0), 1.0f, mat1 };
+    m_rtxData.sphereArray[i++] = { Vector3(0.f, 1.f, 0.f), 1.0f, mat1 };
 
     Material mat2 = MakeLamberian(Vector3(0.4f, 0.2f, 0.1f));
     m_rtxData.sphereArray[i++] = { Vector3(-4.f, 1.f, 0.f), 1.0f, mat2 };

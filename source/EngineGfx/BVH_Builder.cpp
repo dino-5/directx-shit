@@ -26,27 +26,38 @@ void BVHBuilder::build(const Model& model)
     auto& vertices = model.m_geometry.vertices;
     auto& indices = model.m_geometry.indices;
 
-    triangles.reserve(indices.size()/3);
-    m_nodes.resize(triangles.capacity() * 2 - 1);
+    aabbs.reserve(indices.size()/3);
+    m_nodes.resize(aabbs.capacity() * 2 - 1);
 
     for(auto& submesh : submeshes)
     {
-        for(u32 i = submesh.StartIndexLocation; i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
+        for(u32 i = submesh.StartIndexLocation;
+            i < submesh.StartIndexLocation + submesh.IndexCount; i+=3)
         {
-            auto ind = &indices[i];
-            triangles.push_back(Triangle(ind[0], ind[1], ind[2], vertices, submesh.BaseVertexLocation));
+            aabbs.push_back(
+                AABBFromTriangle(&indices[i],
+                         vertices, 
+                         submesh.BaseVertexLocation));
         }
     }
 
-    triIndices.resize(triangles.size());
-    util::printInfo("{} triangles", triangles.size());
+    triIndices.resize(aabbs.size());
+    util::printInfo("{} triangles", aabbs.size());
+
     u32 i = 0;
     for(auto& index : triIndices)
         index = i++;
 
     m_nodes[0].leftChild = 0;
-    m_nodes[0].triangleCount = (u32)triangles.size();
-    updateNodeBounds(0);
+    m_nodes[0].triangleCount = (u32)aabbs.size();
+
+    BVHNode& node = m_nodes[0];
+    for (u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
+    {
+        auto& aabb = aabbs[triIndices[i]];
+        node.aabb.grow(aabb);
+    }
+
     m_minDim = m_nodes[0].aabb.diagonal() * 1e-20f;
 
     subdivide();
@@ -72,71 +83,88 @@ void BVHBuilder::subdivide()
             Vector3 stepSize =  (float)NUMBER_OF_BINS / node.aabb.diagonal();
             Vector3 nodeMin = node.aabb.aabbMin;
             {
-                PROFILER("binning");
+            PROFILER("binning");
+            {
+                AABB binsAABB[3][NUMBER_OF_BINS];
+                u32 binsCount[3][NUMBER_OF_BINS];
+                memset(binsCount, 0, 3 * NUMBER_OF_BINS * sizeof(u32));
                 {
-                    AABB binsAABB[3][NUMBER_OF_BINS];
-                    u32 binsCount[3][NUMBER_OF_BINS];
-                    memset(binsCount, 0, 3 * NUMBER_OF_BINS * sizeof(u32));
-                    {
-                        PROFILER("bin sorting");
-                        for (u32 j = node.leftChild; j < node.leftChild + node.triangleCount; ++j)
-                        {
-                            u32 triIndex = triIndices[j];
-                            Int3 binDistr = (triangles[triIndex].aabb.middle() - nodeMin) * stepSize;
-                            binDistr = math::clamp(binDistr, Int3(0), Int3(NUMBER_OF_BINS - 1));
-                            binsAABB[0][binDistr[0]].grow(triangles[triIndex].aabb);
-                            binsCount[0][binDistr[0]]++;
-                            binsAABB[1][binDistr[1]].grow(triangles[triIndex].aabb);
-                            binsCount[1][binDistr[1]]++;
-                            binsAABB[2][binDistr[2]].grow(triangles[triIndex].aabb);
-                            binsCount[2][binDistr[2]]++;
-                        }
-                    }
+                PROFILER("bin sorting");
+                for (u32 j = node.leftChild;
+                        j < node.leftChild + node.triangleCount;
+                        ++j)
+                {
+                    u32 triIndex = triIndices[j];
+                    auto& aabb = aabbs[triIndex];
+                    Int3 binDistr = (aabb.middle() - nodeMin) * stepSize;
+                    binDistr = math::clamp( binDistr, Int3(0),
+                                           Int3(NUMBER_OF_BINS - 1));
 
-                    for(int i = 0; i < 3; ++i)
-                        if(node.aabb.diagonal()[i] > m_minDim[i])
-                    {
-
-                        float leftArea[NUMBER_OF_BINS - 1], rightArea[NUMBER_OF_BINS - 1];
-                        AABB leftAABB[NUMBER_OF_BINS - 1], rightAABB[NUMBER_OF_BINS - 1];
-
-                        u32 currentLeftCount = 0, currentRightCount = 0;
-                        AABB currentLeftAABB, currentRightAABB;
-
-                        {
-                            PROFILER("calculation of area");
-                            for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
-                            {
-                                    currentLeftAABB.grow(binsAABB[i][j]);
-                                    leftAABB[j] = currentLeftAABB;
-                                    currentLeftCount += binsCount[i][j];
-                                    leftArea[j] = currentLeftCount == 0 ? (float)1e20 : currentLeftAABB.area() * currentLeftCount;
-
-                                    currentRightAABB.grow(binsAABB[i][NUMBER_OF_BINS - j - 1]);
-                                    rightAABB[NUMBER_OF_BINS - j - 2] = currentRightAABB;
-                                    currentRightCount += binsCount[i][NUMBER_OF_BINS - j - 1];
-                                    rightArea[NUMBER_OF_BINS - j - 2] = currentRightCount == 0 ? (float)1e20 : currentRightAABB.area() * currentRightCount;
-                            }
-                        }
-
-                        {
-                            PROFILER("best area finding");
-                            for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
-                            {
-                                    float sah = leftArea[j] + rightArea[j];
-                                    if (sah < bestSah)
-                                    {
-                                        bestSah = sah;
-                                        bestSplitAxisIndex = i;
-                                        bestLeftAABB = leftAABB[j];
-                                        bestRightAABB = rightAABB[j];
-                                        bestSplitPos = j;
-                                    }
-                            }
-                        }
-                    }
-
+                    binsAABB[0][binDistr[0]].grow(aabb);
+                    binsCount[0][binDistr[0]]++;
+                    binsAABB[1][binDistr[1]].grow(aabb);
+                    binsCount[1][binDistr[1]]++;
+                    binsAABB[2][binDistr[2]].grow(aabb);
+                    binsCount[2][binDistr[2]]++;
                 }
+                }
+
+                for(int i = 0; i < 3; ++i)
+                    if(node.aabb.diagonal()[i] > m_minDim[i])
+                {
+
+                    float leftArea[NUMBER_OF_BINS - 1],
+                        rightArea[NUMBER_OF_BINS - 1];
+                    AABB leftAABB[NUMBER_OF_BINS - 1],
+                        rightAABB[NUMBER_OF_BINS - 1];
+
+                    u32 currentLeftCount = 0, currentRightCount = 0;
+                    AABB currentLeftAABB, currentRightAABB;
+
+                    {
+                    PROFILER("calculation of area");
+                    for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+                    {
+                        currentLeftAABB.grow(binsAABB[i][j]);
+                        leftAABB[j] = currentLeftAABB;
+                        currentLeftCount += binsCount[i][j];
+                        leftArea[j] = currentLeftCount == 0 ?
+                            (float)1e20 :
+                            currentLeftAABB.area() * currentLeftCount;
+
+                        currentRightAABB.grow(
+                            binsAABB[i][NUMBER_OF_BINS - j - 1]);
+
+                        rightAABB[NUMBER_OF_BINS - j - 2] = currentRightAABB;
+
+                        currentRightCount += 
+                                    binsCount[i][NUMBER_OF_BINS - j - 1];
+
+                        rightArea[NUMBER_OF_BINS - j - 2] = 
+                                    currentRightCount == 0 ?
+                                    (float)1e20 :
+                                    currentRightAABB.area() * currentRightCount;
+                    }
+                    }
+
+                    {
+                    PROFILER("best area finding");
+                    for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+                    {
+                        float sah = leftArea[j] + rightArea[j];
+                        if (sah < bestSah)
+                        {
+                            bestSah = sah;
+                            bestSplitAxisIndex = i;
+                            bestLeftAABB = leftAABB[j];
+                            bestRightAABB = rightAABB[j];
+                            bestSplitPos = j;
+                        }
+                    }
+                    }
+                }
+
+            }
             }
             
             float splitCost = 1 + bestSah / node.aabb.area();
@@ -146,18 +174,20 @@ void BVHBuilder::subdivide()
 
             u32 i = node.leftChild, j = i + (node.triangleCount - 1);
             {
-                PROFILER("sorting of triangles");
-                while (i < j)
-                {
-                    AABB& triAABB = triangles[triIndices[i]].aabb;
-                    float centroid = (triAABB.aabbMin[bestSplitAxisIndex] + triAABB.aabbMax[bestSplitAxisIndex]) * 0.5;
-                    i32 binDistr = (i32)((centroid - nodeMin[bestSplitAxisIndex]) * stepSize[bestSplitAxisIndex]);
-                    binDistr = math::clamp(binDistr, 0, (i32)NUMBER_OF_BINS - 1);
-                    if((u32)binDistr <= bestSplitPos)
-                        i++;
-                    else
-                        std::swap(triIndices[i], triIndices[j--]);
-                }
+            PROFILER("sorting of triangles");
+            while (i < j)
+            {
+                AABB& aabb = aabbs[triIndices[i]];
+                float centroid = (aabb.aabbMin[bestSplitAxisIndex] + 
+                        aabb.aabbMax[bestSplitAxisIndex]) * 0.5;
+                i32 binDistr = (i32)((centroid - nodeMin[bestSplitAxisIndex]) 
+                                     * stepSize[bestSplitAxisIndex]);
+                binDistr = math::clamp(binDistr, 0, (i32)NUMBER_OF_BINS - 1);
+                if((u32)binDistr <= bestSplitPos)
+                    i++;
+                else
+                    std::swap(triIndices[i], triIndices[j--]);
+            }
             }
 
             u32 leftCount = i - node.leftChild;
@@ -193,17 +223,6 @@ void BVHBuilder::subdivide()
         nodeIdx = task[--taskCount];
     }
 
-}
-
-void BVHBuilder::updateNodeBounds(u32 index)
-{
-    PROFILER("BVHBuilder::updateNodeBounds");
-    BVHNode& node = m_nodes[index];
-    for (u32 i = node.leftChild; i < node.leftChild + node.triangleCount; ++i)
-    {
-        auto& triangle = triangles[triIndices[i]];
-        node.aabb.grow(triangle.aabb);
-    }
 }
 
 };

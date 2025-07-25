@@ -254,7 +254,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.cameraUpDir,
                         g_view.fov,
                         id.xy,
-                        50,
+                        5,
                         4,
                         0.6,
                         10);

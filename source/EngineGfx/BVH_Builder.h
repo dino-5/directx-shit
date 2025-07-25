@@ -16,8 +16,10 @@ struct AABB
 {
     Vector3 aabbMin = AABB_MAX;
     Vector3 aabbMax = AABB_MIN;
-    void grow(Vector3 p) { aabbMin = minVectorCoords(aabbMin, p); aabbMax = maxVectorCoords(aabbMax, p); }
-    void grow(AABB p) { aabbMin = minVectorCoords(aabbMin, p.aabbMin); aabbMax = maxVectorCoords(aabbMax, p.aabbMax);  } 
+    void grow(Vector3 p) { aabbMin = minVectorCoords(aabbMin, p);
+                           aabbMax = maxVectorCoords(aabbMax, p); }
+    void grow(AABB p) { aabbMin = minVectorCoords(aabbMin, p.aabbMin);
+                        aabbMax = maxVectorCoords(aabbMax, p.aabbMax);  } 
     inline Vector3 diagonal() const { return aabbMax - aabbMin;}
     inline Vector3 middle() const { return (aabbMin + aabbMax) * 0.5; }
     inline float area() const
@@ -27,16 +29,15 @@ struct AABB
     }
 };
 
-struct Triangle
+inline AABB AABBFromTriangle(const u32* indices, 
+         const std::vector<Vertex>& vertices, u32 offset=0)
 {
     AABB aabb;
-    Triangle(u32 first, u32 second, u32 third, const std::vector<Vertex>& vertices, u32 offset=0)
-    {
-        aabb.grow(vertices[first+offset].position);
-        aabb.grow(vertices[second+offset].position);
-        aabb.grow(vertices[third+offset].position);
-    }
-};
+    aabb.grow(vertices[indices[0]+offset].position);
+    aabb.grow(vertices[indices[1]+offset].position);
+    aabb.grow(vertices[indices[2]+offset].position);
+    return aabb;
+}
 
 struct BVHNode
 {
@@ -44,6 +45,9 @@ struct BVHNode
     u32 leftChild = 0, triangleCount = 0;
     bool isLeaf() const { return triangleCount > 0; }
 };
+
+template<typename T>
+using functionT = std::function<Vector3(const T&)>;
 
 class BVHBuilder
 {
@@ -54,25 +58,24 @@ public:
 
     const Mesh& getMesh()const { return m_mesh; }
     const Submesh getSubmesh() const { return m_submesh; }
+    const BVHNode* getRootNode() const { return &m_nodes[0]; }
+    u32 getNodeCount() const { return lastElement; }
+
     template<typename BVHNodeType>
     static Model generateDrawData(GfxContext& context,
                                   const BVHNodeType* rootNode,
                                   u32 nodeCount,
-                                  std::function<Vector3(const BVHNodeType&)> diagonalF,
-                                  std::function<Vector3(const BVHNodeType&)> aabbMinF);
-
-    const BVHNode* getRootNode() const { return &m_nodes[0]; }
-    u32 getNodeCount() const { return lastElement; }
+                                  functionT<const BVHNodeType&> diagonalF,
+                                  functionT<const BVHNodeType&> aabbMinF);
 
 private:
     void subdivide();
-    void updateNodeBounds(u32 index);
     float findBestSplitPosition(u32 nodeIndex, u32& splitAxis, float& splitPosition);
 
     const Model* m_model;
     Mesh m_mesh;
     Submesh m_submesh;
-    std::vector<Triangle> triangles;
+    std::vector<AABB> aabbs;
     std::vector<u32> triIndices;
     u32 lastElement=0;
     Vector3 m_minDim;
@@ -84,8 +87,8 @@ template<typename BVHNodeType>
 Model BVHBuilder::generateDrawData(GfxContext& context,
                                   const BVHNodeType* rootNode,
                                   u32 nodeCount,
-                                  std::function<Vector3(const BVHNodeType&)> diagonalF,
-                                  std::function<Vector3(const BVHNodeType&)> aabbMinF)
+                                  functionT<const BVHNodeType&> diagonalF,
+                                  functionT<const BVHNodeType&> aabbMinF)
 {
     Geometry<Vector3> geometry;
     auto& vertices = geometry.vertices;
@@ -127,6 +130,7 @@ Model BVHBuilder::generateDrawData(GfxContext& context,
             indices[i * 24 + 2 * j + 17] = i * 8 + j + 4;
         }
     }
+
     Submesh submesh = geometry.getSubmesh();
     Mesh mesh(context, geometry);
     Model model;
