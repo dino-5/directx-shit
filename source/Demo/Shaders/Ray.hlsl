@@ -24,6 +24,16 @@ struct Material
     }
 };
 
+Material getMaterial()
+{
+    Material m;
+    m.color = float4(0,0,0,0);
+    m.fuzz = 0;
+    m.refractionIndex = 0;
+    m.materialType = 0;
+    return m;
+}
+
 struct Ray
 {
     float3 pos;
@@ -67,6 +77,7 @@ HitRecord getHit()
     rec.n = float3(0,0,0);
     rec.p = float3(0,0,0);
     rec.t = 1000;
+    rec.m = getMaterial();
     rec.index = 0;
     return rec;
 }

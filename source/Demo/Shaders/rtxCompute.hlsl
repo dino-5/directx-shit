@@ -64,7 +64,6 @@ HitRecord hit(BVH bvh, Ray ray, SphereArray array, uint sphereCount, float2 inte
     {
         while(1)
         {
-            if(nodeIndex >= bvh.bvhNodeCount) break;
             BVHNode node = bvh.nodes[nodeIndex];
 
             if(!node.aabb.intersect(ray, closestHit)) break;
@@ -78,12 +77,8 @@ HitRecord hit(BVH bvh, Ray ray, SphereArray array, uint sphereCount, float2 inte
                 {
                     HitRecord tempRec = getHit();
 
-                    if(i < sphereCount)
-                    {
-                        if(bvh.indices[i] < sphereCount)
-                            tempRec = hit_sphere(array.spheres[bvh.indices[i]],
-                                             ray, interval.x, closestHit);
-                    }
+                    tempRec = hit_sphere(array.spheres[bvh.indices[i]],
+                                         ray, interval.x, closestHit);
 
                     if(tempRec.hit) // we shrink interval to the closestHit every time
                     {
@@ -97,10 +92,8 @@ HitRecord hit(BVH bvh, Ray ray, SphereArray array, uint sphereCount, float2 inte
             else
             {
                 nodeIndex = node.first;
-                if(taskCount>510) break;
-                if(nodeIndex < bvh.bvhNodeCount-1) tasks[taskCount++] = nodeIndex+1;
+                tasks[taskCount++] = nodeIndex+1;
             }
-
             
         }
         if(!taskCount) break;
@@ -188,6 +181,7 @@ struct Camera
         return r;
     }
 #define USE_BVH 1
+
     float4 pixelColor(SphereArray array, Ray r)
     {
         float4 color = float4(1,1,1,1);
