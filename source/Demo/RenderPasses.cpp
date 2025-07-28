@@ -22,8 +22,12 @@ std::vector<PassResource> PassResourcesDesc(PassResourcesCount);
 void initRenderPassResources(GfxContext& context)
 {
     PassResourcesDesc[RTXPass_ConstantBufferData] = {1, 0};
-    PassResourcesDesc[RTXPass_OutputTexture] = {config::NumFrames, 0};
-    PassResourcesDesc[RTXPass_SphereBuffer] = {1, 0};
+    PassResourcesDesc[RTXPass_Output_Texture] = {config::NumFrames, 0};
+    PassResourcesDesc[RTXPass_Sphere_Buffer] = {1, 0};
+    PassResourcesDesc[RTXPass_BVHNode_Buffer] = {1, 0};
+    PassResourcesDesc[RTXPass_BVHAABB_Buffer] = {1, 0};
+    PassResourcesDesc[RTXPass_BVHIndices_Buffer] = {1, 0};
+    PassResourcesDesc[RTXPass_BVHDescription_Buffer] = {1, 0};
 
     u32 totalResourceCount = 0;
     for(auto& resDesc : PassResourcesDesc)
@@ -161,6 +165,7 @@ void debugDrawBVHPassInit(GfxContext& context,
 
     sig.desc = inputElements;
     pass.renderState.sig = sig;
+	pass.renderState.topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
 
     pass.compilePSO();
 }
@@ -181,8 +186,8 @@ void debugDrawBVHPassExecute(GfxContext& context,
             DescriptorHeapManager::CurrentSRVHeap.getHeapAddress());
     cmdList->SetGraphicsRootSignature(pass.rs);
     cmdList->SetPipelineState(pass.pso);
-    cmdList->SetGraphicsRoot32BitConstant(0,
-              context.view.buffer.getDescriptorHeapIndex(), 0);
+    u32 index = context.view.buffer.cbv.getDescriptorIndex();
+    cmdList->SetGraphicsRoot32BitConstant(0, index, 0);
     cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
     auto mesh = model->m_mesh;
@@ -199,13 +204,14 @@ struct BindlessRTXTable
 {
     u32 outputTextureIndex;
     u32 sphereArrayIndex;
+    u32 bvhDescIndex;
 };
 
 void computeRTXPassResize(GfxContext& context,
                      RenderPass& pass)
 {
     std::span<Resource*> outputTexture = getPassResources(context,
-                                                          RTXPass_OutputTexture);
+                                                          RTXPass_Output_Texture);
     for(auto& texture : outputTexture)
     {
         if(texture)
@@ -230,7 +236,7 @@ void computeRTXPassResize(GfxContext& context,
 }
 
 void computeRTXPassInit(GfxContext& context,
-                     RenderPass& pass)
+                        RenderPass& pass)
 {
     pass.addShader("rtxCompute",
                    "CSMain",
@@ -250,13 +256,13 @@ void computeRTXPassInit(GfxContext& context,
         pass.data = new RTXPassData;
 
     Resource*& constantBuffer = getResource(context, RTXPass_ConstantBufferData);
-    constantBuffer = new ConstantBuffer(globalContext.device,
-                                        globalContext.cmdList,
+    constantBuffer = new ConstantBuffer(context.device,
+                                        context.cmdList,
                                         sizeof(RTXDescription));
 
-    Resource*& sphereBuffer = getResource(context, RTXPass_SphereBuffer);
-    sphereBuffer = new ConstantBuffer(globalContext.device,
-                                     globalContext.cmdList,
+    Resource*& sphereBuffer = getResource(context, RTXPass_Sphere_Buffer);
+    sphereBuffer = new ConstantBuffer(context.device,
+                                     context.cmdList,
                                      sizeof(Sphere) * MAX_NUMBER_OF_SPHERES);
 
 }
@@ -271,20 +277,21 @@ void computeRTXPassExecute(GfxContext& context,
     auto renderTarget = context.currentRenderTarget->rtv;
     auto depthStencil = context.currentDepthStencil->dsv;
 
-    Resource*& outputTexture = getResource(context, RTXPass_OutputTexture);
+    Resource*& outputTexture = getResource(context, RTXPass_Output_Texture);
 
     ConstantBuffer* descriptionCB = (ConstantBuffer*) getResource(context,
                                                    RTXPass_ConstantBufferData);
 
     ConstantBuffer* sphereArray = (ConstantBuffer*) getResource(context,
-                                                   RTXPass_SphereBuffer);
+                                                   RTXPass_Sphere_Buffer);
 
-    if(!outputTexture || !sphereArray)
-        return;
+    ConstantBuffer* bvhDescBuffer = (ConstantBuffer*) getResource(context,
+                                                   RTXPass_BVHDescription_Buffer);
 
     BindlessRTXTable passResourcesIndices;
     passResourcesIndices.outputTextureIndex = outputTexture->uav.getDescriptorIndex();
     passResourcesIndices.sphereArrayIndex = sphereArray->cbv.getDescriptorIndex();
+    passResourcesIndices.bvhDescIndex = bvhDescBuffer->cbv.getDescriptorIndex();
 
     cmdList->OMSetRenderTargets(1, &renderTarget.HandleCPU,
                                 true, &depthStencil.HandleCPU);

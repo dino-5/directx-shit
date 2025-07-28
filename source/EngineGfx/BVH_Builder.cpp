@@ -5,7 +5,7 @@
 namespace engine::graphics
 {
 
-constexpr u32 NUMBER_OF_BINS = 8;
+constexpr u32 BIN_COUNT = 8;
 struct Bin
 {
     AABB aabb;
@@ -67,7 +67,7 @@ void BVHBuilder::build(const Model& model)
 void BVHBuilder::subdivide()
 {
     PROFILER("BVHBuilder::subdivide");
-	uint32_t task[256], taskCount = 0, nodeIdx = 0;
+    uint32_t task[256], taskCount = 0, nodeIdx = 0;
 
     while(1)
     {
@@ -80,14 +80,14 @@ void BVHBuilder::subdivide()
             float bestSah = 1e20;
             AABB bestLeftAABB;
             AABB bestRightAABB;
-            Vector3 stepSize =  (float)NUMBER_OF_BINS / node.aabb.diagonal();
-            Vector3 nodeMin = node.aabb.aabbMin;
+            Vector3 stepSize =  (float)BIN_COUNT / node.aabb.diagonal();
+            Vector3 nodeMin = node.aabb.min;
             {
             PROFILER("binning");
             {
-                AABB binsAABB[3][NUMBER_OF_BINS];
-                u32 binsCount[3][NUMBER_OF_BINS];
-                memset(binsCount, 0, 3 * NUMBER_OF_BINS * sizeof(u32));
+                AABB binsAABB[3][BIN_COUNT];
+                u32 binsCount[3][BIN_COUNT];
+                memset(binsCount, 0, 3 * BIN_COUNT * sizeof(u32));
                 {
                 PROFILER("bin sorting");
                 for (u32 j = node.leftChild;
@@ -98,7 +98,7 @@ void BVHBuilder::subdivide()
                     auto& aabb = aabbs[triIndex];
                     Int3 binDistr = (aabb.middle() - nodeMin) * stepSize;
                     binDistr = math::clamp( binDistr, Int3(0),
-                                           Int3(NUMBER_OF_BINS - 1));
+                                           Int3(BIN_COUNT-1));
 
                     binsAABB[0][binDistr[0]].grow(aabb);
                     binsCount[0][binDistr[0]]++;
@@ -113,17 +113,17 @@ void BVHBuilder::subdivide()
                     if(node.aabb.diagonal()[i] > m_minDim[i])
                 {
 
-                    float leftArea[NUMBER_OF_BINS - 1],
-                        rightArea[NUMBER_OF_BINS - 1];
-                    AABB leftAABB[NUMBER_OF_BINS - 1],
-                        rightAABB[NUMBER_OF_BINS - 1];
+                    float leftArea[BIN_COUNT-1],
+                        rightArea[BIN_COUNT-1];
+                    AABB leftAABB[BIN_COUNT-1],
+                        rightAABB[BIN_COUNT-1];
 
                     u32 currentLeftCount = 0, currentRightCount = 0;
                     AABB currentLeftAABB, currentRightAABB;
 
                     {
                     PROFILER("calculation of area");
-                    for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+                    for (u32 j = 0; j < BIN_COUNT - 1; ++j)
                     {
                         currentLeftAABB.grow(binsAABB[i][j]);
                         leftAABB[j] = currentLeftAABB;
@@ -132,16 +132,13 @@ void BVHBuilder::subdivide()
                             (float)1e20 :
                             currentLeftAABB.area() * currentLeftCount;
 
-                        currentRightAABB.grow(
-                            binsAABB[i][NUMBER_OF_BINS - j - 1]);
+                        currentRightAABB.grow(binsAABB[i][BIN_COUNT-j-1]);
 
-                        rightAABB[NUMBER_OF_BINS - j - 2] = currentRightAABB;
+                        rightAABB[BIN_COUNT-j-2] = currentRightAABB;
 
-                        currentRightCount += 
-                                    binsCount[i][NUMBER_OF_BINS - j - 1];
+                        currentRightCount += binsCount[i][BIN_COUNT-j-1];
 
-                        rightArea[NUMBER_OF_BINS - j - 2] = 
-                                    currentRightCount == 0 ?
+                        rightArea[BIN_COUNT-j-2] = currentRightCount == 0 ?
                                     (float)1e20 :
                                     currentRightAABB.area() * currentRightCount;
                     }
@@ -149,7 +146,7 @@ void BVHBuilder::subdivide()
 
                     {
                     PROFILER("best area finding");
-                    for (u32 j = 0; j < NUMBER_OF_BINS - 1; ++j)
+                    for (u32 j = 0; j < BIN_COUNT - 1; ++j)
                     {
                         float sah = leftArea[j] + rightArea[j];
                         if (sah < bestSah)
@@ -178,11 +175,11 @@ void BVHBuilder::subdivide()
             while (i < j)
             {
                 AABB& aabb = aabbs[triIndices[i]];
-                float centroid = (aabb.aabbMin[bestSplitAxisIndex] + 
-                        aabb.aabbMax[bestSplitAxisIndex]) * 0.5;
+                float centroid = (aabb.min[bestSplitAxisIndex] + 
+                        aabb.max[bestSplitAxisIndex]) * 0.5;
                 i32 binDistr = (i32)((centroid - nodeMin[bestSplitAxisIndex]) 
                                      * stepSize[bestSplitAxisIndex]);
-                binDistr = math::clamp(binDistr, 0, (i32)NUMBER_OF_BINS - 1);
+                binDistr = math::clamp(binDistr, 0, (i32)BIN_COUNT - 1);
                 if((u32)binDistr <= bestSplitPos)
                     i++;
                 else

@@ -6,8 +6,12 @@
 enum PassResources
 {
     RTXPass_ConstantBufferData,
-    RTXPass_SphereBuffer, // numFrames
-    RTXPass_OutputTexture, // numFrames
+    RTXPass_Sphere_Buffer, // numFrames
+    RTXPass_Output_Texture, // numFrames
+    RTXPass_BVHNode_Buffer, // numFrames
+    RTXPass_BVHAABB_Buffer, // numFrames
+    RTXPass_BVHIndices_Buffer, // numFrames
+    RTXPass_BVHDescription_Buffer, // numFrames
     PassResourcesCount
 };
 

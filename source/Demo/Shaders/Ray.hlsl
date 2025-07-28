@@ -1,25 +1,6 @@
 #include "Shaders/RandomUtilities.hlsl"
 #define RED float4(1.0f, 0.f, 0.f, 1.f)
 
-struct Ray
-{
-    float3 pos;
-    float3 dir;
-
-    float3 at(float t)
-    {
-        return pos + dir * t;
-    }
-};
-
-Ray createRay(float3 p, float3 d)
-{
-    Ray r;
-    r.pos = p;
-    r.dir = d;
-    return r;
-}
-
 struct Material
 {
     float4 color;
@@ -43,6 +24,25 @@ struct Material
     }
 };
 
+struct Ray
+{
+    float3 pos;
+    float3 dir;
+
+    float3 at(float t)
+    {
+        return pos + dir * t;
+    }
+};
+
+Ray createRay(float3 p, float3 d)
+{
+    Ray r;
+    r.pos = p;
+    r.dir = d;
+    return r;
+}
+
 struct HitRecord 
 {
     float3 p;
@@ -51,6 +51,7 @@ struct HitRecord
     Material m;
     bool frontFace;
     bool hit;
+    uint index;
 
     void setNormal(Ray r, float3 normal)
     {
@@ -65,58 +66,9 @@ HitRecord getHit()
     rec.hit = false;
     rec.n = float3(0,0,0);
     rec.p = float3(0,0,0);
-    rec.t = 0;
+    rec.t = 1000;
+    rec.index = 0;
     return rec;
-}
-
-
-struct Sphere
-{
-    float3 center;
-    float radius;
-    Material mat;
-    float pad;
-};
-
-#define MAX_NUMBER_OF_SPHERES 100
-struct SphereArray
-{
-    Sphere spheres[MAX_NUMBER_OF_SPHERES];
-
-};
-
-HitRecord hit_sphere(Sphere sphere, Ray ray,
-                float tmin, float tmax)
-{
-    HitRecord hit = getHit();
-    // a is always zero
-    ray.dir = normalize(ray.dir);
-    float3 co = sphere.center - ray.pos;
-    float b = dot(ray.dir, co);
-
-    float c = dot(co, co) - sphere.radius * sphere.radius;
-
-    float d = b * b - c ;
-    if (d < 0)
-        return hit;
-
-    d = sqrt(d);
-    float t = b - d;
-    if(t < tmin || t > tmax)
-    {
-        t = b + d;
-        if(t < tmin || t > tmax)
-            return hit;
-    }
-
-    hit.p = ray.at(t);
-    hit.t = t;
-    float3 n = (hit.p - sphere.center) / sphere.radius;
-    hit.setNormal(ray, normalize(n));
-    hit.m = sphere.mat;
-    hit.hit = true;
-
-    return hit;
 }
 
 float3 refractRay(float3 r, float3 n, float ri) // refract is HLSL function :)
@@ -134,30 +86,6 @@ float3 refractRay(float3 r, float3 n, float ri) // refract is HLSL function :)
     return r_out_perp + r_out_parallel;
 }
 
-HitRecord hitArray(SphereArray array, 
-              Ray ray, 
-              float2 interval, 
-              uint count)
-{
-    HitRecord record = getHit(); 
-    bool hitAny = false;
-    float closestHit = interval.y;
-
-    for(uint i = 0; i < count; i++)
-    {
-        HitRecord tempRec = hit_sphere(array.spheres[i],
-                              ray,
-                              interval.x, closestHit);
-        if(tempRec.hit) // we shrink interval to the closestHit every time
-        {
-            record = tempRec;
-            record.hit = true;
-            closestHit = tempRec.t;
-        }
-    }
-
-    return record;
-}
 
 // NOTE : for some reason direct call to scatter_lambert is not the same as
 // call through this function
@@ -186,12 +114,6 @@ bool scatter(Ray r,
 
     return result;
 }
-
-
-struct CB_Sphere
-{
-    SphereArray array;
-};
 
 
 

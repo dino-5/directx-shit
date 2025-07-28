@@ -14,14 +14,14 @@ const float AABB_MIN = -1e20;
 const float AABB_MAX =  1e20;
 struct AABB
 {
-    Vector3 aabbMin = AABB_MAX;
-    Vector3 aabbMax = AABB_MIN;
-    void grow(Vector3 p) { aabbMin = minVectorCoords(aabbMin, p);
-                           aabbMax = maxVectorCoords(aabbMax, p); }
-    void grow(AABB p) { aabbMin = minVectorCoords(aabbMin, p.aabbMin);
-                        aabbMax = maxVectorCoords(aabbMax, p.aabbMax);  } 
-    inline Vector3 diagonal() const { return aabbMax - aabbMin;}
-    inline Vector3 middle() const { return (aabbMin + aabbMax) * 0.5; }
+    Vector3 min = AABB_MAX;
+    Vector3 max = AABB_MIN;
+    void grow(Vector3 p) { min = minVectorCoords(min, p);
+                           max = maxVectorCoords(max, p); }
+    void grow(AABB p) { min = minVectorCoords(min, p.min);
+                        max = maxVectorCoords(max, p.max);  } 
+    inline Vector3 diagonal() const { return max - min;}
+    inline Vector3 middle() const { return (min + max) * 0.5; }
     inline float area() const
     {
         Vector3 d = diagonal();
@@ -48,6 +48,8 @@ struct BVHNode
 
 template<typename T>
 using functionT = std::function<Vector3(const T&)>;
+template<typename T>
+using isLeafT = std::function<bool(const T&)>;
 
 class BVHBuilder
 {
@@ -66,7 +68,8 @@ public:
                                   const BVHNodeType* rootNode,
                                   u32 nodeCount,
                                   functionT<const BVHNodeType&> diagonalF,
-                                  functionT<const BVHNodeType&> aabbMinF);
+                                  functionT<const BVHNodeType&> aabbMinF,
+                                  isLeafT<const BVHNodeType&> leafF);
 
 private:
     void subdivide();
@@ -88,7 +91,8 @@ Model BVHBuilder::generateDrawData(GfxContext& context,
                                   const BVHNodeType* rootNode,
                                   u32 nodeCount,
                                   functionT<const BVHNodeType&> diagonalF,
-                                  functionT<const BVHNodeType&> aabbMinF)
+                                  functionT<const BVHNodeType&> aabbMinF,
+                                  isLeafT<const BVHNodeType&> leafF)
 {
     Geometry<Vector3> geometry;
     auto& vertices = geometry.vertices;
@@ -100,6 +104,9 @@ Model BVHBuilder::generateDrawData(GfxContext& context,
     for(u32 i = 0; i < nodeCount; ++i)
     {
         const BVHNodeType& node = rootNode[i];
+        if(!leafF(node))
+            continue;
+
         Vector3 d = diagonalF(node);
         Vector3 aabbMin = aabbMinF(node);
         vertices[i * 8 + 0] = aabbMin;

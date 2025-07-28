@@ -132,7 +132,7 @@ void Camera::processUpdate()
 
 void Camera::reset()
 {
-    pos = {0.f, 0.f, 0.f};
+    pos = {0.f, 1.f, -10.f};
     viewDir  = {0.f, 0.f, 1.f};
     rightDir = {1.f, 0.f, 0.f};
     upDir    = {0.f, 1.f, 0.f};

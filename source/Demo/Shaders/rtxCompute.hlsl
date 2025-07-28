@@ -1,11 +1,6 @@
-#include "Shaders/Ray.hlsl"
+#include "Shaders/bvh.hlsl"
 
 #define PI 3.1415
-
-float degrees_to_radians(float degrees)
-{
-    return degrees / 180 * PI;
-}
 
 struct ViewSettings
 {
@@ -22,17 +17,107 @@ struct ViewSettings
     float fov;
 };
 
+struct RTXData
+{
+    uint sphereCount;
+    uint imWidth;
+    uint imHeight;
+    float3 color;
+};
+
+struct IndirectIndices
+{
+    uint outputTextureIndex;
+    uint sphereBufferIndex;
+    uint bvhDescIndex;
+};
+
+ConstantBuffer<ViewSettings> g_view : register(b0);
+ConstantBuffer<RTXData> g_rtxData : register(b1);
+ConstantBuffer<IndirectIndices> bindless : register(b2);
+
+#define RDH(index) ResourceDescriptorHeap[index]
+
+float degrees_to_radians(float degrees)
+{
+    return degrees / 180 * PI;
+}
+
+
 float4 calculateSky(float blue)
 {
     return float4((1 - blue) * float2(1,1) + blue * float2(0.5, 0.7), 
                   1.f, 1.f); 
 }
 
+/* */
+HitRecord hit(BVH bvh, Ray ray, SphereArray array, uint sphereCount, float2 interval)
+{
+    uint nodeIndex = 0, taskCount = 0;
+    uint tasks[512];
+
+    HitRecord record = getHit(); 
+    bool hitAny = false;
+    float closestHit = interval.y;
+
+    while(1)
+    {
+        while(1)
+        {
+            if(nodeIndex >= bvh.bvhNodeCount) break;
+            BVHNode node = bvh.nodes[nodeIndex];
+
+            if(!node.aabb.intersect(ray, closestHit)) break;
+
+            if(node.isLeaf())
+            {
+                if(!node.aabb.intersect(ray, closestHit)) break;
+
+                uint start=node.first, end=start+node.count;
+                for(uint i=start; i<end; i++)
+                {
+                    HitRecord tempRec = getHit();
+
+                    if(i < sphereCount)
+                    {
+                        if(bvh.indices[i] < sphereCount)
+                            tempRec = hit_sphere(array.spheres[bvh.indices[i]],
+                                             ray, interval.x, closestHit);
+                    }
+
+                    if(tempRec.hit) // we shrink interval to the closestHit every time
+                    {
+                        record = tempRec;
+                        record.hit = true;
+                        closestHit = tempRec.t;
+                    }
+                }
+                break;
+            }
+            else
+            {
+                nodeIndex = node.first;
+                if(taskCount>510) break;
+                if(nodeIndex < bvh.bvhNodeCount-1) tasks[taskCount++] = nodeIndex+1;
+            }
+
+            
+        }
+        if(!taskCount) break;
+        nodeIndex = tasks[--taskCount];
+    }
+    return record;
+
+}
+/*
+*/
+
 
 struct Camera
 {
 
-    void createCamera(float width,
+    void createCamera(BVH aBVH,
+                      float width,
                       float height,
                       float3 cameraPos,
                       float3 cameraV,
@@ -45,6 +130,8 @@ struct Camera
                       float lensR,
                       float focusD)
     {
+        bvh = aBVH;
+
         lensAngle = lensR;
         focusDist = focusD;
         pos = cameraPos;
@@ -100,7 +187,7 @@ struct Camera
 
         return r;
     }
-
+#define USE_BVH 1
     float4 pixelColor(SphereArray array, Ray r)
     {
         float4 color = float4(1,1,1,1);
@@ -108,7 +195,11 @@ struct Camera
         HitRecord hitRec;
         for(int i = 0; i < maxDepth; i++)
         {
+        #if USE_BVH
+            hitRec = hit(bvh, r, array, sphCount, interv);
+        #else
             hitRec = hitArray(array, r, interv, sphCount);
+        #endif
             if(hitRec.hit)
             {
                 Ray scattered;
@@ -198,8 +289,8 @@ struct Camera
     float3 viewPlaneC;
 
     float3 pixel;
-    float3 pos;
     float dx;
+    float3 pos;
     float dy;
     uint hash;
     uint sampleCount;
@@ -208,32 +299,13 @@ struct Camera
     uint sphCount;
     float2 interv;
 
+    float3 defocus_disk_u;       // Defocus disk horizontal radius
     float lensAngle;
+    float3 defocus_disk_r;       // Defocus disk vertical radius
     float focusDist;
-    float3   defocus_disk_u;       // Defocus disk horizontal radius
-    float3   defocus_disk_r;       // Defocus disk vertical radius
 
+    BVH bvh;
 };
-
-struct RTXData
-{
-    uint sphereCount;
-    uint imWidth;
-    uint imHeight;
-    float3 color;
-};
-
-struct IndirectIndices
-{
-    uint outputTextureIndex;
-    uint sphereBufferIndex;
-};
-
-ConstantBuffer<ViewSettings> g_view : register(b0);
-ConstantBuffer<RTXData> g_rtxData : register(b1);
-ConstantBuffer<IndirectIndices> bindless : register(b2);
-
-#define RDH(index) ResourceDescriptorHeap[index]
 
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
@@ -243,10 +315,16 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     RWTexture2D<float4> tex = RDH(bindless.outputTextureIndex);
     ConstantBuffer<CB_Sphere> sphereArray = RDH(bindless.sphereBufferIndex);
+    ConstantBuffer<BVHDescription> bvhDesc = RDH(bindless.bvhDescIndex);
 
+    BVH bvh;
+    bvh.nodes = RDH(bvhDesc.bvhNodeBufferIndex);
+    bvh.indices = RDH(bvhDesc.bvhIndicesBufferIndex);
+    bvh.bvhNodeCount = bvhDesc.bvhNodeCount;
 
     Camera camera;
-    camera.createCamera(g_rtxData.imWidth,
+    camera.createCamera(bvh, 
+                        g_rtxData.imWidth,
                         g_rtxData.imHeight,
                         g_view.cameraPos,
                         g_view.cameraViewDir,
@@ -254,7 +332,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                         g_view.cameraUpDir,
                         g_view.fov,
                         id.xy,
-                        5,
+                        50,
                         4,
                         0.6,
                         10);

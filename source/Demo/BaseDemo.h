@@ -87,6 +87,34 @@ struct ConstandBufferData
     Matrix4 projection;
 };
 
+struct RTX_BVHNode
+{
+    AABB aabb;
+    // NOTE:: if count = 0 then first is index of the left node,
+        // first + 1 is right node, and if count > 0 then first is actual index of
+        // primitives and count is telling us how many primitives is related
+        // to our node
+    u32 first = 0, count = 0; 
+};
+
+// NOTE  : 
+// 1. calculate the AABB of the node 
+// 2. if it is already small enough or node has only one element the return
+// 3. calculate the bins for partition
+// 4. select the best partition
+// 5. sort indices of node according where center of the aabb lying
+
+struct RTX_BVH
+{
+    std::vector<u32> indices;
+    std::vector<AABB> aabbs;
+    std::vector<RTX_BVHNode> nodes;
+
+    u32 count = 0;
+
+    void createBVH(Sphere* array, u32 arrayCount);
+};
+
 using SphereUI = std::function<bool(std::string_view name, Sphere* sphere, int i)>;
 using uiSphereActionCallback = std::function<void(BaseDemo&, Sphere, int)>;
 
@@ -148,6 +176,7 @@ public:
     BaseDemo():
         m_renderModel(*this, true, "render model"),
         m_drawBVHDebugView(*this, true, "draw BVH debug view"),
+        m_drawRTXBVHDebugView(*this, false, "draw RTX BVH debug view"),
         m_outputColor(*this, Vector3({1.f, 1.f, 0}), "color", 1.f)
     {}
     bool initialize()override;
@@ -188,6 +217,7 @@ private:
     Model m_model;
     Model m_bvhModel;
     Model m_tinybvhModel;
+    Model m_rtxbvhModel;
 
     enum {
         ForwardPass,
@@ -203,10 +233,12 @@ private:
     UI_Sphere m_sphereUI[sphereCount];
 
     RTXPassData m_rtxData;
+    RTX_BVH m_bvh;
 
     UI_Vector<BaseDemo> m_outputColor;
     UI_CheckBox<BaseDemo> m_renderModel;
     UI_CheckBox<BaseDemo> m_drawBVHDebugView;
+    UI_CheckBox<BaseDemo> m_drawRTXBVHDebugView;
 
     InputManager* m_inputManager;
 };

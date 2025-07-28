@@ -1,6 +1,7 @@
 #include <dxgiformat.h>
 #include <format>
 #include <functional>
+#include <ios>
 #include <iterator>
 #include <ostream>
 #include <string_view>
@@ -14,6 +15,9 @@
 #include "RenderPasses.h"
 #include <random>
 
+using namespace std;
+using namespace util;
+using namespace DirectX;
 
 inline float random_float() {
     static std::uniform_real_distribution<float> distribution(0.0, 1.0);
@@ -31,7 +35,7 @@ Vector3 randomColor(float min = 0.f, float max = 1.f)
     return Vector3 { random_float(), random_float(),random_float() };
 }
 
-void locCreateViewData(GfxViewData& data, const Camera& camera)
+inline void locCreateViewData(GfxViewData& data, const Camera& camera)
 {
     data.projectionMatrix = camera.getProjectionMatrix();
     data.viewMatrix = camera.getViewMatrix();
@@ -42,9 +46,94 @@ void locCreateViewData(GfxViewData& data, const Camera& camera)
     data.fov = 90.f;
 }
 
-using namespace std;
-using namespace util;
-using namespace DirectX;
+void RTX_BVH::createBVH(Sphere* array, u32 arrayCount)
+{
+    indices.resize(arrayCount);
+    aabbs.resize(arrayCount);
+    nodes.resize(2*arrayCount-1);
+
+    u32 i = 0;
+    for(auto& index : indices)
+    {
+        index = i++;
+    }
+
+    for(int i=0; i<arrayCount; i++)
+    {
+        Vector3 center = array[i].center;
+        float r = array[i].radius;
+        aabbs[i] = {center - r, center + r};
+    }
+
+    nodes[0].first = 0;
+    nodes[0].count = arrayCount;
+    count++;
+
+    for(auto& aabb : aabbs) // NOTE:: valid only in this case in all other use indices
+    {
+        nodes[0].aabb.grow(aabb);
+    }
+
+    uint32_t task[256], taskCount = 0, nodeIdx = 0;
+
+    while(1)
+    {
+        while(1)
+        {
+            auto& node = nodes[nodeIdx];
+            if(node.count<=2)
+                break;
+
+            Vector3 diag = node.aabb.diagonal();
+            u32 longestAxis = 0;
+            if(diag[1] > diag[longestAxis]) longestAxis = 1;
+            if(diag[2] > diag[longestAxis]) longestAxis = 2;
+
+            float split = node.aabb.min[longestAxis] + diag[longestAxis]/2; 
+            u32 leftEnd = node.first;
+
+            for(u32 idx=leftEnd, end=idx+node.count; idx<end; idx++)
+            {
+                int i = indices[idx];
+                float pos = aabbs[i].middle()[longestAxis];
+                if(pos <= split)
+                    std::swap(indices[leftEnd++], indices[idx]);
+            }
+
+            if(leftEnd == node.first || leftEnd == node.first+node.count)
+                break;
+
+            u32 leftIdx = count++, rightIdx = count++;
+            auto& leftNode = nodes[leftIdx];
+            auto& rightNode = nodes[rightIdx];
+
+            leftNode.first = node.first;
+            leftNode.count = leftEnd - node.first;
+            rightNode.first = leftEnd;
+            rightNode.count = node.count - leftNode.count;
+
+            node.first = leftIdx;
+            node.count = 0;
+            nodeIdx = leftIdx;
+            task[taskCount++] = rightIdx;
+
+            for(u32 idx=leftNode.first, end=idx+leftNode.count; idx<end; idx++)
+            {
+                leftNode.aabb.grow(aabbs[indices[idx]]);
+            }
+
+            for(u32 idx=rightNode.first, end=idx+rightNode.count; idx<end; idx++)
+            {
+                rightNode.aabb.grow(aabbs[indices[idx]]);
+            }
+        }
+        if(taskCount==0)
+            break;
+        nodeIdx = task[--taskCount];
+    }
+
+}
+
 
 void locGenerateTinyBVHCompatibleGeometry(
     std::vector<tinybvh::bvhvec4>& outVertices,
@@ -99,6 +188,7 @@ BaseDemo::BaseDemo(
     WindowApp(width, height, name),
     m_renderModel(*this, true, "render model"),
     m_drawBVHDebugView(*this, true, "draw BVH debug view"),
+    m_drawRTXBVHDebugView(*this, false, "draw RTX BVH debug view"),
     m_outputColor(*this, Vector3({1.f, 1.f, 0}), "color", 1.f)
 {
     initGfxContext(width, height);
@@ -164,7 +254,7 @@ void BaseDemo::createRenderPasses()
 {
     RenderPassDesc renderPassDesc[RenderPassCount] = {
         {forwardPassInit, 0, forwardPassExecute,  0} ,
-        {debugDrawBVHPassInit, 0, debugDrawBVHPassExecute, 0} ,
+        {debugDrawBVHPassInit, 0, debugDrawBVHPassExecute, 1} ,
         {computeRTXPassInit, computeRTXPassResize, computeRTXPassExecute, 1}
     };
     
@@ -203,14 +293,17 @@ bool BaseDemo::initialize()
         Profiler::EndProfiling();
 
         using func = std::function<Vector3(const BVHNode&)>;
+        using leaf = std::function<bool(const BVHNode&)>;
         func diagonalF = [](const BVHNode& node) { return node.aabb.diagonal(); };
-        func aabbF = [](const BVHNode& node) { return node.aabb.aabbMin;};
+        func aabbF = [](const BVHNode& node) { return node.aabb.min;};
+
+        leaf leafF=[](const BVHNode& node){return node.isLeaf();};
 
         m_bvhModel = BVHBuilder::generateDrawData(
                         globalContext,
                         m_bvhBuilder.getRootNode(),
                         m_bvhBuilder.getNodeCount(),
-                        diagonalF, aabbF);
+                        diagonalF, aabbF, leafF);
     }
 
     if(m_model.isInitialized())
@@ -237,6 +330,7 @@ bool BaseDemo::initialize()
         util::printInfo("tiny bvh node number {}", bvh.NodeCount());
 
         using func = std::function<Vector3( const tinybvh::BVH::BVHNode&)>;
+        using leaf = std::function<bool( const tinybvh::BVH::BVHNode&)>;
         auto from_tinyV3_to_mathV3 = [](tinybvh::bvhvec3 vec) 
             { return Vector3({vec.x, vec.y, vec.z}); };
 
@@ -248,10 +342,11 @@ bool BaseDemo::initialize()
         [from_tinyV3_to_mathV3](const tinybvh::BVH::BVHNode& node)  
         { return from_tinyV3_to_mathV3(node.aabbMin);};
 
+        leaf leafF=[](const tinybvh::BVH::BVHNode& node){return node.isLeaf();};
         m_tinybvhModel = BVHBuilder::generateDrawData(globalContext,
                                                       bvh.bvhNode,
                                                       bvh.NodeCount(),
-                                                  diagonalF, aabbF);
+                                                      diagonalF, aabbF, leafF);
     }
 
     m_camera.addChangeCallback([](const Camera* camera)
@@ -318,6 +413,60 @@ bool BaseDemo::initialize()
 
     m_currentSphereCount = i;
 
+    m_bvh.createBVH(m_rtxData.sphereArray, m_currentSphereCount);
+
+    {
+        using func = std::function<Vector3(const RTX_BVHNode&)>;
+        using leaf = std::function<bool(const RTX_BVHNode&)>;
+        func diagonalF = [](const RTX_BVHNode& node) { return node.aabb.diagonal(); };
+        func aabbF = [](const RTX_BVHNode& node) { return node.aabb.min;};
+        leaf leafF = [](const RTX_BVHNode& node) { return node.count > 0;};
+
+        m_rtxbvhModel = BVHBuilder::generateDrawData(
+                            globalContext,
+                            m_bvh.nodes.data(),
+                            m_bvh.count,
+                            diagonalF,
+                            aabbF,
+                            leafF);
+    }
+
+    Resource*& bvhNodeBuffer = getResource(globalContext, RTXPass_BVHNode_Buffer);
+    bvhNodeBuffer = new Buffer(globalContext.device,
+                               globalContext.cmdList,
+                               getCustomBufferDescription(m_bvh.nodes.data(),
+                                                          m_bvh.count));
+
+    Resource*& bvhAABBBuffer = getResource(globalContext, RTXPass_BVHAABB_Buffer);
+    bvhAABBBuffer = new Buffer(globalContext.device,
+                               globalContext.cmdList,
+                               getCustomBufferDescription(m_bvh.aabbs.data(),
+                                                          m_bvh.aabbs.size()));
+
+    Resource*& bvhIndicesBuffer = getResource(globalContext, RTXPass_BVHIndices_Buffer);
+    bvhIndicesBuffer = new Buffer(globalContext.device,
+                               globalContext.cmdList,
+                               getCustomBufferDescription(m_bvh.indices.data(),
+                                                          m_bvh.indices.size()));
+
+    struct BVHDescription
+    {
+        u32 bvhNodeBufferIndex;
+        u32 bvhIndicesBufferIndex;
+        u32 bvhNodeCount;
+    }bvhDesc;
+
+    bvhDesc.bvhNodeCount = m_bvh.count;
+    bvhDesc.bvhNodeBufferIndex = bvhNodeBuffer->srv.getDescriptorIndex();
+    bvhDesc.bvhIndicesBufferIndex = bvhIndicesBuffer->srv.getDescriptorIndex();
+
+    Resource*& bvhDescBuffer = getResource(globalContext,
+                                           RTXPass_BVHDescription_Buffer);
+    bvhDescBuffer = new ConstantBuffer(globalContext.device,
+                                     globalContext.cmdList,
+                                     sizeof(BVHDescription));
+    ((ConstantBuffer*)bvhDescBuffer)->update(&bvhDesc);
+
     RTXDescription rtxDesc;
     rtxDesc.sphereCount = m_currentSphereCount;
     rtxDesc.imWidth = getWidth();
@@ -372,8 +521,9 @@ void BaseDemo::draw()
         m_renderPasses[BVHDebugPass].execute(globalContext, &m_tinybvhModel);
     }
 
-
-    m_renderPasses[RTXComputePass].execute(globalContext, nullptr, &m_rtxData);
+        m_renderPasses[RTXComputePass].execute(globalContext, nullptr, &m_rtxData);
+    if(m_drawRTXBVHDebugView.getData())
+        m_renderPasses[BVHDebugPass].execute(globalContext, &m_rtxbvhModel);
 
     imgui::StartFrame();
     {

@@ -112,6 +112,17 @@ BufferDescription getCustomBufferDescription(T* data, u32 elementCount)
                     BufferType::CUSTOM);
 }
 
+inline BufferDescription getCustomBufferDescription(u32 elementSize,
+                                                    u32 elementCount)
+{
+    BufferDescription desc(elementSize,
+                           "CustomBuffer",
+                           ResourceState::COMMON,
+                           BufferType::CUSTOM);
+    desc.elementCount = elementCount;
+    return desc;
+}
+
 inline BufferDescription getConstantBufferDescription(u32 bufferSize)
 {
     return BufferDescription(bufferSize,

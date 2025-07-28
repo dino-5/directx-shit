@@ -246,13 +246,16 @@ private:
 
 
 template<int M>
-const Vector<M> PerElementOperation(const Vector<M>& v1, const Vector<M>& v2, float (*op)(float, float))
+const Vector<M> PerElementOperation(const Vector<M>& v1,
+                                    const Vector<M>& v2,
+                                    float (*op)(float, float))
 {
     Vector<M> result;
     for (int i = 0; i < M; i++)
         result[i] = op(v1[i], v2[i]);
     return result;
 }
+
 
 template<int M, typename T>
 const Vector<M,T> operator+(const Vector<M,T>& v1, const Vector<M,T>& v2)
@@ -300,6 +303,30 @@ template<int N, typename T=float>
 const Vector<N,T> operator*(const float v, const Vector<N,T>& v1)
 {
     return v1*v;
+}
+
+template<int N, typename T=float>
+const Vector<N,T> operator+(const Vector<N,T>& v1, const float v)
+{
+    return VectorOpFloat(v1, v, [](float a, float b) { return a + b; });
+}
+
+template<int N, typename T=float>
+const Vector<N,T> operator+(const float v, const Vector<N,T>& v1)
+{
+    return v1+v;
+}
+
+template<int N, typename T=float>
+const Vector<N,T> operator-(const Vector<N,T>& v1, const float v)
+{
+    return VectorOpFloat(v1, v, [](float a, float b) { return a - b; });
+}
+
+template<int N, typename T=float>
+const Vector<N,T> operator-(const float v, const Vector<N,T>& v1)
+{
+    return v1-v;
 }
 
 template<int N, typename T=float>
